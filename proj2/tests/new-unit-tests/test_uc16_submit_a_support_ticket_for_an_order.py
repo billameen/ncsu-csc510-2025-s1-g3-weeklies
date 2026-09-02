@@ -191,7 +191,9 @@ def test_support_submit_message_too_short(client, mock_db):
     location = response.headers["Location"]
     assert "ticket_error=message_too_short" in location
     assert "ord_id=101" in location
-    assert "message=Too+few" in location or "message=Too few" in location
+    # Flask's redirect() percent-encodes the Location header, so a literal space becomes %20
+    # (not left raw and not '+'-encoded, which only applies to application/x-www-form-urlencoded bodies).
+    assert "message=Too%20few" in location
 # This proves support messages with fewer than 10 characters are rejected and preserve the order ID and message in the redirect URL.
 
 
