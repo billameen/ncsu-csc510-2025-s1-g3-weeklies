@@ -253,11 +253,13 @@ def test_insights_data_malformed_order_json_skipped_gracefully(client, mock_db):
 # This proves corrupted or missing order details JSON records are skipped gracefully without aborting dataset generation.
 
 
-def test_insights_data_database_exception_returns_500_defect(client, mock_db):
-    # Defect Test / Extension Not Handled #2:
-    # Expected behavior: When a database query fails, the server should return a sanitized error message.
-    # Suspected Defect: Line 1726 catches generic exceptions and directly returns raw exception strings {"error": str(e)},
-    # leaking internal database errors to the client.
+def test_insights_data_database_exception_returns_sanitized_500(client, mock_db):
+    # Extension Not Handled #2:
+    # Expected behavior: when a database query fails, the server should return a sanitized
+    # error message without leaking internal details (e.g. raw exception text).
+    # Known defect: line 1726 catches generic exceptions and directly returns raw exception
+    # strings {"error": str(e)}, leaking internal database errors to the client. This test
+    # asserts the CORRECT behavior and will fail while the raw exception text is echoed back.
     mock_db["fetch_one"].side_effect = RuntimeError("SQLite database file is locked")
 
     with client.session_transaction() as sess:
@@ -266,10 +268,10 @@ def test_insights_data_database_exception_returns_500_defect(client, mock_db):
 
     response = client.get("/api/insights_data")
     assert response.status_code == 500
-    data = response.get_json()
-    assert "error" in data
-    assert "SQLite database file is locked" in data["error"]
-# This proves unhandled server exceptions return HTTP 500 while leaking internal error strings into the response.
+    body_text = response.get_data(as_text=True)
+    assert "SQLite database file is locked" not in body_text
+# This fails while the raw exception string is leaked in the response; it passes once the
+# route returns a sanitized error message instead of str(e).
 
 
 def test_insights_data_ensures_database_connection_closed(client, mock_db):
