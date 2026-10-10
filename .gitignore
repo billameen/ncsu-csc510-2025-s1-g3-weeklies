@@ -38,11 +38,11 @@ htmlcov/
 
 # Generated docs / reports
 site/
-docs/
+/docs/
 *.pdf
 
 # Databases (important!)
-proj2/CSC510_DB.db
+app/CSC510_DB.db
 *.db
 *.sqlite
 *.sqlite3

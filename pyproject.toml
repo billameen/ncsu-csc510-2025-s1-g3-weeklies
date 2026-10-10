@@ -4,7 +4,7 @@ target-version = ["py311"]
 extend-exclude = '''
 (
   ^\.venv/
-| ^proj2/site/
+| ^app/site/
 | __pycache__
 )
 '''
@@ -12,4 +12,4 @@ extend-exclude = '''
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["proj2/site", ".venv"]
+extend-exclude = ["app/site", ".venv"]

@@ -10,7 +10,7 @@
 ### 🪟 Windows (PowerShell)
 ```powershell
 # 1️⃣ Clone the repository
-git clone https://github.com/Aum3010/ncsu-csc510-2025-s1-g3-weeklies.git
+git clone https://github.com/billameen/ncsu-csc510-2025-s1-g3-weeklies.git
 cd ncsu-csc510-2025-s1-g3-weeklies
 
 # 2️⃣ Create and activate a virtual environment
@@ -21,13 +21,16 @@ py -3 -m venv .venv
 
 # 3️⃣ Install dependencies
 python -m pip install --upgrade pip
-pip install -r proj2/requirements.txt
+pip install -r app/requirements.txt
+
+# 4️⃣ Build the local database from app/db/seed.sql
+python app/scripts/init_db.py
 ```
 
 ### 🐧MacOS / Linux (Bash/Zsh)
 ```bash
 # 1️⃣ Clone the repository
-git clone https://github.com/Aum3010/ncsu-csc510-2025-s1-g3-weeklies.git
+git clone https://github.com/billameen/ncsu-csc510-2025-s1-g3-weeklies.git
 cd ncsu-csc510-2025-s1-g3-weeklies
 
 # 2️⃣ Create & activate a venv
@@ -36,7 +39,10 @@ source .venv/bin/activate
 
 # 3️⃣ Install packages
 python -m pip install --upgrade pip
-pip install -r proj2/requirements.txt
+pip install -r app/requirements.txt
+
+# 4️⃣ Build the local database from app/db/seed.sql
+python app/scripts/init_db.py
 ```
 
 ---
@@ -48,19 +54,21 @@ Once dependencies are installed and the virtual environment is activated, you ca
 
 ### 🪟Windows (PowerShell)
 ```powershell
-# Start the development server
+# Start the development server (from app/, where .flaskenv lives)
+cd app
 flask run
 ```
 
 ### 🐧MacOS / Linux (Bash/Zsh)
 ```bash
-# Start the development server
+# Start the development server (from app/, where .flaskenv lives)
+cd app
 flask run
 ```
 
 > [!NOTE]
 > If you have downloaded the repo locally and you're running into issues with
-> `proj2.` errors when trying to run `Flask_app.py`, simply remove `proj2.`
+> `app.` errors when trying to run `Flask_app.py`, simply remove `app.`
 > that is in front of any of the imports and try to run the application again.
 
 ---
@@ -82,7 +90,7 @@ pytest -q
 Documentation is automatically generated using pdoc and deployed to GitHub Pages whenever new changes are merged into the `main` branch.
 
 ### 🧩 Automated Docs
-* CI/CD workflow (`docs.yml`) builds and publishes docs from `proj2/` to the `gh-pages` branch.
+* CI/CD workflow (`docs.yml`) builds and publishes docs from `app/` to the `gh-pages` branch.
 
 * Live documentation becomes available at the GitHub Pages link after each successful merge.
 
@@ -94,20 +102,20 @@ You can also generate and preview the documentation manually:
 ```powershell
 # Temporarily add current directory to Python path
 $env:PYTHONPATH="." ;
-pdoc proj2 --no-show-source --template-dir proj2\pdoc_templates -o proj2\site
+pdoc app --no-show-source --template-dir app\pdoc_templates -o app\site
 python .\scripts\build_docs.py
 # View the documentation in your default browser
-start proj2\site\index.html
+start app\site\index.html
 ```
 
 ### 🐧MacOS / Linux (Bash/Zsh)
 ```bash
 # Temporarily add current directory to Python path
 export PYTHONPATH="."
-pdoc proj2 --no-show-source --template-dir proj2/pdoc_templates -o proj2/site
+pdoc app --no-show-source --template-dir app/pdoc_templates -o app/site
 python ./scripts/build_docs.py
 # View the documentation in your default browser
-open proj2/site/index.html
+open app/site/index.html
 ```
 
-The generated HTML files will be available in the `proj2/site` directory.
+The generated HTML files will be available in the `app/site` directory.
