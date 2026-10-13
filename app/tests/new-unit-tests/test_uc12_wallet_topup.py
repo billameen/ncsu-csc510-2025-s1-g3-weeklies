@@ -59,46 +59,26 @@ def test_a_valid_top_up_credits_the_wallet_and_the_session_by_the_same_amount(cl
 # This proves a well-formed top-up converts dollars to cents, applies the credit atomically, and keeps the session balance in step with the database.
 
 
-def test_a_non_numeric_amount_reports_zero_amount_because_the_invalid_amount_branch_is_unreachable(
-    client, temp_db_path
-):
-    """The route wraps the conversion in try/except and redirects with
-    ``wallet_error=invalid_amount`` on failure. But ``_money`` already
-    swallows the failure itself::
-
-        try:    return round(float(x) + 1e-9, 2)
-        except Exception: return 0.0
-
-    so ``_money("abc")`` returns 0.0 rather than raising, the except branch is
-    never entered, and control falls through to the ``amount_cents <= 0``
-    check instead. The team's own suite has a commented-out
-    ``test_topup_error_invalid_amount`` attributing this to HTML form
-    validation; the real cause is that the branch cannot be reached at all.
+def test_a_non_numeric_amount_reports_invalid_amount(client, temp_db_path):
+    """Regression (M2, bug 1 follow-on): non-numeric input used to be coerced
+    to $0.00 by ``_money`` and misreported as ``zero_amount``. Amounts are now
+    parsed with ``money.parse_cents``, which rejects garbage outright.
     """
-    usr_id = _make_user(temp_db_path, "uc12-invalid@example.test", wallet_cents=500)
-    _login(client, "uc12-invalid@example.test")
+    usr_id = _make_user(temp_db_path, "uc12-garbage@example.test", wallet_cents=500)
+    _login(client, "uc12-garbage@example.test")
 
     response = client.post("/profile/wallet/topup", data={"amount": "abc"}, follow_redirects=False)
 
     assert response.status_code == 302
-    assert response.headers["Location"] == "/profile?wallet_error=zero_amount"
-    assert "invalid_amount" not in response.headers["Location"]
+    assert response.headers["Location"] == "/profile?wallet_error=invalid_amount"
     assert _wallet_cents(temp_db_path, usr_id) == 500
 
 
-# This proves the invalid_amount error the route defines is dead code: garbage input is silently coerced to $0.00 and misreported as a zero-amount error, so the user is told the wrong thing about their own input -- a real defect.
-
-
-def test_certain_exact_dollar_amounts_lose_a_cent_to_float_truncation(client, temp_db_path):
-    """``_dollars_to_cents`` truncates instead of rounding::
-
-        return int(_money(dollars) * 100)
-
-    0.29 is not exactly representable in binary floating point, so
-    ``0.29 * 100`` evaluates to 28.999999999999996 and ``int()`` floors it to
-    28. Roughly 1,145 of the 20,000 cent-values between $0.01 and $200.00
-    are short by one cent for the same reason. The same helper is used by the
-    gift and order routes.
+def test_a_29_cent_top_up_credits_exactly_29_cents(client, temp_db_path):
+    """Regression (M2, bug 1): ``_dollars_to_cents`` used to compute
+    ``int(0.29 * 100)``, i.e. ``int(28.999999999999996) == 28``, losing a cent
+    on 4,586 of the first 100,000 cent amounts. Amounts are now parsed with
+    ``Decimal`` and rounded half up.
     """
     usr_id = _make_user(temp_db_path, "uc12-cent@example.test", wallet_cents=0)
     _login(client, "uc12-cent@example.test")
@@ -107,9 +87,6 @@ def test_certain_exact_dollar_amounts_lose_a_cent_to_float_truncation(client, te
 
     assert response.status_code == 302
     assert response.headers["Location"] == "/profile?wallet_updated=topup"
-    assert _wallet_cents(temp_db_path, usr_id) == 28
+    assert _wallet_cents(temp_db_path, usr_id) == 29
     with client.session_transaction() as sess:
-        assert sess["Wallet"] == 28
-
-
-# This proves a $0.29 top-up credits 28 cents, because dollars are floored rather than rounded into cents -- money is silently lost on every affected amount, a real defect.
+        assert sess["Wallet"] == 29

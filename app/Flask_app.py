@@ -17,6 +17,7 @@ from flask import Flask, render_template, url_for, redirect, request, session, s
 
 # Use ONLY these helpers for DB access
 from sqlQueries import create_connection, close_connection, fetch_one, fetch_all, execute_query
+from money import MoneyError, parse_cents
 from collections import Counter, defaultdict
 from menu_generation import MenuGenerator
 
@@ -67,16 +68,15 @@ def _cents_to_dollars(cents) -> float:
     
 def _dollars_to_cents(dollars) -> int:
     """
-    Convert an amount in dollars to cents.
+    Convert an amount in dollars to cents, rounding half up (see ``money.py``).
     Args:
-        dollars (int | float | None): The value in dollars to convert.
+        dollars (int | float | str | None): The value in dollars to convert.
     Returns:
         int: The cent value (0 on failure).
     """
     try:
-        # Use _money to ensure 2 decimal places, then multiply by 100
-        return int(_money(dollars) * 100)
-    except Exception:
+        return parse_cents(dollars)
+    except MoneyError:
         return 0
 
 def _execute_transaction(conn, queries_and_params: list) -> bool:
@@ -772,9 +772,8 @@ def wallet_topup():
         return redirect(url_for('login'))
 
     try:
-        amount_dollars = _money(request.form.get('amount') or 0)
-        amount_cents = _dollars_to_cents(amount_dollars)
-    except Exception:
+        amount_cents = parse_cents(request.form.get('amount'))
+    except MoneyError:
         return redirect(url_for('profile', wallet_error='invalid_amount'))
 
     if amount_cents <= 0:
@@ -809,9 +808,8 @@ def wallet_gift():
 
     recipient_email = (request.form.get('recipient_email') or '').strip().lower()
     try:
-        amount_dollars = _money(request.form.get('amount') or 0)
-        amount_cents = _dollars_to_cents(amount_dollars)
-    except Exception:
+        amount_cents = parse_cents(request.form.get('amount'))
+    except MoneyError:
         return redirect(url_for('profile', wallet_error='invalid_amount'))
 
     sender_id = session['usr_id']
