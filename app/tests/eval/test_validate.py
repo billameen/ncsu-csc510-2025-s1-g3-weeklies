@@ -1,4 +1,5 @@
 from dataclasses import replace
+from datetime import date
 
 import pytest
 
@@ -6,6 +7,7 @@ from eval.catalog import Catalog, Item, Restaurant
 from eval.profiles import Profile
 from eval.validate import (
     MEAL_TIMES,
+    WEEK_START,
     WEEKDAYS,
     Meal,
     Violation,
@@ -103,6 +105,11 @@ def swap(meals, day, meal, itm_id):
 def test_the_week_has_seven_days_of_three_meals():
     assert WEEKDAYS == ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
     assert MEAL_TIMES == {1: 1000, 2: 1400, 3: 2000}
+
+
+def test_the_week_starts_on_monday_2026_10_19():
+    assert WEEK_START == date(2026, 10, 19)
+    assert WEEK_START.weekday() == 0
 
 
 def test_valid_week_has_no_violations():

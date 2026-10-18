@@ -7,6 +7,7 @@ eval.baselines), so a planner bug cannot also hide in the check that is meant to
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
+from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 
@@ -16,6 +17,9 @@ from eval.catalog import Catalog, Item
 from eval.profiles import Profile
 
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+# The planned week runs Mon-Sun from this Monday. Planners that work in dates use it.
+WEEK_START = date(2026, 10, 19)
 
 # Meal number -> order time (HHMM). Numbered like the app's generated menus:
 # 1 breakfast, 2 lunch, 3 dinner.
