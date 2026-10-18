@@ -12,6 +12,7 @@ from eval.validate import (
     Meal,
     Violation,
     ViolationKind,
+    kcal_band,
     normalize_allergen,
     order_cost_cents,
     validate_week,
@@ -276,6 +277,15 @@ def test_calorie_band_comes_from_the_profile(kcal_target, kind):
     assert validate_week(full_week(), with_kcal_target(kcal_target), CATALOG) == [
         Violation(kind, day=day) for day in WEEKDAYS
     ]
+
+
+@pytest.mark.parametrize(
+    "target, expected",
+    [(2100, (1890, 2310)), (1600, (1440, 1760)), (2105, (1895, 2315)), (2101, (1891, 2311))],
+)
+def test_kcal_band_is_ten_percent_either_side_rounded_inward(target, expected):
+    # 2105: 0.9 x 2105 = 1894.5 and 1.1 x 2105 = 2315.5, so 1895..2315 whole calories.
+    assert kcal_band(target) == expected
 
 
 def test_each_day_is_checked_on_its_own_in_week_order():

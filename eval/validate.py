@@ -124,15 +124,14 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
         if (day, meal) not in filled
     )
 
-    target = profile.kcal_target
+    low, high = kcal_band(profile.kcal_target)
     for day in WEEKDAYS:
         day_meals = [m for m in placed if m.day == day]
         kcal = sum(catalog.items[m.itm_id].calories for m in day_meals)
-        detail = f"{kcal} kcal, target {target} ± 10%"
-        # 0.9 * target <= kcal <= 1.1 * target, in integers so both edges are exact.
-        if 10 * kcal > 11 * target:
+        detail = f"{kcal} kcal, allowed {low}-{high}"
+        if kcal > high:
             violations.append(Violation(ViolationKind.OVER_KCAL, day, detail=detail))
-        elif 10 * kcal < 9 * target and len(day_meals) == len(MEAL_TIMES):
+        elif kcal < low and len(day_meals) == len(MEAL_TIMES):
             violations.append(Violation(ViolationKind.UNDER_KCAL, day, detail=detail))
 
     week_cents = sum(order_cost_cents(catalog.items[m.itm_id].price_cents) for m in placed)
@@ -144,6 +143,14 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
             )
         )
     return violations
+
+
+def kcal_band(target: int) -> tuple[int, int]:
+    """
+    The whole-calorie range a day may total: within 10% of the target, edges included. Computed
+    in integers, so 0.9 x 2105 = 1894.5 gives 1895 exactly.
+    """
+    return -(-9 * target // 10), 11 * target // 10
 
 
 def order_cost_cents(price_cents: int) -> int:

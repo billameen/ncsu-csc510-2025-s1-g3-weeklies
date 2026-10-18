@@ -58,7 +58,7 @@ def reachable_imports(module: str) -> set[str]:
     return found
 
 
-@pytest.mark.parametrize("module", ["eval.validate"])
+@pytest.mark.parametrize("module", ["eval.validate", "eval.feasibility"])
 def test_does_not_import_planner_code(module):
     assert source_file(module) is not None
     assert reachable_imports(module) & PLANNER_MODULES == set()
