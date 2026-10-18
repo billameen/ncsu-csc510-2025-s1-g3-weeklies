@@ -1,0 +1,92 @@
+name: Eval
+
+# The M0 evaluation (GitHub issue #5): B2 replays its recorded LLM responses, so this needs no
+# API key and no model. It fails only if the eval crashes or H1 drops 5+ points vs main.
+on:
+  pull_request:
+  push:
+    branches: ["main"] # gives the README a run on main to link to
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONUNBUFFERED: "1"
+      HF_HUB_OFFLINE: "1" # replaying never loads a model; fail instead of downloading one
+
+    steps:
+      - name: Set the output paths
+        run: |
+          echo "BASELINE=$RUNNER_TEMP/baseline.json" >> "$GITHUB_ENV"
+          echo "RESULTS=$RUNNER_TEMP/m0" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # so origin/main is there to take the baseline from
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: app/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          set -e
+          python -m pip install --upgrade pip
+          # CPU-only torch: the eval imports it but never runs a model, and the default Linux
+          # wheel pulls in gigabytes of CUDA libraries. It still satisfies torch==2.9.0 below.
+          pip install torch==2.9.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r app/requirements.txt
+
+      - name: Build the database
+        run: python app/scripts/init_db.py # CSC510_DB.db is gitignored; seed.sql is tracked
+
+      - name: Take the baseline from main
+        run: |
+          # The redirect creates the file even when git show fails, so remove it in that case.
+          if ! git show origin/main:eval/results/m0.json > "$BASELINE" 2> /dev/null; then
+            rm -f "$BASELINE"
+            echo "No eval/results/m0.json on main yet; the regression check is skipped."
+          fi
+
+      - name: Run the eval
+        run: |
+          set -e
+          args=(--seed 510 --out "$RESULTS")
+          if [ -s "$BASELINE" ]; then
+            args+=(--baseline "$BASELINE")
+          fi
+          python -m eval.run "${args[@]}"
+
+      - name: Post the results table
+        if: always()
+        run: |
+          if [ -f "$RESULTS/m0.md" ]; then
+            cat "$RESULTS/m0.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "The eval produced no results; see the Run the eval step." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ ! -s "$BASELINE" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "No m0.json on main yet, so H1 was not compared." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m0-results
+          path: ${{ runner.temp }}/m0
+          if-no-files-found: warn
