@@ -19,6 +19,7 @@ from flask import Flask, render_template, url_for, redirect, request, session, s
 from sqlQueries import create_connection, close_connection, fetch_one, fetch_all, execute_query
 from collections import Counter, defaultdict
 from menu_generation import MenuGenerator
+from pricing import TAX_RATE, DELIVERY_FEE, SERVICE_FEE
 
 # ----------MANAGE ORDER STATUS--------------
 class OrderStatus(Enum):
@@ -995,9 +996,9 @@ def order():
                 **({"notes": (it.get("notes") or "")} if it.get("notes") else {})
             })
 
-        tax = _money(subtotal * 0.0725)
-        delivery_fee = 3.99 if delivery_type == "delivery" else 0.00
-        service_fee = 1.49
+        tax = _money(subtotal * TAX_RATE)
+        delivery_fee = DELIVERY_FEE if delivery_type == "delivery" else 0.00
+        service_fee = SERVICE_FEE
         total = _money(subtotal + tax + delivery_fee + service_fee + tip_dollars)
 
         placed_iso = datetime.now().astimezone().isoformat()
@@ -1134,9 +1135,9 @@ def order():
     unit_price = _cents_to_dollars(price_cents)
     line_total = _money(unit_price * qty)
 
-    tax = _money(line_total * 0.0725)
-    delivery_fee = 3.99 if delivery_type == "delivery" else 0.00
-    service_fee = 1.49
+    tax = _money(line_total * TAX_RATE)
+    delivery_fee = DELIVERY_FEE if delivery_type == "delivery" else 0.00
+    service_fee = SERVICE_FEE
     total = _money(line_total + tax + delivery_fee + service_fee + tip_dollars)
 
     details = {
