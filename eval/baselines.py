@@ -124,7 +124,8 @@ class ReplayLLM:
         if self.used[key] >= len(recorded):
             raise StaleRecording(
                 "The B2 recording has no response for this prompt: the menu data or v1's "
-                "prompts changed since it was recorded. Re-record it."
+                "prompts changed since it was recorded. Re-record it with "
+                "`python -m eval.run --seed <seed> --record` (needs OPENAI_API_KEY)."
             )
         call = recorded[self.used[key]]
         self.used[key] += 1
