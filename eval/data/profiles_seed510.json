@@ -1,0 +1,891 @@
+[
+  {
+    "user_id": 1,
+    "kcal_target": 2600,
+    "budget_dollars": 443,
+    "allergens": [
+      "Gluten",
+      "Nuts",
+      "Fish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 2,
+    "kcal_target": 1750,
+    "budget_dollars": 636,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 3,
+    "kcal_target": 2950,
+    "budget_dollars": 399,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 4,
+    "kcal_target": 2950,
+    "budget_dollars": 545,
+    "allergens": [
+      "Dairy",
+      "Soy",
+      "Fish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 5,
+    "kcal_target": 2100,
+    "budget_dollars": 335,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 6,
+    "kcal_target": 3000,
+    "budget_dollars": 520,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 7,
+    "kcal_target": 1700,
+    "budget_dollars": 364,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 8,
+    "kcal_target": 1600,
+    "budget_dollars": 474,
+    "allergens": [
+      "Dairy",
+      "Nuts"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 9,
+    "kcal_target": 1800,
+    "budget_dollars": 594,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 10,
+    "kcal_target": 1650,
+    "budget_dollars": 647,
+    "allergens": [
+      "Eggs"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 11,
+    "kcal_target": 2950,
+    "budget_dollars": 434,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 12,
+    "kcal_target": 2600,
+    "budget_dollars": 621,
+    "allergens": [
+      "Eggs",
+      "Nuts",
+      "Shellfish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 13,
+    "kcal_target": 2100,
+    "budget_dollars": 502,
+    "allergens": [
+      "Nuts"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 14,
+    "kcal_target": 3000,
+    "budget_dollars": 451,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 15,
+    "kcal_target": 2150,
+    "budget_dollars": 615,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 16,
+    "kcal_target": 1650,
+    "budget_dollars": 440,
+    "allergens": [
+      "Nuts",
+      "Fish",
+      "Shellfish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 17,
+    "kcal_target": 1950,
+    "budget_dollars": 543,
+    "allergens": [
+      "Dairy",
+      "Fish",
+      "Shellfish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 18,
+    "kcal_target": 2550,
+    "budget_dollars": 371,
+    "allergens": [
+      "Soy",
+      "Shellfish"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 19,
+    "kcal_target": 1650,
+    "budget_dollars": 373,
+    "allergens": [
+      "Gluten",
+      "Fish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 20,
+    "kcal_target": 2750,
+    "budget_dollars": 438,
+    "allergens": [
+      "Gluten",
+      "Dairy",
+      "Fish"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 21,
+    "kcal_target": 2300,
+    "budget_dollars": 385,
+    "allergens": [
+      "Nuts"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 22,
+    "kcal_target": 2100,
+    "budget_dollars": 607,
+    "allergens": [
+      "Dairy"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 23,
+    "kcal_target": 1950,
+    "budget_dollars": 335,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 24,
+    "kcal_target": 1700,
+    "budget_dollars": 586,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 25,
+    "kcal_target": 2100,
+    "budget_dollars": 571,
+    "allergens": [
+      "Dairy",
+      "Soy",
+      "Fish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 26,
+    "kcal_target": 2400,
+    "budget_dollars": 351,
+    "allergens": [
+      "Soy",
+      "Fish",
+      "Shellfish"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 27,
+    "kcal_target": 2850,
+    "budget_dollars": 392,
+    "allergens": [
+      "Gluten",
+      "Soy"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 28,
+    "kcal_target": 2450,
+    "budget_dollars": 375,
+    "allergens": [
+      "Gluten",
+      "Dairy"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 29,
+    "kcal_target": 1700,
+    "budget_dollars": 425,
+    "allergens": [
+      "Soy",
+      "Fish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 30,
+    "kcal_target": 2000,
+    "budget_dollars": 554,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 31,
+    "kcal_target": 3000,
+    "budget_dollars": 368,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 32,
+    "kcal_target": 1900,
+    "budget_dollars": 448,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 33,
+    "kcal_target": 2050,
+    "budget_dollars": 384,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 34,
+    "kcal_target": 2550,
+    "budget_dollars": 608,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 35,
+    "kcal_target": 1600,
+    "budget_dollars": 626,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 36,
+    "kcal_target": 2600,
+    "budget_dollars": 374,
+    "allergens": [
+      "Fish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 37,
+    "kcal_target": 2350,
+    "budget_dollars": 589,
+    "allergens": [
+      "Gluten",
+      "Dairy",
+      "Eggs"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 38,
+    "kcal_target": 2200,
+    "budget_dollars": 378,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 39,
+    "kcal_target": 2800,
+    "budget_dollars": 414,
+    "allergens": [
+      "Gluten",
+      "Dairy",
+      "Eggs"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 40,
+    "kcal_target": 2600,
+    "budget_dollars": 577,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 41,
+    "kcal_target": 2450,
+    "budget_dollars": 414,
+    "allergens": [
+      "Eggs",
+      "Nuts"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 42,
+    "kcal_target": 2150,
+    "budget_dollars": 620,
+    "allergens": [
+      "Gluten",
+      "Dairy",
+      "Eggs"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 43,
+    "kcal_target": 2650,
+    "budget_dollars": 357,
+    "allergens": [
+      "Gluten",
+      "Soy",
+      "Nuts"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 44,
+    "kcal_target": 2650,
+    "budget_dollars": 380,
+    "allergens": [
+      "Gluten",
+      "Fish"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 45,
+    "kcal_target": 2600,
+    "budget_dollars": 498,
+    "allergens": [
+      "Shellfish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 46,
+    "kcal_target": 2500,
+    "budget_dollars": 437,
+    "allergens": [
+      "Gluten",
+      "Eggs",
+      "Shellfish"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 47,
+    "kcal_target": 2900,
+    "budget_dollars": 350,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 48,
+    "kcal_target": 2350,
+    "budget_dollars": 373,
+    "allergens": [
+      "Eggs"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 49,
+    "kcal_target": 2650,
+    "budget_dollars": 409,
+    "allergens": [
+      "Soy",
+      "Fish"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 50,
+    "kcal_target": 2700,
+    "budget_dollars": 385,
+    "allergens": [
+      "Gluten",
+      "Eggs",
+      "Fish"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 51,
+    "kcal_target": 1650,
+    "budget_dollars": 581,
+    "allergens": [
+      "Dairy",
+      "Fish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 52,
+    "kcal_target": 3000,
+    "budget_dollars": 437,
+    "allergens": [
+      "Eggs",
+      "Nuts",
+      "Shellfish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 53,
+    "kcal_target": 1750,
+    "budget_dollars": 385,
+    "allergens": [
+      "Gluten",
+      "Nuts"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 54,
+    "kcal_target": 2000,
+    "budget_dollars": 568,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 55,
+    "kcal_target": 2050,
+    "budget_dollars": 647,
+    "allergens": [
+      "Gluten",
+      "Nuts",
+      "Fish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 56,
+    "kcal_target": 1750,
+    "budget_dollars": 421,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 57,
+    "kcal_target": 2900,
+    "budget_dollars": 529,
+    "allergens": [
+      "Eggs",
+      "Nuts"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 58,
+    "kcal_target": 1850,
+    "budget_dollars": 583,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 59,
+    "kcal_target": 2300,
+    "budget_dollars": 642,
+    "allergens": [
+      "Shellfish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 60,
+    "kcal_target": 2100,
+    "budget_dollars": 622,
+    "allergens": [
+      "Dairy"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 61,
+    "kcal_target": 2750,
+    "budget_dollars": 637,
+    "allergens": [
+      "Gluten"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 62,
+    "kcal_target": 2750,
+    "budget_dollars": 643,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 63,
+    "kcal_target": 2900,
+    "budget_dollars": 383,
+    "allergens": [
+      "Gluten",
+      "Soy",
+      "Shellfish"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 64,
+    "kcal_target": 2300,
+    "budget_dollars": 509,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 65,
+    "kcal_target": 1750,
+    "budget_dollars": 414,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 66,
+    "kcal_target": 2250,
+    "budget_dollars": 587,
+    "allergens": [
+      "Fish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 67,
+    "kcal_target": 2700,
+    "budget_dollars": 455,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 68,
+    "kcal_target": 2050,
+    "budget_dollars": 569,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 69,
+    "kcal_target": 2750,
+    "budget_dollars": 558,
+    "allergens": [
+      "Gluten",
+      "Soy"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 70,
+    "kcal_target": 2500,
+    "budget_dollars": 339,
+    "allergens": [
+      "Dairy",
+      "Eggs",
+      "Soy"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 71,
+    "kcal_target": 3000,
+    "budget_dollars": 530,
+    "allergens": [
+      "Dairy",
+      "Nuts"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 72,
+    "kcal_target": 2400,
+    "budget_dollars": 421,
+    "allergens": [
+      "Eggs",
+      "Soy",
+      "Fish"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 73,
+    "kcal_target": 2600,
+    "budget_dollars": 425,
+    "allergens": [
+      "Gluten",
+      "Eggs",
+      "Fish"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 74,
+    "kcal_target": 2450,
+    "budget_dollars": 379,
+    "allergens": [
+      "Dairy",
+      "Eggs"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 75,
+    "kcal_target": 2150,
+    "budget_dollars": 338,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 76,
+    "kcal_target": 2500,
+    "budget_dollars": 486,
+    "allergens": [
+      "Gluten",
+      "Fish",
+      "Shellfish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 77,
+    "kcal_target": 2450,
+    "budget_dollars": 351,
+    "allergens": [
+      "Gluten",
+      "Eggs"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 78,
+    "kcal_target": 2550,
+    "budget_dollars": 548,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 79,
+    "kcal_target": 1650,
+    "budget_dollars": 363,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 80,
+    "kcal_target": 2100,
+    "budget_dollars": 451,
+    "allergens": [
+      "Shellfish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 81,
+    "kcal_target": 2400,
+    "budget_dollars": 534,
+    "allergens": [
+      "Gluten",
+      "Soy"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 82,
+    "kcal_target": 2450,
+    "budget_dollars": 553,
+    "allergens": [
+      "Eggs"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 83,
+    "kcal_target": 1600,
+    "budget_dollars": 568,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 84,
+    "kcal_target": 2050,
+    "budget_dollars": 560,
+    "allergens": [
+      "Nuts",
+      "Fish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 85,
+    "kcal_target": 2100,
+    "budget_dollars": 331,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 86,
+    "kcal_target": 1850,
+    "budget_dollars": 399,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 87,
+    "kcal_target": 2150,
+    "budget_dollars": 454,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 88,
+    "kcal_target": 2550,
+    "budget_dollars": 349,
+    "allergens": [
+      "Dairy",
+      "Soy",
+      "Shellfish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 89,
+    "kcal_target": 2750,
+    "budget_dollars": 429,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 90,
+    "kcal_target": 2550,
+    "budget_dollars": 585,
+    "allergens": [
+      "Dairy",
+      "Fish",
+      "Shellfish"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 91,
+    "kcal_target": 2100,
+    "budget_dollars": 430,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 92,
+    "kcal_target": 2950,
+    "budget_dollars": 409,
+    "allergens": [
+      "Gluten",
+      "Soy"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 93,
+    "kcal_target": 3000,
+    "budget_dollars": 407,
+    "allergens": [
+      "Gluten",
+      "Eggs"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 94,
+    "kcal_target": 2700,
+    "budget_dollars": 375,
+    "allergens": [
+      "Eggs",
+      "Nuts",
+      "Fish"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 95,
+    "kcal_target": 2550,
+    "budget_dollars": 350,
+    "allergens": [
+      "Gluten",
+      "Dairy"
+    ],
+    "hard": true
+  },
+  {
+    "user_id": 96,
+    "kcal_target": 1950,
+    "budget_dollars": 383,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 97,
+    "kcal_target": 2950,
+    "budget_dollars": 523,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 98,
+    "kcal_target": 1800,
+    "budget_dollars": 300,
+    "allergens": [],
+    "hard": false
+  },
+  {
+    "user_id": 99,
+    "kcal_target": 2200,
+    "budget_dollars": 649,
+    "allergens": [
+      "Eggs"
+    ],
+    "hard": false
+  },
+  {
+    "user_id": 100,
+    "kcal_target": 1800,
+    "budget_dollars": 332,
+    "allergens": [
+      "Soy"
+    ],
+    "hard": false
+  }
+]
