@@ -30,6 +30,8 @@ class ViolationKind(StrEnum):
     MISSING_MEAL = "missing_meal"
     EXTRA_MEAL = "extra_meal"
     UNKNOWN_ITEM = "unknown_item"
+    UNDER_KCAL = "under_kcal"
+    OVER_KCAL = "over_kcal"
     OVER_BUDGET = "over_budget"
 
 
@@ -58,8 +60,10 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
         catalog: In-stock items from open restaurants.
     Returns:
         list[Violation]: Empty if the week is valid. Meal-level problems come in the order the
-        meals were given, then missing slots in week order, then week-level problems. Extra
-        meals and unknown items are left out of every later check.
+        meals were given, then missing slots in week order, then calorie problems by day, then
+        the budget. Extra meals and unknown items are left out of every later check, so only
+        problems the remaining meals prove are reported: a day missing a meal can still be
+        over its calorie target, but not under it.
     """
     violations = []
     filled = set()
@@ -90,6 +94,17 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
         for meal in MEAL_TIMES
         if (day, meal) not in filled
     )
+
+    target = profile.kcal_target
+    for day in WEEKDAYS:
+        day_meals = [m for m in placed if m.day == day]
+        kcal = sum(catalog.items[m.itm_id].calories for m in day_meals)
+        detail = f"{kcal} kcal, target {target} ± 10%"
+        # 0.9 * target <= kcal <= 1.1 * target, in integers so both edges are exact.
+        if 10 * kcal > 11 * target:
+            violations.append(Violation(ViolationKind.OVER_KCAL, day, detail=detail))
+        elif 10 * kcal < 9 * target and len(day_meals) == len(MEAL_TIMES):
+            violations.append(Violation(ViolationKind.UNDER_KCAL, day, detail=detail))
 
     week_cents = sum(order_cost_cents(catalog.items[m.itm_id].price_cents) for m in placed)
     if week_cents > profile.budget_dollars * 100:

@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import pytest
 
 from eval.catalog import Catalog, Item, Restaurant
@@ -15,14 +17,25 @@ from eval.validate import (
 OPEN_ALL_WEEK = {day: (600, 2300) for day in WEEKDAYS}
 
 
-def item(itm_id, price_cents=1000):
-    return Item(itm_id=itm_id, rtr_id=1, price_cents=price_cents, calories=700, allergens=())
+def item(itm_id, price_cents=1000, calories=700):
+    return Item(itm_id=itm_id, rtr_id=1, price_cents=price_cents, calories=calories, allergens=())
 
 
 # Per order: $10.00 costs $16.21, $9.62 costs $15.80 and $9.63 costs $15.81 (see the
 # order_cost_cents cases below).
+# Calories: two 700 kcal meals plus item 4, 5, 6 or 7 make 1890, 1889, 2310 or 2311 kcal: the
+# edges of 2100 ± 10% and one past each.
 CATALOG = Catalog(
-    items={1: item(1), 2: item(2, price_cents=962), 3: item(3, price_cents=963)},
+    items={
+        1: item(1),
+        2: item(2, price_cents=962),
+        3: item(3, price_cents=963),
+        4: item(4, calories=490),
+        5: item(5, calories=489),
+        6: item(6, calories=910),
+        7: item(7, calories=911),
+        8: item(8, calories=1200),
+    },
     restaurants={1: Restaurant(rtr_id=1, hours=OPEN_ALL_WEEK)},
 )
 
@@ -35,9 +48,11 @@ def full_week(itm_id=1):
 
 
 def with_budget(budget_dollars):
-    return Profile(
-        user_id=1, kcal_target=2100, budget_dollars=budget_dollars, allergens=(), hard=False
-    )
+    return replace(PROFILE, budget_dollars=budget_dollars)
+
+
+def with_kcal_target(kcal_target):
+    return replace(PROFILE, kcal_target=kcal_target)
 
 
 def swap(meals, day, meal, itm_id):
@@ -188,3 +203,88 @@ def test_budget_is_checked_on_the_known_meals_only(budget_dollars, expected):
     meals = swap(swap(full_week(), "Sun", 3, itm_id=2), "Sun", 2, itm_id=999)
 
     assert validate_week(meals, with_budget(budget_dollars), CATALOG) == expected
+
+
+@pytest.mark.parametrize(
+    "itm_id, expected",
+    [
+        (4, []),  # 1890 kcal: exactly 10% under
+        (5, [Violation(ViolationKind.UNDER_KCAL, day="Mon")]),  # 1889 kcal
+        (6, []),  # 2310 kcal: exactly 10% over
+        (7, [Violation(ViolationKind.OVER_KCAL, day="Mon")]),  # 2311 kcal
+    ],
+)
+def test_daily_calories_must_be_within_ten_percent_edges_included(itm_id, expected):
+    meals = swap(full_week(), "Mon", 3, itm_id=itm_id)
+
+    assert validate_week(meals, PROFILE, CATALOG) == expected
+
+
+@pytest.mark.parametrize(
+    "kcal_target, kind",
+    [(2400, ViolationKind.UNDER_KCAL), (1900, ViolationKind.OVER_KCAL)],
+)
+def test_calorie_band_comes_from_the_profile(kcal_target, kind):
+    # 2100 kcal a day is under 2400 - 10% = 2160 and over 1900 + 10% = 2090.
+    assert validate_week(full_week(), with_kcal_target(kcal_target), CATALOG) == [
+        Violation(kind, day=day) for day in WEEKDAYS
+    ]
+
+
+def test_each_day_is_checked_on_its_own_in_week_order():
+    meals = swap(swap(full_week(), "Sat", 1, itm_id=7), "Tue", 2, itm_id=5)
+
+    assert validate_week(meals, PROFILE, CATALOG) == [
+        Violation(ViolationKind.UNDER_KCAL, day="Tue"),
+        Violation(ViolationKind.OVER_KCAL, day="Sat"),
+    ]
+
+
+def test_day_with_an_empty_slot_is_not_reported_as_under():
+    # Mon has 1400 kcal, but the missing meal is the problem, not the calories.
+    meals = [m for m in full_week() if (m.day, m.meal) != ("Mon", 3)]
+
+    assert validate_week(meals, PROFILE, CATALOG) == [
+        Violation(ViolationKind.MISSING_MEAL, day="Mon", meal=3)
+    ]
+
+
+def test_day_with_an_unknown_item_is_not_reported_as_under():
+    meals = swap(full_week(), "Mon", 3, itm_id=999)
+
+    assert validate_week(meals, PROFILE, CATALOG) == [
+        Violation(ViolationKind.UNKNOWN_ITEM, day="Mon", meal=3)
+    ]
+
+
+def test_day_with_an_empty_slot_is_still_reported_as_over():
+    # 2 x 1200 kcal is already past 2310 without the missing meal.
+    meals = [
+        m
+        for m in swap(swap(full_week(), "Mon", 1, 8), "Mon", 2, 8)
+        if (m.day, m.meal) != ("Mon", 3)
+    ]
+
+    assert validate_week(meals, PROFILE, CATALOG) == [
+        Violation(ViolationKind.MISSING_MEAL, day="Mon", meal=3),
+        Violation(ViolationKind.OVER_KCAL, day="Mon"),
+    ]
+
+
+def test_extra_meal_calories_are_not_counted():
+    # Counting the extra 700 kcal would put Mon at 2800.
+    meals = full_week() + [Meal(day="Mon", meal=1, itm_id=1)]
+
+    assert validate_week(meals, PROFILE, CATALOG) == [
+        Violation(ViolationKind.EXTRA_MEAL, day="Mon", meal=1)
+    ]
+
+
+def test_calorie_problems_come_before_budget():
+    # Mon at 1889 kcal, and 21 x $16.21 = $340.41 against a $340 budget.
+    meals = swap(full_week(), "Mon", 3, itm_id=5)
+
+    assert validate_week(meals, with_budget(340), CATALOG) == [
+        Violation(ViolationKind.UNDER_KCAL, day="Mon"),
+        Violation(ViolationKind.OVER_BUDGET),
+    ]
