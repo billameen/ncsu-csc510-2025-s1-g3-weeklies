@@ -25,11 +25,15 @@ MEAL_TIMES = {1: 1000, 2: 1400, 3: 2000}
 _TAX_RATE = Decimal(str(TAX_RATE))
 _FEES_CENTS = int(Decimal(str(DELIVERY_FEE)) * 100 + Decimal(str(SERVICE_FEE)) * 100)
 
+# Different spellings of the same allergen in the menu data, after lowercasing.
+_ALLERGEN_ALIASES = {"egg": "eggs", "peanuts": "nuts"}
+
 
 class ViolationKind(StrEnum):
     MISSING_MEAL = "missing_meal"
     EXTRA_MEAL = "extra_meal"
     UNKNOWN_ITEM = "unknown_item"
+    ALLERGEN = "allergen"
     UNDER_KCAL = "under_kcal"
     OVER_KCAL = "over_kcal"
     OVER_BUDGET = "over_budget"
@@ -68,6 +72,7 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
     violations = []
     filled = set()
     placed = []  # meals in a valid slot with a known item
+    avoid = {normalize_allergen(a) for a in profile.allergens}
     for m in meals:
         slot = (m.day, m.meal)
         if m.day not in WEEKDAYS or m.meal not in MEAL_TIMES or slot in filled:
@@ -86,6 +91,17 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
                 )
             )
             continue
+        tags = (normalize_allergen(t) for t in catalog.items[m.itm_id].allergens)
+        found = [t for t in dict.fromkeys(tags) if t in avoid]  # deduped, in tag order
+        if found:
+            violations.append(
+                Violation(
+                    ViolationKind.ALLERGEN,
+                    m.day,
+                    m.meal,
+                    f"item {m.itm_id} contains {', '.join(found)}",
+                )
+            )
         placed.append(m)
 
     violations.extend(
@@ -124,3 +140,12 @@ def order_cost_cents(price_cents: int) -> int:
     """
     tax_cents = (price_cents * _TAX_RATE).quantize(Decimal(1), rounding=ROUND_HALF_UP)
     return price_cents + int(tax_cents) + _FEES_CENTS
+
+
+def normalize_allergen(tag: str) -> str:
+    """
+    Canonical form of an allergen tag: lowercase with whitespace collapsed, and the menu data's
+    alternate spellings resolved ("Egg" is "eggs"; "Peanuts" count as "nuts").
+    """
+    tag = " ".join(tag.lower().split())
+    return _ALLERGEN_ALIASES.get(tag, tag)

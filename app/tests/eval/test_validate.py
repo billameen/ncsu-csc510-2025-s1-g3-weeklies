@@ -10,6 +10,7 @@ from eval.validate import (
     Meal,
     Violation,
     ViolationKind,
+    normalize_allergen,
     order_cost_cents,
     validate_week,
 )
@@ -17,14 +18,17 @@ from eval.validate import (
 OPEN_ALL_WEEK = {day: (600, 2300) for day in WEEKDAYS}
 
 
-def item(itm_id, price_cents=1000, calories=700):
-    return Item(itm_id=itm_id, rtr_id=1, price_cents=price_cents, calories=calories, allergens=())
+def item(itm_id, price_cents=1000, calories=700, allergens=()):
+    return Item(
+        itm_id=itm_id, rtr_id=1, price_cents=price_cents, calories=calories, allergens=allergens
+    )
 
 
 # Per order: $10.00 costs $16.21, $9.62 costs $15.80 and $9.63 costs $15.81 (see the
 # order_cost_cents cases below).
 # Calories: two 700 kcal meals plus item 4, 5, 6 or 7 make 1890, 1889, 2310 or 2311 kcal: the
 # edges of 2100 ± 10% and one past each.
+# Allergens: items 9-13 carry raw tags as the menu data stores them.
 CATALOG = Catalog(
     items={
         1: item(1),
@@ -35,6 +39,12 @@ CATALOG = Catalog(
         6: item(6, calories=910),
         7: item(7, calories=911),
         8: item(8, calories=1200),
+        9: item(9, allergens=("Gluten", "Soy", "Egg")),
+        10: item(10, allergens=("Peanuts",)),
+        11: item(11, allergens=("Gluten", "Dairy")),
+        12: item(12, allergens=(" dairy ",)),
+        13: item(13, allergens=("Shellfish",)),
+        14: item(14, allergens=("Egg", "Eggs")),
     },
     restaurants={1: Restaurant(rtr_id=1, hours=OPEN_ALL_WEEK)},
 )
@@ -53,6 +63,10 @@ def with_budget(budget_dollars):
 
 def with_kcal_target(kcal_target):
     return replace(PROFILE, kcal_target=kcal_target)
+
+
+def with_allergens(*allergens):
+    return replace(PROFILE, allergens=allergens)
 
 
 def swap(meals, day, meal, itm_id):
@@ -286,5 +300,118 @@ def test_calorie_problems_come_before_budget():
 
     assert validate_week(meals, with_budget(340), CATALOG) == [
         Violation(ViolationKind.UNDER_KCAL, day="Mon"),
+        Violation(ViolationKind.OVER_BUDGET),
+    ]
+
+
+@pytest.mark.parametrize(
+    "tag, expected",
+    [
+        ("Eggs", "eggs"),
+        ("Egg", "eggs"),
+        (" egg ", "eggs"),
+        ("EGGS", "eggs"),
+        ("Peanuts", "nuts"),
+        ("Nuts", "nuts"),
+        ("Shellfish", "shellfish"),
+        ("  Dairy\t", "dairy"),
+        ("Tree   Nuts", "tree nuts"),
+        ("Sesame", "sesame"),
+    ],
+)
+def test_normalize_allergen(tag, expected):
+    assert normalize_allergen(tag) == expected
+
+
+def test_meal_with_an_allergen_is_reported():
+    meals = swap(full_week(), "Thu", 2, itm_id=11)
+
+    assert validate_week(meals, with_allergens("Dairy"), CATALOG) == [
+        Violation(ViolationKind.ALLERGEN, day="Thu", meal=2)
+    ]
+
+
+def test_item_tagged_egg_is_caught_for_a_user_avoiding_eggs():
+    meals = swap(full_week(), "Mon", 1, itm_id=9)
+
+    assert validate_week(meals, with_allergens("Eggs"), CATALOG) == [
+        Violation(ViolationKind.ALLERGEN, day="Mon", meal=1)
+    ]
+
+
+def test_item_tagged_peanuts_is_caught_for_a_user_avoiding_nuts():
+    meals = swap(full_week(), "Mon", 1, itm_id=10)
+
+    assert validate_week(meals, with_allergens("Nuts"), CATALOG) == [
+        Violation(ViolationKind.ALLERGEN, day="Mon", meal=1)
+    ]
+
+
+def test_tag_case_and_spacing_do_not_matter():
+    meals = swap(full_week(), "Mon", 1, itm_id=12)
+
+    assert validate_week(meals, with_allergens("Dairy"), CATALOG) == [
+        Violation(ViolationKind.ALLERGEN, day="Mon", meal=1)
+    ]
+
+
+@pytest.mark.parametrize(
+    "itm_id, allergens",
+    [
+        (11, ()),  # the user avoids nothing
+        (11, ("Eggs", "Nuts")),  # the item has other allergens
+        (13, ("Fish",)),  # whole tags only: "Shellfish" is not "Fish"
+    ],
+)
+def test_allergens_the_user_does_not_avoid_are_fine(itm_id, allergens):
+    meals = swap(full_week(), "Mon", 1, itm_id=itm_id)
+
+    assert validate_week(meals, with_allergens(*allergens), CATALOG) == []
+
+
+@pytest.mark.parametrize("user_allergen, itm_id", [(" egg", 9), ("PEANUTS", 10)])
+def test_users_allergens_are_normalized_too(user_allergen, itm_id):
+    meals = swap(full_week(), "Mon", 1, itm_id=itm_id)
+
+    assert validate_week(meals, with_allergens(user_allergen), CATALOG) == [
+        Violation(ViolationKind.ALLERGEN, day="Mon", meal=1)
+    ]
+
+
+def test_two_spellings_of_one_allergen_are_named_once():
+    meals = swap(full_week(), "Mon", 1, itm_id=14)
+
+    violations = validate_week(meals, with_allergens("Eggs"), CATALOG)
+
+    assert violations == [Violation(ViolationKind.ALLERGEN, day="Mon", meal=1)]
+    assert violations[0].detail == "item 14 contains eggs"
+
+
+def test_item_with_several_of_the_users_allergens_is_one_violation():
+    meals = swap(full_week(), "Mon", 1, itm_id=9)
+
+    violations = validate_week(meals, with_allergens("Gluten", "Soy", "Eggs"), CATALOG)
+
+    assert violations == [Violation(ViolationKind.ALLERGEN, day="Mon", meal=1)]
+    assert violations[0].detail == "item 9 contains gluten, soy, eggs"
+
+
+def test_allergen_problems_are_reported_in_meal_order():
+    meals = swap(swap(full_week(), "Sun", 3, itm_id=11), "Tue", 1, itm_id=12)
+
+    assert validate_week(meals, with_allergens("Dairy"), CATALOG) == [
+        Violation(ViolationKind.ALLERGEN, day="Tue", meal=1),
+        Violation(ViolationKind.ALLERGEN, day="Sun", meal=3),
+    ]
+
+
+def test_meal_with_an_allergen_still_counts_for_calories_and_budget():
+    # Mon is 700 + 1200 + 700 = 2600 kcal and the week costs 21 x $16.21 = $340.41. Leaving out
+    # the $10.00, 700 kcal Dairy meal would hide both: 1900 kcal and $324.20.
+    meals = swap(swap(full_week(), "Mon", 1, itm_id=11), "Mon", 2, itm_id=8)
+
+    assert validate_week(meals, replace(with_budget(340), allergens=("Dairy",)), CATALOG) == [
+        Violation(ViolationKind.ALLERGEN, day="Mon", meal=1),
+        Violation(ViolationKind.OVER_KCAL, day="Mon"),
         Violation(ViolationKind.OVER_BUDGET),
     ]
