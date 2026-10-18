@@ -2,7 +2,7 @@
 Run the evaluation and score it against the hypotheses in GitHub issue #5.
 
     python -m eval.run --seed 510                  # replay the recorded B2 run; no API key
-    python -m eval.run --seed 510 --record         # run B2 on the app's LLM and record it
+    python -m eval.run --seed 510 --record         # record B2 on the app's LLM, then replay
     python -m eval.run --baseline main_m0.json     # exit 1 if H1 dropped 5+ points vs main
 
 Writes m0.json and m0.md to --out (default eval/results). Exits 0 even when a hypothesis
@@ -25,7 +25,7 @@ from pathlib import Path
 import llm_toolkit
 import menu_generation
 
-from eval.baselines import RecordingLLM, ReplayLLM, random_safe, v1_llm
+from eval.baselines import RecordingError, RecordingLLM, ReplayLLM, random_safe, v1_llm
 from eval.catalog import Catalog, load_catalog
 from eval.feasibility import is_feasible
 from eval.profiles import Profile, generate_profiles
@@ -269,12 +269,30 @@ def _format(metric: str, value: float | None) -> str:
     return f"{value:g}"
 
 
-def m0_planners(llm) -> list[Planner]:
-    """The M0 baselines. llm answers B2's prompts: a ReplayLLM, or a RecordingLLM to record."""
+def m0_planners(replay: ReplayLLM) -> list[Planner]:
+    """The M0 baselines. B2 answers its prompts from the recording."""
     return [
         Planner("B1", random_safe),
-        Planner("B2", partial(v1_llm, llm=llm), llm if isinstance(llm, ReplayLLM) else None),
+        Planner("B2", partial(v1_llm, llm=replay), replay),
     ]
+
+
+def record_b2(catalog: Catalog, profiles: Sequence[Profile], seed: int):
+    """
+    Run v1 for every user on the app's LLM and record the responses to RECORDING, resuming
+    an earlier, unfinished recording if there is one.
+    """
+    live = _live_llm()
+    recorder = RecordingLLM(live, RECORDING)
+    print(
+        f"Recording B2 with {recorder.model} ({live.provider}); "
+        f"{recorder.resumed} responses already recorded",
+        file=sys.stderr,
+    )
+    for done, profile in enumerate(profiles, start=1):
+        v1_llm(profile, catalog, seed, llm=recorder)
+        print(f"  user {done}/{len(profiles)} recorded", file=sys.stderr, flush=True)
+    recorder.finish()
 
 
 def _live_llm():
@@ -304,30 +322,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     catalog = load_catalog(menu_generation.db_file)
     profiles = generate_profiles(args.seed)
     if args.record:
-        live = _live_llm()
-        provider = live.provider
-        print(f"Recording B2 with {live.model_name} ({provider})", file=sys.stderr)
-        llm = RecordingLLM(live)
-    elif not RECORDING.exists():
+        try:
+            record_b2(catalog, profiles, args.seed)
+        except RecordingError as e:
+            sys.exit(str(e))
+    if not RECORDING.exists():
         sys.exit(
             f"No B2 recording at {RECORDING}. Record one with "
             f"`python -m eval.run --seed {args.seed} --record`."
         )
-    else:
-        llm = ReplayLLM(RECORDING)
-
-    report = run(args.seed, catalog, profiles, m0_planners(llm))
-
-    if args.record:
-        # llm_toolkit silently switches from OpenAI to the local model after an OpenAI error,
-        # which would leave a recording that mixes two models.
-        if live.provider != provider:
-            sys.exit(
-                f"The LLM switched from {provider} to {live.provider} while recording; "
-                "nothing was saved."
-            )
-        RECORDING.parent.mkdir(parents=True, exist_ok=True)
-        llm.save(RECORDING)
+    # Results always come from a replay, even right after recording, so B2's time is the
+    # recorded LLM time for every call (a resumed recording replays part of the run instantly).
+    report = run(args.seed, catalog, profiles, m0_planners(ReplayLLM(RECORDING)))
 
     markdown = render_markdown(report)
     args.out.mkdir(parents=True, exist_ok=True)

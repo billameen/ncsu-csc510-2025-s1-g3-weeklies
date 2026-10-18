@@ -9,7 +9,14 @@ import pytest
 
 import eval.baselines
 import menu_generation
-from eval.baselines import RecordingLLM, ReplayLLM, StaleRecording, random_safe, v1_llm
+from eval.baselines import (
+    RecordingError,
+    RecordingLLM,
+    ReplayLLM,
+    StaleRecording,
+    random_safe,
+    v1_llm,
+)
 from eval.catalog import Catalog, Item, Restaurant, load_catalog
 from eval.profiles import Profile, generate_profiles
 from eval.validate import MEAL_TIMES, WEEKDAYS, Meal, ViolationKind, validate_week
@@ -134,9 +141,9 @@ class FirstItemLLM:
 
 
 def test_replay_returns_recorded_responses_in_order(tmp_path):
-    recorder = RecordingLLM(ScriptedLLM("7", "8"))
+    recorder = RecordingLLM(ScriptedLLM("7", "8"), tmp_path / "rec.json")
     assert [recorder.generate("sys", "same prompt") for _ in range(2)] == ["7", "8"]
-    recorder.save(tmp_path / "rec.json")
+    recorder.finish()
 
     replay = ReplayLLM(tmp_path / "rec.json")
 
@@ -144,9 +151,9 @@ def test_replay_returns_recorded_responses_in_order(tmp_path):
 
 
 def test_replay_of_an_unrecorded_prompt_raises(tmp_path):
-    recorder = RecordingLLM(ScriptedLLM("7"))
+    recorder = RecordingLLM(ScriptedLLM("7"), tmp_path / "rec.json")
     recorder.generate("sys", "recorded")
-    recorder.save(tmp_path / "rec.json")
+    recorder.finish()
     replay = ReplayLLM(tmp_path / "rec.json")
 
     with pytest.raises(StaleRecording, match="Re-record"):
@@ -156,9 +163,9 @@ def test_replay_of_an_unrecorded_prompt_raises(tmp_path):
 
 
 def test_replay_past_the_recorded_count_raises(tmp_path):
-    recorder = RecordingLLM(ScriptedLLM("7"))
+    recorder = RecordingLLM(ScriptedLLM("7"), tmp_path / "rec.json")
     recorder.generate("sys", "once")
-    recorder.save(tmp_path / "rec.json")
+    recorder.finish()
     replay = ReplayLLM(tmp_path / "rec.json")
     replay.generate("sys", "once")
 
@@ -167,10 +174,10 @@ def test_replay_past_the_recorded_count_raises(tmp_path):
 
 
 def test_recording_keeps_latency_and_model_and_replay_adds_up_latency(tmp_path):
-    recorder = RecordingLLM(ScriptedLLM("7"))
+    recorder = RecordingLLM(ScriptedLLM("7"), tmp_path / "rec.json")
     recorder.generate("sys", "a")
     recorder.generate("sys", "b")
-    recorder.save(tmp_path / "rec.json")
+    recorder.finish()
 
     saved = json.loads((tmp_path / "rec.json").read_text())
     latencies = [call["latency_s"] for calls in saved["calls"].values() for call in calls]
@@ -185,11 +192,98 @@ def test_recording_keeps_latency_and_model_and_replay_adds_up_latency(tmp_path):
 
 
 def test_recording_stores_no_prompt_text(tmp_path):
-    recorder = RecordingLLM(ScriptedLLM("7"))
+    recorder = RecordingLLM(ScriptedLLM("7"), tmp_path / "rec.json")
     recorder.generate("sys", "private prompt text")
-    recorder.save(tmp_path / "rec.json")
+    recorder.finish()
 
     assert "private prompt text" not in (tmp_path / "rec.json").read_text()
+
+
+class NoLLM:
+    """Fails the test if the recording calls the LLM again."""
+
+    model_name = "scripted"
+
+    def generate(self, system, prompt):
+        raise AssertionError(f"called the LLM again for {prompt!r}")
+
+
+def recorded_responses(path):
+    calls = json.loads(path.read_text())["calls"]
+    return sorted(call["response"] for answers in calls.values() for call in answers)
+
+
+def test_recording_is_saved_after_every_call(tmp_path):
+    recorder = RecordingLLM(ScriptedLLM("7", "8"), tmp_path / "rec.json")
+
+    recorder.generate("sys", "a")
+    assert recorded_responses(tmp_path / "rec.json") == ["7"]
+    recorder.generate("sys", "b")
+    assert recorded_responses(tmp_path / "rec.json") == ["7", "8"]
+    assert not list(tmp_path.glob("*.tmp"))  # written via a temporary file, then replaced
+
+
+def test_recording_resumes_without_calling_the_llm_again(tmp_path):
+    first = RecordingLLM(ScriptedLLM("7"), tmp_path / "rec.json")
+    first.generate("sys", "a")  # then the run stops
+
+    resumed = RecordingLLM(NoLLM(), tmp_path / "rec.json")
+    assert resumed.resumed == 1
+    assert resumed.generate("sys", "a") == "7"
+
+    resumed.inner = ScriptedLLM("9")
+    assert resumed.generate("sys", "b") == "9"
+    resumed.finish()
+    assert recorded_responses(tmp_path / "rec.json") == ["7", "9"]
+
+
+def test_resume_keeps_the_order_of_repeated_prompts(tmp_path):
+    first = RecordingLLM(ScriptedLLM("7", "8"), tmp_path / "rec.json")
+    first.generate("sys", "same")
+    first.generate("sys", "same")
+
+    resumed = RecordingLLM(ScriptedLLM("9"), tmp_path / "rec.json")
+
+    assert [resumed.generate("sys", "same") for _ in range(3)] == ["7", "8", "9"]
+
+
+def test_finish_drops_responses_this_run_did_not_ask_for(tmp_path):
+    old = RecordingLLM(ScriptedLLM("7"), tmp_path / "rec.json")
+    old.generate("sys", "a")
+    old.generate("sys", "no longer asked")
+
+    rerun = RecordingLLM(NoLLM(), tmp_path / "rec.json")
+    rerun.generate("sys", "a")
+    rerun.finish()
+
+    assert recorded_responses(tmp_path / "rec.json") == ["7"]
+
+
+def test_resuming_a_recording_made_with_another_model_is_refused(tmp_path):
+    RecordingLLM(ScriptedLLM("7"), tmp_path / "rec.json").generate("sys", "a")
+    before = (tmp_path / "rec.json").read_text()
+
+    class OtherModel(ScriptedLLM):
+        model_name = "other"
+
+    with pytest.raises(RecordingError, match="scripted"):
+        RecordingLLM(OtherModel("7"), tmp_path / "rec.json")
+    assert (tmp_path / "rec.json").read_text() == before
+
+
+def test_a_response_from_a_model_that_switched_midway_is_not_saved(tmp_path):
+    class SwitchesOnSecondCall(ScriptedLLM):
+        def generate(self, system, prompt):
+            if self.prompts:
+                self.model_name = "local fallback"
+            return super().generate(system, prompt)
+
+    recorder = RecordingLLM(SwitchesOnSecondCall("7", "8"), tmp_path / "rec.json")
+    recorder.generate("sys", "a")
+
+    with pytest.raises(RecordingError, match="switched from scripted to local fallback"):
+        recorder.generate("sys", "b")
+    assert recorded_responses(tmp_path / "rec.json") == ["7"]
 
 
 @pytest.fixture
@@ -244,9 +338,9 @@ def test_v1_prompts_depend_only_on_seed_and_user(v1_menu):
 
 
 def test_v1_replays_a_recorded_run_exactly(v1_menu, tmp_path):
-    recorder = RecordingLLM(FirstItemLLM())
+    recorder = RecordingLLM(FirstItemLLM(), tmp_path / "rec.json")
     recorded = v1_llm(PROFILE, None, seed=510, llm=recorder)
-    recorder.save(tmp_path / "rec.json")
+    recorder.finish()
 
     replayed = v1_llm(PROFILE, None, seed=510, llm=ReplayLLM(tmp_path / "rec.json"))
 

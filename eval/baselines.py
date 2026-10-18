@@ -87,24 +87,68 @@ class StaleRecording(Exception):
     """A prompt was not in the recording: the menu data or v1's prompts changed since."""
 
 
-class RecordingLLM:
-    """Wraps a real LLM and records each response with its latency, for ReplayLLM."""
+class RecordingError(Exception):
+    """A recording would mix two models, so it was refused."""
 
-    def __init__(self, inner):
+
+class RecordingLLM:
+    """
+    Wraps a live LLM and records each response with its latency, for ReplayLLM. The recording
+    is written after every call (through a temporary file, so a crash cannot corrupt it), and
+    an existing one is resumed: prompts it has answers for are replayed in recorded order
+    without calling the LLM, and only the rest go to the LLM. Only a hash of each prompt is
+    stored, not its text.
+    """
+
+    def __init__(self, inner, path: str | Path):
         self.inner = inner
+        self.path = Path(path)
+        self.model = getattr(inner, "model_name", None)
         self.calls = defaultdict(list)
+        self.used = defaultdict(int)
+        if self.path.exists():
+            saved = json.loads(self.path.read_text())
+            if saved["model"] != self.model:
+                raise RecordingError(
+                    f"{self.path} was recorded with {saved['model']}, not {self.model}. "
+                    "Delete it to start a new recording."
+                )
+            self.calls.update(saved["calls"])
+        self.resumed = sum(len(answers) for answers in self.calls.values())
 
     def generate(self, system: str, prompt: str) -> str:
-        start = time.perf_counter()
-        response = self.inner.generate(system, prompt)
-        latency = time.perf_counter() - start
-        self.calls[_prompt_key(system, prompt)].append({"response": response, "latency_s": latency})
-        return response
+        key = _prompt_key(system, prompt)
+        if self.used[key] < len(self.calls[key]):
+            call = self.calls[key][self.used[key]]
+        else:
+            start = time.perf_counter()
+            response = self.inner.generate(system, prompt)
+            latency = time.perf_counter() - start
+            # llm_toolkit silently switches from OpenAI to the local model after an OpenAI
+            # error, so check every response still comes from the model we started with.
+            model = getattr(self.inner, "model_name", None)
+            if model != self.model:
+                raise RecordingError(
+                    f"The LLM switched from {self.model} to {model} while recording; that "
+                    "response was not saved. Fix the cause and rerun --record to resume."
+                )
+            call = {"response": response, "latency_s": latency}
+            self.calls[key].append(call)
+            self._write(self.calls)
+        self.used[key] += 1
+        return call["response"]
 
-    def save(self, path: str | Path):
-        """Write the recording. Only a hash of each prompt is stored, not its text."""
-        recording = {"model": getattr(self.inner, "model_name", None), "calls": self.calls}
-        Path(path).write_text(json.dumps(recording, indent=1, sort_keys=True) + "\n")
+    def finish(self):
+        """Keep only the responses this run asked for, dropping leftovers from older runs."""
+        self.calls = {key: answers[: self.used[key]] for key, answers in self.calls.items()}
+        self._write({key: answers for key, answers in self.calls.items() if answers})
+
+    def _write(self, calls: dict):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.path.with_suffix(".tmp")
+        recording = {"model": self.model, "calls": calls}
+        tmp.write_text(json.dumps(recording, indent=1, sort_keys=True) + "\n")
+        tmp.replace(self.path)
 
 
 class ReplayLLM:

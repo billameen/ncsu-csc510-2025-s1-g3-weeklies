@@ -7,7 +7,7 @@ import pytest
 
 import eval.run
 import menu_generation
-from eval.baselines import RecordingLLM, ReplayLLM, random_safe
+from eval.baselines import ReplayLLM, random_safe
 from eval.catalog import load_catalog
 from eval.feasibility import cheapest_week, is_feasible
 from eval.profiles import generate_profiles
@@ -200,16 +200,14 @@ def test_markdown_marks_pass_and_fail_against_the_threshold(menu_db):
 # --- the command ---
 
 
-def test_m0_planners_are_b1_and_b2_and_only_a_replay_adds_recorded_time(tmp_path):
+def test_m0_planners_are_b1_and_b2_with_b2_adding_its_recorded_llm_time(tmp_path):
     (tmp_path / "rec.json").write_text(json.dumps({"model": None, "calls": {}}))
     replay = ReplayLLM(tmp_path / "rec.json")
 
-    replayed = m0_planners(replay)
-    recording = m0_planners(RecordingLLM(inner=None))
+    planners = m0_planners(replay)
 
-    assert [p.name for p in replayed] == ["B1", "B2"]
-    assert replayed[0].replay is None and replayed[1].replay is replay
-    assert all(p.replay is None for p in recording)
+    assert [p.name for p in planners] == ["B1", "B2"]
+    assert planners[0].replay is None and planners[1].replay is replay
 
 
 class FakeOpenAI:
@@ -289,14 +287,63 @@ def test_record_uses_the_apps_own_llm_and_names_its_model(command, monkeypatch):
     assert recording["model"] == "ibm-granite/granite-4.0-h-350M"
 
 
-def test_record_is_not_saved_if_the_llm_switched_models_midway(command, monkeypatch):
-    class FallsBack(FakeOpenAI):
+def test_record_keeps_what_it_has_if_the_llm_switched_models_midway(command, monkeypatch):
+    class FallsBackOnThirdCall(FakeOpenAI):
+        calls = 0
+
         def generate(self, system, prompt):
-            self.provider = "local"  # what llm_toolkit does silently after an OpenAI error
+            FallsBackOnThirdCall.calls += 1
+            if FallsBackOnThirdCall.calls == 3:  # what llm_toolkit does after an OpenAI error
+                self.provider, self.model_name = "local", "ibm-granite/granite-4.0-h-350M"
             return super().generate(system, prompt)
 
-    monkeypatch.setattr(eval.run, "_live_llm", FallsBack)
+    monkeypatch.setattr(eval.run, "_live_llm", FallsBackOnThirdCall)
 
-    with pytest.raises(SystemExit, match="switched from openai to local"):
+    with pytest.raises(SystemExit, match="switched from fake-gpt to ibm-granite"):
         eval.run.main(["--record", "--out", str(command / "out")])
-    assert not (command / "fixtures" / "b2.json").exists()
+    recording = json.loads((command / "fixtures" / "b2.json").read_text())
+    assert recording["model"] == "fake-gpt"
+    assert sum(len(answers) for answers in recording["calls"].values()) == 2
+    assert not (command / "out").exists()
+
+
+def test_an_interrupted_recording_resumes_where_it_stopped(command, monkeypatch):
+    class PowerCut(FakeOpenAI):
+        calls = 0
+
+        def generate(self, system, prompt):
+            PowerCut.calls += 1
+            if PowerCut.calls == 30:
+                raise KeyboardInterrupt  # the laptop slept, or someone pressed Ctrl+C
+            return super().generate(system, prompt)
+
+    monkeypatch.setattr(eval.run, "_live_llm", PowerCut)
+    with pytest.raises(KeyboardInterrupt):
+        eval.run.main(["--record", "--out", str(command / "first")])
+
+    class Counting(FakeOpenAI):
+        calls = 0
+
+        def generate(self, system, prompt):
+            Counting.calls += 1
+            return super().generate(system, prompt)
+
+    monkeypatch.setattr(eval.run, "_live_llm", Counting)
+    assert eval.run.main(["--record", "--out", str(command / "resumed")]) == 0
+    assert Counting.calls == 5 * 21 - 29  # only the meals the first run never got to
+
+    monkeypatch.setattr(eval.run, "RECORDING", command / "clean.json")
+    assert eval.run.main(["--record", "--out", str(command / "clean")]) == 0
+    resumed, clean = read_report(command / "resumed"), read_report(command / "clean")
+    for report in (resumed, clean):
+        for metrics in report["planners"].values():
+            metrics.pop("h3_p95_s")
+    assert resumed == clean
+
+
+def test_a_finished_recording_drops_responses_the_run_no_longer_asks_for(command):
+    assert eval.run.main(["--record", "--seed", "510", "--out", str(command / "a")]) == 0
+    assert eval.run.main(["--record", "--seed", "511", "--out", str(command / "b")]) == 0
+
+    recording = json.loads((command / "fixtures" / "b2.json").read_text())
+    assert sum(len(answers) for answers in recording["calls"].values()) == 5 * 21
