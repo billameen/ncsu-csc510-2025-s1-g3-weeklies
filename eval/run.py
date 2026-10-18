@@ -2,7 +2,7 @@
 Run the evaluation and score it against the hypotheses in GitHub issue #5.
 
     python -m eval.run --seed 510                  # replay the recorded B2 run; no API key
-    python -m eval.run --seed 510 --record         # call OpenAI for B2 and save the recording
+    python -m eval.run --seed 510 --record         # run B2 on the app's LLM and record it
     python -m eval.run --baseline main_m0.json     # exit 1 if H1 dropped 5+ points vs main
 
 Writes m0.json and m0.md to --out (default eval/results). Exits 0 even when a hypothesis
@@ -14,7 +14,6 @@ the group a metric is measured on.
 
 import argparse
 import json
-import os
 import statistics
 import sys
 import time
@@ -25,7 +24,6 @@ from pathlib import Path
 
 import llm_toolkit
 import menu_generation
-from dotenv import load_dotenv
 
 from eval.baselines import RecordingLLM, ReplayLLM, random_safe, v1_llm
 from eval.catalog import Catalog, load_catalog
@@ -280,14 +278,11 @@ def m0_planners(llm) -> list[Planner]:
 
 
 def _live_llm():
-    """gpt-4o-mini through the app's llm_toolkit, refusing to fall back to the local model."""
-    load_dotenv()
-    if not os.getenv("OPENAI_API_KEY"):
-        sys.exit("--record calls OpenAI and needs OPENAI_API_KEY (in the environment or .env).")
-    live = llm_toolkit.LLM()
-    if live.provider != "openai":
-        sys.exit("--record needs the openai package: pip install -r app/requirements.txt")
-    return live
+    """
+    The app's own LLM, chosen the way the app chooses it: OpenAI if OPENAI_API_KEY is set
+    (environment or .env), otherwise the local HuggingFace model.
+    """
+    return llm_toolkit.LLM(tokens=500)  # the token limit /generate_plan uses
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -295,7 +290,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, default=510)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="where m0.json/.md go")
     parser.add_argument(
-        "--record", action="store_true", help="call OpenAI for B2 and save the recording"
+        "--record",
+        action="store_true",
+        help="run B2 on the app's LLM (OpenAI if OPENAI_API_KEY is set, else the local model) "
+        "and save the recording",
     )
     parser.add_argument(
         "--baseline", type=Path, help="an m0.json to compare H1 against; exit 1 on regression"
@@ -307,11 +305,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     profiles = generate_profiles(args.seed)
     if args.record:
         live = _live_llm()
+        provider = live.provider
+        print(f"Recording B2 with {live.model_name} ({provider})", file=sys.stderr)
         llm = RecordingLLM(live)
     elif not RECORDING.exists():
         sys.exit(
             f"No B2 recording at {RECORDING}. Record one with "
-            f"`python -m eval.run --seed {args.seed} --record` (needs OPENAI_API_KEY)."
+            f"`python -m eval.run --seed {args.seed} --record`."
         )
     else:
         llm = ReplayLLM(RECORDING)
@@ -319,9 +319,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     report = run(args.seed, catalog, profiles, m0_planners(llm))
 
     if args.record:
-        # llm_toolkit silently switches to the local model after an OpenAI error.
-        if live.provider != "openai":
-            sys.exit("The LLM fell back to the local model while recording; nothing was saved.")
+        # llm_toolkit silently switches from OpenAI to the local model after an OpenAI error,
+        # which would leave a recording that mixes two models.
+        if live.provider != provider:
+            sys.exit(
+                f"The LLM switched from {provider} to {live.provider} while recording; "
+                "nothing was saved."
+            )
         RECORDING.parent.mkdir(parents=True, exist_ok=True)
         llm.save(RECORDING)
 

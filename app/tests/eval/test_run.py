@@ -213,7 +213,7 @@ def test_m0_planners_are_b1_and_b2_and_only_a_replay_adds_recorded_time(tmp_path
 
 
 class FakeOpenAI:
-    """Stands in for gpt-4o-mini while recording: always picks the first item it is offered."""
+    """Stands in for the app's LLM (here OpenAI) while recording: always picks the first item."""
 
     provider = "openai"
     model_name = "fake-gpt"
@@ -268,21 +268,28 @@ def test_replay_without_a_recording_says_how_to_record(command):
         eval.run.main(["--out", str(command / "out")])
 
 
-def test_record_refuses_to_start_without_an_openai_key(command, monkeypatch):
+def test_record_uses_the_apps_own_llm_and_names_its_model(command, monkeypatch):
+    # No OPENAI_API_KEY, so llm_toolkit picks the local model, as the app does.
+    built = []
+
+    class LocalModel(FakeOpenAI):
+        provider = "local"
+        model_name = "ibm-granite/granite-4.0-h-350M"
+
+        def __init__(self, tokens):
+            built.append(tokens)
+
     monkeypatch.setattr(eval.run, "_live_llm", REAL_LIVE_LLM)
-    monkeypatch.setattr(eval.run, "load_dotenv", lambda: None)
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setattr(eval.run.llm_toolkit, "LLM", LocalModel)
 
-    def no_model(*args, **kwargs):
-        raise AssertionError("must not load a model without a key")
+    assert eval.run.main(["--record", "--out", str(command / "out")]) == 0
 
-    monkeypatch.setattr(eval.run.llm_toolkit, "LLM", no_model)
-
-    with pytest.raises(SystemExit, match="OPENAI_API_KEY"):
-        eval.run.main(["--record", "--out", str(command / "out")])
+    assert built == [500]  # the token limit /generate_plan uses
+    recording = json.loads((command / "fixtures" / "b2.json").read_text())
+    assert recording["model"] == "ibm-granite/granite-4.0-h-350M"
 
 
-def test_record_is_not_saved_if_the_llm_fell_back_to_the_local_model(command, monkeypatch):
+def test_record_is_not_saved_if_the_llm_switched_models_midway(command, monkeypatch):
     class FallsBack(FakeOpenAI):
         def generate(self, system, prompt):
             self.provider = "local"  # what llm_toolkit does silently after an OpenAI error
@@ -290,6 +297,6 @@ def test_record_is_not_saved_if_the_llm_fell_back_to_the_local_model(command, mo
 
     monkeypatch.setattr(eval.run, "_live_llm", FallsBack)
 
-    with pytest.raises(SystemExit, match="local model"):
+    with pytest.raises(SystemExit, match="switched from openai to local"):
         eval.run.main(["--record", "--out", str(command / "out")])
     assert not (command / "fixtures" / "b2.json").exists()
