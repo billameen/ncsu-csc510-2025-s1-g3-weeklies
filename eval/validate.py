@@ -5,14 +5,14 @@ This module is the spec. It deliberately does not import planner code (menu_gene
 eval.baselines), so a planner bug cannot also hide in the check that is meant to catch it.
 """
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 
 from pricing import DELIVERY_FEE, SERVICE_FEE, TAX_RATE
 
-from eval.catalog import Catalog
+from eval.catalog import Catalog, Item
 from eval.profiles import Profile
 
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
@@ -73,7 +73,6 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
     violations = []
     filled = set()
     placed = []  # meals in a valid slot with a known item
-    avoid = {normalize_allergen(a) for a in profile.allergens}
     for m in meals:
         slot = (m.day, m.meal)
         if m.day not in WEEKDAYS or m.meal not in MEAL_TIMES or slot in filled:
@@ -92,8 +91,8 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
                 )
             )
             continue
-        tags = (normalize_allergen(t) for t in catalog.items[m.itm_id].allergens)
-        found = [t for t in dict.fromkeys(tags) if t in avoid]  # deduped, in tag order
+        item = catalog.items[m.itm_id]
+        found = allergens_found(item, profile.allergens)
         if found:
             violations.append(
                 Violation(
@@ -103,15 +102,13 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
                     f"item {m.itm_id} contains {', '.join(found)}",
                 )
             )
-        rtr_id = catalog.items[m.itm_id].rtr_id
-        restaurant = catalog.restaurants.get(rtr_id)
-        if restaurant is None or not _is_open(restaurant.hours, m.day, MEAL_TIMES[m.meal]):
+        if not is_open(catalog, item, m.day, m.meal):
             violations.append(
                 Violation(
                     ViolationKind.CLOSED_RESTAURANT,
                     m.day,
                     m.meal,
-                    f"restaurant {rtr_id} is closed {m.day} at {MEAL_TIMES[m.meal]:04d}",
+                    f"restaurant {item.rtr_id} is closed {m.day} at {MEAL_TIMES[m.meal]:04d}",
                 )
             )
         placed.append(m)
@@ -163,12 +160,27 @@ def normalize_allergen(tag: str) -> str:
     return _ALLERGEN_ALIASES.get(tag, tag)
 
 
-def _is_open(hours: dict[str, tuple[int, ...]], day: str, time: int) -> bool:
+def allergens_found(item: Item, allergens: Iterable[str]) -> list[str]:
     """
-    True if time falls inside one of the day's (open, close) pairs, both ends included. A day
-    with no entry, no times, or an odd number of times (unreadable) is closed.
+    The given allergens that the item contains, normalized, deduplicated and in the item's tag
+    order. Empty if the item is safe.
     """
-    times = hours.get(day, ())
+    avoid = {normalize_allergen(a) for a in allergens}
+    tags = (normalize_allergen(t) for t in item.allergens)
+    return [t for t in dict.fromkeys(tags) if t in avoid]
+
+
+def is_open(catalog: Catalog, item: Item, day: str, meal: int) -> bool:
+    """
+    True if the item's restaurant is open at the meal's time: the time falls inside one of the
+    day's (open, close) pairs, both ends included. A restaurant missing from the catalog, or a
+    day with no entry, no times, or an odd number of times (unreadable), is closed.
+    """
+    restaurant = catalog.restaurants.get(item.rtr_id)
+    if restaurant is None:
+        return False
+    times = restaurant.hours.get(day, ())
     if len(times) % 2:
         return False
+    time = MEAL_TIMES[meal]
     return any(times[i] <= time <= times[i + 1] for i in range(0, len(times), 2))
