@@ -15,25 +15,179 @@ CREATE TABLE IF NOT EXISTS "Restaurant" (
 	"status"	TEXT,
 	PRIMARY KEY("rtr_id" AUTOINCREMENT)
 );
-INSERT INTO Restaurant VALUES(1,'Bida Manda','Laotian and Vietnamese cuisine with a lively atmosphere.','(919) 615-0253','rpassie0@paypal.com','scrypt:32768:8:1$x7c3MHE3IuIe3S8y$3eb2804388d265cf6149106f4d57e2b02714d39e411ee035c4cf8615debcd4a7991909331c39114f04efc360bab2bb0b279c58b06e1cc860a7c8a7dc224ca702','222 S Wilmington St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [1700, 2100],\u000d\u000a  "Wed": [1700, 2100],\u000d\u000a  "Thu": [1700, 2100],\u000d\u000a  "Fri": [1700, 2200],\u000d\u000a  "Sat": [1700, 2200],\u000d\u000a  "Sun": [1100, 1400]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(2,'Poole''side Pies','Award-winning wood-fired pizza with a focus on local ingredients.','(919) 271-2221','cfeathersby1@virginia.edu','scrypt:32768:8:1$Q86UGXWmz3rcvPzq$f337b68b5ef85d1803fbf4069074d76ddfadc8de156f18d69b15330363276fa7c6f1a256bf73064fa879b7a6767f636dd8faeb49f781bd7e0f74a24b7ee68672','103 S Wilmington St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [1600, 2200],\u000d\u000a  "Tue": [1600, 2200],\u000d\u000a  "Wed": [1600, 2200],\u000d\u000a  "Thu": [1600, 2200],\u000d\u000a  "Fri": [1600, 2200],\u000d\u000a  "Sat": [1600, 2200],\u000d\u000a  "Sun": [1100, 1500]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(3,'Morgan Street Food Hall','Diverse collection of food vendors under one roof.','(919) 428-5080','mjakubowski2@sciencedirect.com','scrypt:32768:8:1$MA9jyVoTqvicplin$3100cdd91a81163d1adba5b6bb5fa5023798f202f7de151b890fc2864ac36e4b4fe1f1ce35fa7d84ea06c95eed383fb973d0ecd7ce433fd4ec5addf27b6423ff','411 W Morgan St','Raleigh','NC',27603,unistr('{\u000d\u000a  "Mon": [1100, 2200],\u000d\u000a  "Tue": [1100, 2200],\u000d\u000a  "Wed": [1100, 2200],\u000d\u000a  "Thu": [1100, 2200],\u000d\u000a  "Fri": [1100, 2200],\u000d\u000a  "Sat": [1100, 2200],\u000d\u000a  "Sun": [1100, 2200]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(4,'Beasley''s Chicken + Honey','Southern comfort food specializing in fried chicken.','(919) 272-0334','rbentke3@live.com','scrypt:32768:8:1$E4w97Z3kvg2NzKcQ$6f1766040e5f8883e42e1b60ee09ca8cfaf1d90c1fc30689ae376d61af20bbd5221c67b4169d65918193d537c9bbe1537ad515542660c80955082a998bc623bc','237 S Wilmington St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [1700, 2100],\u000d\u000a  "Wed": [1700, 2100],\u000d\u000a  "Thu": [1700, 2100],\u000d\u000a  "Fri": [1700, 2200],\u000d\u000a  "Sat": [1700, 2200],\u000d\u000a  "Sun": [1100, 1400]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(5,'Death & Co','Upscale cocktail bar with a small plates menu.','(919) 272-1304','wmoxom4@booking.com','scrypt:32768:8:1$sHl4q6gmv7PCRQPM$fd0b62904c29a61526cadd6cf12887e86e0475bf715e3f38d0731b875abfb4226a3667a08664c3381fbca8befb535462824fcfd9926b752eb4ab7ec1191ae4c2','658 B Broad St','Raleigh','NC',27603,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [],\u000d\u000a  "Wed": [1800, 2400],\u000d\u000a  "Thu": [1800, 2400],\u000d\u000a  "Fri": [1800, 2400],\u000d\u000a  "Sat": [1800, 2400],\u000d\u000a  "Sun": []\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(7,'The Pit','Authentic North Carolina-style BBQ.','(919) 971-5555','lbassam6@jugem.jp','scrypt:32768:8:1$ri9ThnzE7AclfmMp$d94d0cb6aa182d1dcab991513b65958ddf4242d59970a094977fff18934c34a994411dd64bd015bf85383b0d2382e225b9578e47555d350f8fc5e12cf2caf1bd','328 W Davie St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [1100, 2100],\u000d\u000a  "Wed": [1100, 2100],\u000d\u000a  "Thu": [1100, 2100],\u000d\u000a  "Fri": [1100, 2100],\u000d\u000a  "Sat": [1100, 2100],\u000d\u000a  "Sun": [1100, 1500]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(8,'Sorella''s','Italian cuisine with a focus on pasta and seafood.','(919) 271-0460','gschimek7@webmd.com','scrypt:32768:8:1$R1FmASXzQiiR53EJ$a9ca365f88b7a0cb24de5dd3bbdc7eb740ed23a79dcdc2f01cd0fb53dc6313b9491546b97be978c97ebee08bc7da48d0c7f793b2048c2f735b03e59730f510f0','2900 Garrett Rd Ste 101','Raleigh','NC',27609,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [1700, 2100],\u000d\u000a  "Wed": [1700, 2100],\u000d\u000a  "Thu": [1700, 2100],\u000d\u000a  "Fri": [1700, 2100],\u000d\u000a  "Sat": [1700, 2100],\u000d\u000a  "Sun": [1700, 2100]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(9,'lucettegrace','Contemporary American cuisine with a creative menu.','(919) 881-4686','tphythien8@artisteer.com','scrypt:32768:8:1$iAvp0ddzU4cCn9HV$fe67a9d5228a7be1a1f85cd4ae9d82e0d48dfa07cb60d30caf9ba37d126fc4fd8ca9c514fb2e28cb9513ac318330e32fcdb2fe911b77220e5b81de6bba304546','101 Peace St','Raleigh','NC',27604,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [],\u000d\u000a  "Wed": [1700, 2200],\u000d\u000a  "Thu": [1700, 2200],\u000d\u000a  "Fri": [1700, 2200],\u000d\u000a  "Sat": [1700, 2200],\u000d\u000a  "Sun": [1100, 1500]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(10,'Irregardless Cafe','Eclectic and globally-inspired cuisine in a unique setting.','(919) 977-2020','nsimononsky9@usnews.com','scrypt:32768:8:1$qDJM9EcEqsXOyj8P$cc6ae62eb234695bd2fe8a0cee95d5f2b4c5054010338dcce1ca9357ff75d0c791756307cb7ffcfb65f0377442b85dfc1f99910c028a8f6e00effcce16caed96','402 W Chaves St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [1100, 2100],\u000d\u000a  "Tue": [1100, 2100],\u000d\u000a  "Wed": [1100, 2100],\u000d\u000a  "Thu": [1100, 2100],\u000d\u000a  "Fri": [1100, 2100],\u000d\u000a  "Sat": [1100, 2100],\u000d\u000a  "Sun": [1100, 1500]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(11,'Happy Dappy','Asian Fusion','(919) 231-6144','hcrocka@mozilla.com','scrypt:32768:8:1$h0VGNYZ1n8K0iaWs$6798f70671029159f3e60652f104b76dba849b543cddece48d7e8f101c371baf324d0214e70c711dc934a754cffdca7d3717050ca0109d91221a84da624b3efb','241 S Wilmington St Suite 100','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [1700, 2200],\u000d\u000a  "Tue": [1700, 2200],\u000d\u000a  "Wed": [1700, 2200],\u000d\u000a  "Thu": [1700, 2300],\u000d\u000a  "Fri": [1700, 2300],\u000d\u000a  "Sat": [1700, 2300],\u000d\u000a  "Sun": [1700, 2200]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(12,'A Place at the Table','Pay-what-you-can restaurant focusing on community and accessible dining.','(919) 615-5329','hgallehawkb@youtube.com','scrypt:32768:8:1$tWCYf711zvlepuHr$97130fa1c4ff49db23ae1ce8b260c5bd07453a6fbb73ba4b4efbb04ff9f806b6236a670c800d9f626cf0add000e26b664b70f655ea3949b2b9824b7e06b631c0','420 W Peace St','Raleigh','NC',27603,unistr('{\u000d\u000a  "Mon": [1100, 1400],\u000d\u000a  "Tue": [1100, 1400],\u000d\u000a  "Wed": [1100, 1400],\u000d\u000a  "Thu": [1100, 1400],\u000d\u000a  "Fri": [1100, 1400],\u000d\u000a  "Sat": [1700, 2100],\u000d\u000a  "Sun": []\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(13,'Ruckus Seafood Co.','Seafood restaurant with a focus on fresh local ingredients.','(919) 102-4065','ccomiskeyc@is.gd','scrypt:32768:8:1$VTdXjVbjy9V5mGvf$7afa5b92a92db117448b849e354c141c8124fa634fc55b58545614250f74962cf8f87eb28d141f72f6d11dc1f05c980e3630760b40cb4fdc56017b27fb8e604c','707 Gateway St','Raleigh','NC',27603,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [1700, 2200],\u000d\u000a  "Wed": [1700, 2200],\u000d\u000a  "Thu": [1700, 2200],\u000d\u000a  "Fri": [1700, 2200],\u000d\u000a  "Sat": [1700, 2200],\u000d\u000a  "Sun": [1100, 1400]\u000d\u000a}\u000d\u000a'),'Open');
-INSERT INTO Restaurant VALUES(14,'Caffè D''Roma','Classic Italian restaurant with a large menu.','(919) 615-0518','chuygensd@plala.or.jp','scrypt:32768:8:1$8ReVkGe7TdzAkgFg$f02ac9ce0208ed2dce8bb0e3c9dd707ab7480efa7f6fb2fe6ea91b47182babf07aa5ed712590988df982a5a03cadf8dacd0f1ae6099db3b4445a2bc72225286a','1893 Village Mall Dr','Raleigh','NC',27615,unistr('{\u000d\u000a  "Mon": [1100, 2130],\u000d\u000a  "Tue": [1100, 2130],\u000d\u000a  "Wed": [1100, 2130],\u000d\u000a  "Thu": [1100, 2130],\u000d\u000a  "Fri": [1100, 2130],\u000d\u000a  "Sat": [1100, 2130],\u000d\u000a  "Sun": [1000, 1500]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(15,'Basil''s','Mediterranean and American cuisine.','(919) 615-7779','cfrugiere@a8.net','scrypt:32768:8:1$jFWIociwHMMx6yhM$0cdd3b53f2723e7bf33f2876754a83f495e646636e870f66b09e1798011e85077e5b138083bffd3748cfe8e50dcb889cc81f23fafc341c6a54f199dcca96b06e','4423 Six Forks Rd','Raleigh','NC',27609,unistr('{\u000d\u000a  "Mon": [1100, 2100],\u000d\u000a  "Tue": [1100, 2100],\u000d\u000a  "Wed": [1100, 2100],\u000d\u000a  "Thu": [1100, 2100],\u000d\u000a  "Fri": [1100, 2100],\u000d\u000a  "Sat": [1100, 2100],\u000d\u000a  "Sun": [1100, 1500]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(16,'Taverna Agora','Greek restaurant with a large selection of wines.','(919) 446-9690','mgeevef@blogspot.com','scrypt:32768:8:1$lmSfFasdMIVWklPG$be47977b5486eb9dc9c38abe23478a2ee8fe2edb3ae038d9db2b4bbea28b8491e26d3ddec29b7da151e28dedb3ce831e12aa27bd3bbef0cef4261cacdbf7565f','412 W Chapel Hill St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [1700, 2200],\u000d\u000a  "Wed": [1700, 2200],\u000d\u000a  "Thu": [1700, 2200],\u000d\u000a  "Fri": [1700, 2200],\u000d\u000a  "Sat": [1700, 2200],\u000d\u000a  "Sun": [1100, 1500]\u000d\u000a}\u000d\u000a'),'Open');
-INSERT INTO Restaurant VALUES(17,'Golden Corral','Buffet style restaurant','(919) 143-4411','ggametg@godaddy.com','scrypt:32768:8:1$B7ZpQnwphxIZ05kx$b4ad5c511731594948a36664d3f7f860f3571f02b47fc8ea51686081da8cbe3e88326d08a40e06782b03c056c0bf60bd4328c0cbc1630aba2a284f825bad9aef','4601 Duraleigh Rd','Raleigh','NC',27612,unistr('{\u000d\u000a  "Mon": [600, 2200],\u000d\u000a  "Tue": [600, 2200],\u000d\u000a  "Wed": [600, 2200],\u000d\u000a  "Thu": [600, 2200],\u000d\u000a  "Fri": [600, 2200],\u000d\u000a  "Sat": [600, 2200],\u000d\u000a  "Sun": [600, 2200]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(18,'Cowpers','American Restaurant','(919) 256-3033','dblincoeh@spotify.com','scrypt:32768:8:1$zQzPrLkDhQ4K7Q1z$c3fa9b4f85b3dac62b5bd884288d98bf8540803660d89706e1a6902723ef2f899ddd32fd87b3c14fcd004960a784c8dded9e3862a5e80da42cd3c8e0190e5bc7','308 S Estes St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [1100, 2100],\u000d\u000a  "Tue": [1100, 2100],\u000d\u000a  "Wed": [1100, 2100],\u000d\u000a  "Thu": [1100, 2100],\u000d\u000a  "Fri": [1100, 2100],\u000d\u000a  "Sat": [1100, 2100],\u000d\u000a  "Sun": []\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(19,'The Flying Biscuit Cafe','Branch of a laid-back chain known for Southern food & all-day breakfast selections','(919) 833-6924','grapes@cheese.org','scrypt:32768:8:1$B7ZpQnwphxIZ05kx$b4ad5c511731594948a36664d3f7f860f3571f02b47fc8ea51686081da8cbe3e88326d08a40e06782b03c056c0bf60bd4328c0cbc1630aba2a284f825bad9aef','2016 Clark Ave','Raleigh','NC',27605,unistr('{\u000d\u000a  "Mon": [700, 2100],\u000d\u000a  "Tue": [700, 2100],\u000d\u000a  "Wed": [700, 2100],\u000d\u000a  "Thu": [700, 2100],\u000d\u000a  "Fri": [700, 2100],\u000d\u000a  "Sat": [700, 2100],\u000d\u000a  "Sun": [700, 1600]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(20,'Brecotea','Chic bakeshop with an airy, garden-style interior and a terrace, plus varied sweet and savory bites','(919) 234-1555','broccoli@wraps.net','scrypt:32768:8:1$B7ZpQnwphxIZ05kx$b4ad5c511731594948a36664d3f7f860f3571f02b47fc8ea51686081da8cbe3e88326d08a40e06782b03c056c0bf60bd4328c0cbc1630aba2a284f825bad9aef','1144 Kildair Farm Rd','Cary','NC',27511,unistr('{\u000d\u000a  "Mon": [1000, 2130],\u000d\u000a  "Tue": [1000, 2130],\u000d\u000a  "Wed": [1000, 2130],\u000d\u000a  "Thu": [1000, 2130],\u000d\u000a  "Fri": [1000, 2130],\u000d\u000a  "Sat": [1000, 2230],\u000d\u000a  "Sun": [1000, 2230]\u000d\u000a}'),'Open');
+INSERT INTO Restaurant VALUES(1,'Bida Manda','Laotian and Vietnamese cuisine with a lively atmosphere.','(919) 615-0253','rpassie0@paypal.com','scrypt:32768:8:1$x7c3MHE3IuIe3S8y$3eb2804388d265cf6149106f4d57e2b02714d39e411ee035c4cf8615debcd4a7991909331c39114f04efc360bab2bb0b279c58b06e1cc860a7c8a7dc224ca702','222 S Wilmington St','Raleigh','NC',27601,'{
+  "Mon": [],
+  "Tue": [1700, 2100],
+  "Wed": [1700, 2100],
+  "Thu": [1700, 2100],
+  "Fri": [1700, 2200],
+  "Sat": [1700, 2200],
+  "Sun": [1100, 1400]
+}','Open');
+INSERT INTO Restaurant VALUES(2,'Poole''side Pies','Award-winning wood-fired pizza with a focus on local ingredients.','(919) 271-2221','cfeathersby1@virginia.edu','scrypt:32768:8:1$Q86UGXWmz3rcvPzq$f337b68b5ef85d1803fbf4069074d76ddfadc8de156f18d69b15330363276fa7c6f1a256bf73064fa879b7a6767f636dd8faeb49f781bd7e0f74a24b7ee68672','103 S Wilmington St','Raleigh','NC',27601,'{
+  "Mon": [1600, 2200],
+  "Tue": [1600, 2200],
+  "Wed": [1600, 2200],
+  "Thu": [1600, 2200],
+  "Fri": [1600, 2200],
+  "Sat": [1600, 2200],
+  "Sun": [1100, 1500]
+}','Open');
+INSERT INTO Restaurant VALUES(3,'Morgan Street Food Hall','Diverse collection of food vendors under one roof.','(919) 428-5080','mjakubowski2@sciencedirect.com','scrypt:32768:8:1$MA9jyVoTqvicplin$3100cdd91a81163d1adba5b6bb5fa5023798f202f7de151b890fc2864ac36e4b4fe1f1ce35fa7d84ea06c95eed383fb973d0ecd7ce433fd4ec5addf27b6423ff','411 W Morgan St','Raleigh','NC',27603,'{
+  "Mon": [1100, 2200],
+  "Tue": [1100, 2200],
+  "Wed": [1100, 2200],
+  "Thu": [1100, 2200],
+  "Fri": [1100, 2200],
+  "Sat": [1100, 2200],
+  "Sun": [1100, 2200]
+}','Open');
+INSERT INTO Restaurant VALUES(4,'Beasley''s Chicken + Honey','Southern comfort food specializing in fried chicken.','(919) 272-0334','rbentke3@live.com','scrypt:32768:8:1$E4w97Z3kvg2NzKcQ$6f1766040e5f8883e42e1b60ee09ca8cfaf1d90c1fc30689ae376d61af20bbd5221c67b4169d65918193d537c9bbe1537ad515542660c80955082a998bc623bc','237 S Wilmington St','Raleigh','NC',27601,'{
+  "Mon": [],
+  "Tue": [1700, 2100],
+  "Wed": [1700, 2100],
+  "Thu": [1700, 2100],
+  "Fri": [1700, 2200],
+  "Sat": [1700, 2200],
+  "Sun": [1100, 1400]
+}','Open');
+INSERT INTO Restaurant VALUES(5,'Death & Co','Upscale cocktail bar with a small plates menu.','(919) 272-1304','wmoxom4@booking.com','scrypt:32768:8:1$sHl4q6gmv7PCRQPM$fd0b62904c29a61526cadd6cf12887e86e0475bf715e3f38d0731b875abfb4226a3667a08664c3381fbca8befb535462824fcfd9926b752eb4ab7ec1191ae4c2','658 B Broad St','Raleigh','NC',27603,'{
+  "Mon": [],
+  "Tue": [],
+  "Wed": [1800, 2400],
+  "Thu": [1800, 2400],
+  "Fri": [1800, 2400],
+  "Sat": [1800, 2400],
+  "Sun": []
+}','Open');
+INSERT INTO Restaurant VALUES(7,'The Pit','Authentic North Carolina-style BBQ.','(919) 971-5555','lbassam6@jugem.jp','scrypt:32768:8:1$ri9ThnzE7AclfmMp$d94d0cb6aa182d1dcab991513b65958ddf4242d59970a094977fff18934c34a994411dd64bd015bf85383b0d2382e225b9578e47555d350f8fc5e12cf2caf1bd','328 W Davie St','Raleigh','NC',27601,'{
+  "Mon": [],
+  "Tue": [1100, 2100],
+  "Wed": [1100, 2100],
+  "Thu": [1100, 2100],
+  "Fri": [1100, 2100],
+  "Sat": [1100, 2100],
+  "Sun": [1100, 1500]
+}','Open');
+INSERT INTO Restaurant VALUES(8,'Sorella''s','Italian cuisine with a focus on pasta and seafood.','(919) 271-0460','gschimek7@webmd.com','scrypt:32768:8:1$R1FmASXzQiiR53EJ$a9ca365f88b7a0cb24de5dd3bbdc7eb740ed23a79dcdc2f01cd0fb53dc6313b9491546b97be978c97ebee08bc7da48d0c7f793b2048c2f735b03e59730f510f0','2900 Garrett Rd Ste 101','Raleigh','NC',27609,'{
+  "Mon": [],
+  "Tue": [1700, 2100],
+  "Wed": [1700, 2100],
+  "Thu": [1700, 2100],
+  "Fri": [1700, 2100],
+  "Sat": [1700, 2100],
+  "Sun": [1700, 2100]
+}','Open');
+INSERT INTO Restaurant VALUES(9,'lucettegrace','Contemporary American cuisine with a creative menu.','(919) 881-4686','tphythien8@artisteer.com','scrypt:32768:8:1$iAvp0ddzU4cCn9HV$fe67a9d5228a7be1a1f85cd4ae9d82e0d48dfa07cb60d30caf9ba37d126fc4fd8ca9c514fb2e28cb9513ac318330e32fcdb2fe911b77220e5b81de6bba304546','101 Peace St','Raleigh','NC',27604,'{
+  "Mon": [],
+  "Tue": [],
+  "Wed": [1700, 2200],
+  "Thu": [1700, 2200],
+  "Fri": [1700, 2200],
+  "Sat": [1700, 2200],
+  "Sun": [1100, 1500]
+}','Open');
+INSERT INTO Restaurant VALUES(10,'Irregardless Cafe','Eclectic and globally-inspired cuisine in a unique setting.','(919) 977-2020','nsimononsky9@usnews.com','scrypt:32768:8:1$qDJM9EcEqsXOyj8P$cc6ae62eb234695bd2fe8a0cee95d5f2b4c5054010338dcce1ca9357ff75d0c791756307cb7ffcfb65f0377442b85dfc1f99910c028a8f6e00effcce16caed96','402 W Chaves St','Raleigh','NC',27601,'{
+  "Mon": [1100, 2100],
+  "Tue": [1100, 2100],
+  "Wed": [1100, 2100],
+  "Thu": [1100, 2100],
+  "Fri": [1100, 2100],
+  "Sat": [1100, 2100],
+  "Sun": [1100, 1500]
+}','Open');
+INSERT INTO Restaurant VALUES(11,'Happy Dappy','Asian Fusion','(919) 231-6144','hcrocka@mozilla.com','scrypt:32768:8:1$h0VGNYZ1n8K0iaWs$6798f70671029159f3e60652f104b76dba849b543cddece48d7e8f101c371baf324d0214e70c711dc934a754cffdca7d3717050ca0109d91221a84da624b3efb','241 S Wilmington St Suite 100','Raleigh','NC',27601,'{
+  "Mon": [1700, 2200],
+  "Tue": [1700, 2200],
+  "Wed": [1700, 2200],
+  "Thu": [1700, 2300],
+  "Fri": [1700, 2300],
+  "Sat": [1700, 2300],
+  "Sun": [1700, 2200]
+}','Open');
+INSERT INTO Restaurant VALUES(12,'A Place at the Table','Pay-what-you-can restaurant focusing on community and accessible dining.','(919) 615-5329','hgallehawkb@youtube.com','scrypt:32768:8:1$tWCYf711zvlepuHr$97130fa1c4ff49db23ae1ce8b260c5bd07453a6fbb73ba4b4efbb04ff9f806b6236a670c800d9f626cf0add000e26b664b70f655ea3949b2b9824b7e06b631c0','420 W Peace St','Raleigh','NC',27603,'{
+  "Mon": [1100, 1400],
+  "Tue": [1100, 1400],
+  "Wed": [1100, 1400],
+  "Thu": [1100, 1400],
+  "Fri": [1100, 1400],
+  "Sat": [1700, 2100],
+  "Sun": []
+}','Open');
+INSERT INTO Restaurant VALUES(13,'Ruckus Seafood Co.','Seafood restaurant with a focus on fresh local ingredients.','(919) 102-4065','ccomiskeyc@is.gd','scrypt:32768:8:1$VTdXjVbjy9V5mGvf$7afa5b92a92db117448b849e354c141c8124fa634fc55b58545614250f74962cf8f87eb28d141f72f6d11dc1f05c980e3630760b40cb4fdc56017b27fb8e604c','707 Gateway St','Raleigh','NC',27603,'{
+  "Mon": [],
+  "Tue": [1700, 2200],
+  "Wed": [1700, 2200],
+  "Thu": [1700, 2200],
+  "Fri": [1700, 2200],
+  "Sat": [1700, 2200],
+  "Sun": [1100, 1400]
+}
+','Open');
+INSERT INTO Restaurant VALUES(14,'Caffè D''Roma','Classic Italian restaurant with a large menu.','(919) 615-0518','chuygensd@plala.or.jp','scrypt:32768:8:1$8ReVkGe7TdzAkgFg$f02ac9ce0208ed2dce8bb0e3c9dd707ab7480efa7f6fb2fe6ea91b47182babf07aa5ed712590988df982a5a03cadf8dacd0f1ae6099db3b4445a2bc72225286a','1893 Village Mall Dr','Raleigh','NC',27615,'{
+  "Mon": [1100, 2130],
+  "Tue": [1100, 2130],
+  "Wed": [1100, 2130],
+  "Thu": [1100, 2130],
+  "Fri": [1100, 2130],
+  "Sat": [1100, 2130],
+  "Sun": [1000, 1500]
+}','Open');
+INSERT INTO Restaurant VALUES(15,'Basil''s','Mediterranean and American cuisine.','(919) 615-7779','cfrugiere@a8.net','scrypt:32768:8:1$jFWIociwHMMx6yhM$0cdd3b53f2723e7bf33f2876754a83f495e646636e870f66b09e1798011e85077e5b138083bffd3748cfe8e50dcb889cc81f23fafc341c6a54f199dcca96b06e','4423 Six Forks Rd','Raleigh','NC',27609,'{
+  "Mon": [1100, 2100],
+  "Tue": [1100, 2100],
+  "Wed": [1100, 2100],
+  "Thu": [1100, 2100],
+  "Fri": [1100, 2100],
+  "Sat": [1100, 2100],
+  "Sun": [1100, 1500]
+}','Open');
+INSERT INTO Restaurant VALUES(16,'Taverna Agora','Greek restaurant with a large selection of wines.','(919) 446-9690','mgeevef@blogspot.com','scrypt:32768:8:1$lmSfFasdMIVWklPG$be47977b5486eb9dc9c38abe23478a2ee8fe2edb3ae038d9db2b4bbea28b8491e26d3ddec29b7da151e28dedb3ce831e12aa27bd3bbef0cef4261cacdbf7565f','412 W Chapel Hill St','Raleigh','NC',27601,'{
+  "Mon": [],
+  "Tue": [1700, 2200],
+  "Wed": [1700, 2200],
+  "Thu": [1700, 2200],
+  "Fri": [1700, 2200],
+  "Sat": [1700, 2200],
+  "Sun": [1100, 1500]
+}
+','Open');
+INSERT INTO Restaurant VALUES(17,'Golden Corral','Buffet style restaurant','(919) 143-4411','ggametg@godaddy.com','scrypt:32768:8:1$B7ZpQnwphxIZ05kx$b4ad5c511731594948a36664d3f7f860f3571f02b47fc8ea51686081da8cbe3e88326d08a40e06782b03c056c0bf60bd4328c0cbc1630aba2a284f825bad9aef','4601 Duraleigh Rd','Raleigh','NC',27612,'{
+  "Mon": [600, 2200],
+  "Tue": [600, 2200],
+  "Wed": [600, 2200],
+  "Thu": [600, 2200],
+  "Fri": [600, 2200],
+  "Sat": [600, 2200],
+  "Sun": [600, 2200]
+}','Open');
+INSERT INTO Restaurant VALUES(18,'Cowpers','American Restaurant','(919) 256-3033','dblincoeh@spotify.com','scrypt:32768:8:1$zQzPrLkDhQ4K7Q1z$c3fa9b4f85b3dac62b5bd884288d98bf8540803660d89706e1a6902723ef2f899ddd32fd87b3c14fcd004960a784c8dded9e3862a5e80da42cd3c8e0190e5bc7','308 S Estes St','Raleigh','NC',27601,'{
+  "Mon": [1100, 2100],
+  "Tue": [1100, 2100],
+  "Wed": [1100, 2100],
+  "Thu": [1100, 2100],
+  "Fri": [1100, 2100],
+  "Sat": [1100, 2100],
+  "Sun": []
+}','Open');
+INSERT INTO Restaurant VALUES(19,'The Flying Biscuit Cafe','Branch of a laid-back chain known for Southern food & all-day breakfast selections','(919) 833-6924','grapes@cheese.org','scrypt:32768:8:1$B7ZpQnwphxIZ05kx$b4ad5c511731594948a36664d3f7f860f3571f02b47fc8ea51686081da8cbe3e88326d08a40e06782b03c056c0bf60bd4328c0cbc1630aba2a284f825bad9aef','2016 Clark Ave','Raleigh','NC',27605,'{
+  "Mon": [700, 2100],
+  "Tue": [700, 2100],
+  "Wed": [700, 2100],
+  "Thu": [700, 2100],
+  "Fri": [700, 2100],
+  "Sat": [700, 2100],
+  "Sun": [700, 1600]
+}','Open');
+INSERT INTO Restaurant VALUES(20,'Brecotea','Chic bakeshop with an airy, garden-style interior and a terrace, plus varied sweet and savory bites','(919) 234-1555','broccoli@wraps.net','scrypt:32768:8:1$B7ZpQnwphxIZ05kx$b4ad5c511731594948a36664d3f7f860f3571f02b47fc8ea51686081da8cbe3e88326d08a40e06782b03c056c0bf60bd4328c0cbc1630aba2a284f825bad9aef','1144 Kildair Farm Rd','Cary','NC',27511,'{
+  "Mon": [1000, 2130],
+  "Tue": [1000, 2130],
+  "Wed": [1000, 2130],
+  "Thu": [1000, 2130],
+  "Fri": [1000, 2130],
+  "Sat": [1000, 2230],
+  "Sun": [1000, 2230]
+}','Open');
 CREATE TABLE IF NOT EXISTS "Order" (
 	"ord_id"	INTEGER NOT NULL UNIQUE,
 	"rtr_id"	INTEGER NOT NULL,
@@ -44,18 +198,236 @@ CREATE TABLE IF NOT EXISTS "Order" (
 	FOREIGN KEY("rtr_id") REFERENCES "Restaurant"("rtr_id"),
 	FOREIGN KEY("usr_id") REFERENCES "User"("usr_id")
 );
-INSERT INTO "Order" VALUES(125,2,101,unistr('{\u000a  "placed_at": "2025-10-18T18:22:00-04:00",\u000a  "restaurant_id": 2,\u000a  "items": [\u000a    {"itm_id":25,"name":"Margherita Pizza","qty":1,"unit_price":16.00,"line_total":16.00},\u000a    {"itm_id":26,"name":"Pepperoni Pizza","qty":1,"unit_price":18.00,"line_total":18.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 34.00,\u000a    "tax": 2.47,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.00,\u000a    "total": 46.95\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 40,\u000a  "notes": "Extra napkins, cut into squares"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(126,1,101,unistr('{\u000a  "placed_at": "2025-10-19T12:05:00-04:00",\u000a  "restaurant_id": 1,\u000a  "items": [\u000a    {"itm_id":22,"name":"Drunken Noodles","qty":1,"unit_price":16.00,"line_total":16.00},\u000a    {"itm_id":23,"name":"Green Papaya Salad","qty":1,"unit_price":14.00,"line_total":14.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 30.00,\u000a    "tax": 2.18,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.29,\u000a    "tip": 4.00,\u000a    "total": 40.46\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 35,\u000a  "notes": "No peanuts on salad"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(127,7,101,unistr('{\u000a  "placed_at": "2025-10-19T18:41:00-04:00",\u000a  "restaurant_id": 7,\u000a  "items": [\u000a    {"itm_id":17,"name":"Pulled Pork Plate","qty":2,"unit_price":16.00,"line_total":32.00},\u000a    {"itm_id":18,"name":"Brisket Plate","qty":1,"unit_price":18.00,"line_total":18.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 50.00,\u000a    "tax": 3.63,\u000a    "delivery_fee": 4.49,\u000a    "service_fee": 1.99,\u000a    "tip": 6.00,\u000a    "total": 66.11\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 50,\u000a  "notes": "Sauce on the side"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(128,10,101,unistr('{\u000a  "placed_at": "2025-10-20T19:12:00-04:00",\u000a  "restaurant_id": 10,\u000a  "items": [\u000a    {"itm_id":8,"name":"Roasted Beet Salad","qty":1,"unit_price":16.00,"line_total":16.00},\u000a    {"itm_id":9,"name":"Pan Seared Duck Breast","qty":1,"unit_price":32.00,"line_total":32.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 48.00,\u000a    "tax": 3.48,\u000a    "delivery_fee": 3.49,\u000a    "service_fee": 1.49,\u000a    "tip": 6.00,\u000a    "total": 62.46\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 45,\u000a  "notes": "Dressing on the side"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(129,4,101,unistr('{\u000a  "placed_at": "2025-10-20T12:37:00-04:00",\u000a  "restaurant_id": 4,\u000a  "items": [\u000a    {"itm_id":12,"name":"Fried Chicken","qty":1,"unit_price":20.00,"line_total":20.00},\u000a    {"itm_id":13,"name":"Mac & Cheese","qty":1,"unit_price":12.00,"line_total":12.00},\u000a    {"itm_id":14,"name":"Collard Greens","qty":1,"unit_price":10.00,"line_total":10.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 42.00,\u000a    "tax": 3.05,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.00,\u000a    "total": 54.53\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 32,\u000a  "notes": "Honey on the side"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(130,5,101,unistr('{\u000a  "placed_at": "2025-10-20T21:05:00-04:00",\u000a  "restaurant_id": 5,\u000a  "items": [\u000a    {"itm_id":15,"name":"Charcuterie Board","qty":1,"unit_price":25.00,"line_total":25.00},\u000a    {"itm_id":16,"name":"Roasted Cauliflower","qty":1,"unit_price":14.00,"line_total":14.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 39.00,\u000a    "tax": 2.83,\u000a    "delivery_fee": 0.00,\u000a    "service_fee": 0.00,\u000a    "tip": 0.00,\u000a    "total": 41.83\u000a  },\u000a  "delivery_type": "pickup",\u000a  "eta_minutes": 20,\u000a  "notes": "Pickup under name Taylor"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(131,11,101,unistr('{\u000a  "placed_at": "2025-10-21T18:01:00-04:00",\u000a  "restaurant_id": 11,\u000a  "items": [\u000a    {"itm_id":10,"name":"Pad Thai","qty":1,"unit_price":18.00,"line_total":18.00},\u000a    {"itm_id":11,"name":"Sushi Roll","qty":2,"unit_price":12.00,"line_total":24.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 42.00,\u000a    "tax": 3.05,\u000a    "delivery_fee": 3.49,\u000a    "service_fee": 1.49,\u000a    "tip": 5.00,\u000a    "total": 55.03\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 38,\u000a  "notes": "No peanut topping on Pad Thai"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(132,9,101,unistr('{\u000a  "placed_at": "2025-10-21T20:14:00-04:00",\u000a  "restaurant_id": 9,\u000a  "items": [\u000a    {"itm_id":33,"name":"Seared Scallops with Cauliflower Puree","qty":1,"unit_price":32.00,"line_total":32.00},\u000a    {"itm_id":37,"name":"Chocolate Lava Cake","qty":1,"unit_price":15.00,"line_total":15.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 47.00,\u000a    "tax": 3.41,\u000a    "delivery_fee": 4.99,\u000a    "service_fee": 2.49,\u000a    "tip": 7.00,\u000a    "total": 64.89\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 52,\u000a  "notes": "Dessert first ;)"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(133,3,101,unistr('{\u000a  "placed_at": "2025-10-22T11:48:00-04:00",\u000a  "restaurant_id": 3,\u000a  "items": [\u000a    {"itm_id":29,"name":"Smokehouse Q BBQ Pulled Pork Sandwich","qty":2,"unit_price":14.00,"line_total":28.00},\u000a    {"itm_id":31,"name":"A&M Dairy Bar Milkshake","qty":1,"unit_price":7.00,"line_total":7.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 35.00,\u000a    "tax": 2.54,\u000a    "delivery_fee": 2.49,\u000a    "service_fee": 1.29,\u000a    "tip": 4.00,\u000a    "total": 45.32\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 28,\u000a  "notes": "Strawberry milkshake"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(134,2,101,unistr('{\u000a  "placed_at": "2025-10-22T13:06:00-04:00",\u000a  "restaurant_id": 2,\u000a  "items": [\u000a    {"itm_id":28,"name":"Veggie Supreme","qty":1,"unit_price":20.00,"line_total":20.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 20.00,\u000a    "tax": 1.45,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.29,\u000a    "tip": 3.00,\u000a    "total": 28.73\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 30,\u000a  "notes": "Light cheese"\u000a}'),'Preparing');
-INSERT INTO "Order" VALUES(135,1,101,unistr('{\u000a  "placed_at": "2025-10-16T19:30:00-04:00",\u000a  "restaurant_id": 1,\u000a  "items": [\u000a    {"itm_id":24,"name":"Coconut Curry Soup","qty":2,"unit_price":15.00,"line_total":30.00},\u000a    {"itm_id":21,"name":"Lemongrass Beef Stir-Fry","qty":1,"unit_price":17.00,"line_total":17.00}\u000a  ],\u000a  "charges_planned": {\u000a    "subtotal": 47.00,\u000a    "tax": 3.41,\u000a    "delivery_fee": 3.49,\u000a    "service_fee": 1.49,\u000a    "tip": 0.00,\u000a    "would_total": 55.39\u000a  },\u000a  "refund": {"refunded": true, "total_refund": 55.39, "reason": "Restaurant outage"},\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": null,\u000a  "notes": "Cancelled before prep"\u000a}'),'Cancelled');
-INSERT INTO "Order" VALUES(136,17,101,unistr('{\u000a  "placed_at": "2025-10-15T18:03:00-04:00",\u000a  "restaurant_id": 17,\u000a  "items": [\u000a    {"itm_id":1,"name":"Fried Chicken","qty":4,"unit_price":7.00,"line_total":28.00},\u000a    {"itm_id":2,"name":"Macaroni and Cheese","qty":2,"unit_price":5.00,"line_total":10.00},\u000a    {"itm_id":3,"name":"Steak","qty":1,"unit_price":10.00,"line_total":10.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 48.00,\u000a    "tax": 3.48,\u000a    "delivery_fee": 5.99,\u000a    "service_fee": 2.49,\u000a    "tip": 6.00,\u000a    "total": 65.96\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 55,\u000a  "notes": "Family share pack"\u000a}'),'Delivered');
+INSERT INTO "Order" VALUES(125,2,101,'{
+  "placed_at": "2025-10-18T18:22:00-04:00",
+  "restaurant_id": 2,
+  "items": [
+    {"itm_id":25,"name":"Margherita Pizza","qty":1,"unit_price":16.00,"line_total":16.00},
+    {"itm_id":26,"name":"Pepperoni Pizza","qty":1,"unit_price":18.00,"line_total":18.00}
+  ],
+  "charges": {
+    "subtotal": 34.00,
+    "tax": 2.47,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 5.00,
+    "total": 46.95
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 40,
+  "notes": "Extra napkins, cut into squares"
+}','Delivered');
+INSERT INTO "Order" VALUES(126,1,101,'{
+  "placed_at": "2025-10-19T12:05:00-04:00",
+  "restaurant_id": 1,
+  "items": [
+    {"itm_id":22,"name":"Drunken Noodles","qty":1,"unit_price":16.00,"line_total":16.00},
+    {"itm_id":23,"name":"Green Papaya Salad","qty":1,"unit_price":14.00,"line_total":14.00}
+  ],
+  "charges": {
+    "subtotal": 30.00,
+    "tax": 2.18,
+    "delivery_fee": 2.99,
+    "service_fee": 1.29,
+    "tip": 4.00,
+    "total": 40.46
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 35,
+  "notes": "No peanuts on salad"
+}','Delivered');
+INSERT INTO "Order" VALUES(127,7,101,'{
+  "placed_at": "2025-10-19T18:41:00-04:00",
+  "restaurant_id": 7,
+  "items": [
+    {"itm_id":17,"name":"Pulled Pork Plate","qty":2,"unit_price":16.00,"line_total":32.00},
+    {"itm_id":18,"name":"Brisket Plate","qty":1,"unit_price":18.00,"line_total":18.00}
+  ],
+  "charges": {
+    "subtotal": 50.00,
+    "tax": 3.63,
+    "delivery_fee": 4.49,
+    "service_fee": 1.99,
+    "tip": 6.00,
+    "total": 66.11
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 50,
+  "notes": "Sauce on the side"
+}','Delivered');
+INSERT INTO "Order" VALUES(128,10,101,'{
+  "placed_at": "2025-10-20T19:12:00-04:00",
+  "restaurant_id": 10,
+  "items": [
+    {"itm_id":8,"name":"Roasted Beet Salad","qty":1,"unit_price":16.00,"line_total":16.00},
+    {"itm_id":9,"name":"Pan Seared Duck Breast","qty":1,"unit_price":32.00,"line_total":32.00}
+  ],
+  "charges": {
+    "subtotal": 48.00,
+    "tax": 3.48,
+    "delivery_fee": 3.49,
+    "service_fee": 1.49,
+    "tip": 6.00,
+    "total": 62.46
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 45,
+  "notes": "Dressing on the side"
+}','Delivered');
+INSERT INTO "Order" VALUES(129,4,101,'{
+  "placed_at": "2025-10-20T12:37:00-04:00",
+  "restaurant_id": 4,
+  "items": [
+    {"itm_id":12,"name":"Fried Chicken","qty":1,"unit_price":20.00,"line_total":20.00},
+    {"itm_id":13,"name":"Mac & Cheese","qty":1,"unit_price":12.00,"line_total":12.00},
+    {"itm_id":14,"name":"Collard Greens","qty":1,"unit_price":10.00,"line_total":10.00}
+  ],
+  "charges": {
+    "subtotal": 42.00,
+    "tax": 3.05,
+    "delivery_fee": 2.99,
+    "service_fee": 1.49,
+    "tip": 5.00,
+    "total": 54.53
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 32,
+  "notes": "Honey on the side"
+}','Delivered');
+INSERT INTO "Order" VALUES(130,5,101,'{
+  "placed_at": "2025-10-20T21:05:00-04:00",
+  "restaurant_id": 5,
+  "items": [
+    {"itm_id":15,"name":"Charcuterie Board","qty":1,"unit_price":25.00,"line_total":25.00},
+    {"itm_id":16,"name":"Roasted Cauliflower","qty":1,"unit_price":14.00,"line_total":14.00}
+  ],
+  "charges": {
+    "subtotal": 39.00,
+    "tax": 2.83,
+    "delivery_fee": 0.00,
+    "service_fee": 0.00,
+    "tip": 0.00,
+    "total": 41.83
+  },
+  "delivery_type": "pickup",
+  "eta_minutes": 20,
+  "notes": "Pickup under name Taylor"
+}','Delivered');
+INSERT INTO "Order" VALUES(131,11,101,'{
+  "placed_at": "2025-10-21T18:01:00-04:00",
+  "restaurant_id": 11,
+  "items": [
+    {"itm_id":10,"name":"Pad Thai","qty":1,"unit_price":18.00,"line_total":18.00},
+    {"itm_id":11,"name":"Sushi Roll","qty":2,"unit_price":12.00,"line_total":24.00}
+  ],
+  "charges": {
+    "subtotal": 42.00,
+    "tax": 3.05,
+    "delivery_fee": 3.49,
+    "service_fee": 1.49,
+    "tip": 5.00,
+    "total": 55.03
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 38,
+  "notes": "No peanut topping on Pad Thai"
+}','Delivered');
+INSERT INTO "Order" VALUES(132,9,101,'{
+  "placed_at": "2025-10-21T20:14:00-04:00",
+  "restaurant_id": 9,
+  "items": [
+    {"itm_id":33,"name":"Seared Scallops with Cauliflower Puree","qty":1,"unit_price":32.00,"line_total":32.00},
+    {"itm_id":37,"name":"Chocolate Lava Cake","qty":1,"unit_price":15.00,"line_total":15.00}
+  ],
+  "charges": {
+    "subtotal": 47.00,
+    "tax": 3.41,
+    "delivery_fee": 4.99,
+    "service_fee": 2.49,
+    "tip": 7.00,
+    "total": 64.89
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 52,
+  "notes": "Dessert first ;)"
+}','Delivered');
+INSERT INTO "Order" VALUES(133,3,101,'{
+  "placed_at": "2025-10-22T11:48:00-04:00",
+  "restaurant_id": 3,
+  "items": [
+    {"itm_id":29,"name":"Smokehouse Q BBQ Pulled Pork Sandwich","qty":2,"unit_price":14.00,"line_total":28.00},
+    {"itm_id":31,"name":"A&M Dairy Bar Milkshake","qty":1,"unit_price":7.00,"line_total":7.00}
+  ],
+  "charges": {
+    "subtotal": 35.00,
+    "tax": 2.54,
+    "delivery_fee": 2.49,
+    "service_fee": 1.29,
+    "tip": 4.00,
+    "total": 45.32
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 28,
+  "notes": "Strawberry milkshake"
+}','Delivered');
+INSERT INTO "Order" VALUES(134,2,101,'{
+  "placed_at": "2025-10-22T13:06:00-04:00",
+  "restaurant_id": 2,
+  "items": [
+    {"itm_id":28,"name":"Veggie Supreme","qty":1,"unit_price":20.00,"line_total":20.00}
+  ],
+  "charges": {
+    "subtotal": 20.00,
+    "tax": 1.45,
+    "delivery_fee": 2.99,
+    "service_fee": 1.29,
+    "tip": 3.00,
+    "total": 28.73
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 30,
+  "notes": "Light cheese"
+}','Preparing');
+INSERT INTO "Order" VALUES(135,1,101,'{
+  "placed_at": "2025-10-16T19:30:00-04:00",
+  "restaurant_id": 1,
+  "items": [
+    {"itm_id":24,"name":"Coconut Curry Soup","qty":2,"unit_price":15.00,"line_total":30.00},
+    {"itm_id":21,"name":"Lemongrass Beef Stir-Fry","qty":1,"unit_price":17.00,"line_total":17.00}
+  ],
+  "charges_planned": {
+    "subtotal": 47.00,
+    "tax": 3.41,
+    "delivery_fee": 3.49,
+    "service_fee": 1.49,
+    "tip": 0.00,
+    "would_total": 55.39
+  },
+  "refund": {"refunded": true, "total_refund": 55.39, "reason": "Restaurant outage"},
+  "delivery_type": "delivery",
+  "eta_minutes": null,
+  "notes": "Cancelled before prep"
+}','Cancelled');
+INSERT INTO "Order" VALUES(136,17,101,'{
+  "placed_at": "2025-10-15T18:03:00-04:00",
+  "restaurant_id": 17,
+  "items": [
+    {"itm_id":1,"name":"Fried Chicken","qty":4,"unit_price":7.00,"line_total":28.00},
+    {"itm_id":2,"name":"Macaroni and Cheese","qty":2,"unit_price":5.00,"line_total":10.00},
+    {"itm_id":3,"name":"Steak","qty":1,"unit_price":10.00,"line_total":10.00}
+  ],
+  "charges": {
+    "subtotal": 48.00,
+    "tax": 3.48,
+    "delivery_fee": 5.99,
+    "service_fee": 2.49,
+    "tip": 6.00,
+    "total": 65.96
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 55,
+  "notes": "Family share pack"
+}','Delivered');
 INSERT INTO "Order" VALUES(143,1,101,'{"placed_at": "2025-10-23T03:03:30.863776-04:00", "restaurant_id": 1, "items": [{"itm_id": 21, "name": "Lemongrass Beef Stir-Fry", "qty": 2, "unit_price": 17.0, "line_total": 34.0}], "charges": {"subtotal": 34.0, "tax": 2.47, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 41.95}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-10-23", "meal": 3}','Ordered');
 INSERT INTO "Order" VALUES(144,3,101,'{"placed_at": "2025-10-23T03:03:55.273639-04:00", "restaurant_id": 3, "items": [{"itm_id": 31, "name": "A&M Dairy Bar Milkshake", "qty": 1, "unit_price": 7.0, "line_total": 7.0}, {"itm_id": 32, "name": "Pierro\u2019s Italian Kitchen Pasta", "qty": 1, "unit_price": 18.0, "line_total": 18.0}], "charges": {"subtotal": 25.0, "tax": 1.81, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 32.29}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-10-23", "meal": 3}','Ordered');
 INSERT INTO "Order" VALUES(145,17,101,'{"placed_at": "2025-10-23T03:04:04.885729-04:00", "restaurant_id": 17, "items": [{"itm_id": 3, "name": "Steak", "qty": 1, "unit_price": 10.0, "line_total": 10.0}], "charges": {"subtotal": 10.0, "tax": 0.73, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 16.21}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-10-23", "meal": 3}','Ordered');
@@ -63,25 +435,402 @@ INSERT INTO "Order" VALUES(146,8,101,'{"placed_at": "2025-10-27T14:14:43.085067-
 INSERT INTO "Order" VALUES(147,2,101,'{"placed_at": "2025-10-27T17:27:11.565075-04:00", "restaurant_id": 2, "items": [{"itm_id": 16, "name": "Margherita Classic", "qty": 1, "unit_price": 13.0, "line_total": 13.0}], "charges": {"subtotal": 13.0, "tax": 0.94, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 19.42}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-10-20", "meal": 2}','Ordered');
 INSERT INTO "Order" VALUES(148,5,103,'{"placed_at": "2025-12-02T10:17:52.542080-05:00", "restaurant_id": 5, "items": [{"itm_id": 57, "name": "Roasted Cauliflower with Harissa", "qty": 1, "unit_price": 16.0, "line_total": 16.0}], "charges": {"subtotal": 16.0, "tax": 1.16, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 22.64}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-12-02", "meal": 3}','Preparing');
 INSERT INTO "Order" VALUES(149,18,103,'{"placed_at": "2025-12-02T10:18:43.308906-05:00", "restaurant_id": 18, "items": [{"itm_id": 233, "name": "Seared Chicken Breast", "qty": 1, "unit_price": 20.0, "line_total": 20.0}], "charges": {"subtotal": 20.0, "tax": 1.45, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 26.93}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-12-02", "meal": 3}','Ordered');
-INSERT INTO "Order" VALUES(150,1,104,unistr('{\u000a  "placed_at": "2025-12-05T13:34:22-05:00",\u000a  "restaurant_id": 1,\u000a  "restaurant_name": "Bida Manda",\u000a  "items": [\u000a    {\u000a      "itm_id": 100,\u000a      "name": "Test Item 1",\u000a      "qty": 1,\u000a      "unit_price": 15.0,\u000a      "line_total": 15.0\u000a    },\u000a    {\u000a      "itm_id": 200,\u000a      "name": "Test Item 2",\u000a      "qty": 2,\u000a      "unit_price": 10.0,\u000a      "line_total": 20.0\u000a    }\u000a  ],\u000a  "charges": {\u000a    "subtotal": 35.0,\u000a    "tax": 2.54,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.0,\u000a    "total": 48.02\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 30,\u000a  "notes": "Test order 1"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(151,2,104,unistr('{\u000a  "placed_at": "2025-12-04T13:34:22-05:00",\u000a  "restaurant_id": 2,\u000a  "restaurant_name": "Poole''side Pies",\u000a  "items": [\u000a    {\u000a      "itm_id": 101,\u000a      "name": "Test Item 2",\u000a      "qty": 1,\u000a      "unit_price": 16.0,\u000a      "line_total": 16.0\u000a    },\u000a    {\u000a      "itm_id": 201,\u000a      "name": "Test Item 3",\u000a      "qty": 2,\u000a      "unit_price": 10.0,\u000a      "line_total": 20.0\u000a    }\u000a  ],\u000a  "charges": {\u000a    "subtotal": 36.0,\u000a    "tax": 2.61,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.0,\u000a    "total": 49.09\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 35,\u000a  "notes": "Test order 2"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(152,3,104,unistr('{\u000a  "placed_at": "2025-12-03T13:34:22-05:00",\u000a  "restaurant_id": 3,\u000a  "restaurant_name": "Morgan Street Food Hall",\u000a  "items": [\u000a    {\u000a      "itm_id": 102,\u000a      "name": "Test Item 3",\u000a      "qty": 1,\u000a      "unit_price": 17.0,\u000a      "line_total": 17.0\u000a    },\u000a    {\u000a      "itm_id": 202,\u000a      "name": "Test Item 4",\u000a      "qty": 2,\u000a      "unit_price": 10.0,\u000a      "line_total": 20.0\u000a    }\u000a  ],\u000a  "charges": {\u000a    "subtotal": 37.0,\u000a    "tax": 2.68,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.0,\u000a    "total": 50.16\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 40,\u000a  "notes": "Test order 3"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(153,4,104,unistr('{\u000a  "placed_at": "2025-12-02T13:34:22-05:00",\u000a  "restaurant_id": 4,\u000a  "restaurant_name": "Beasley''s Chicken + Honey",\u000a  "items": [\u000a    {\u000a      "itm_id": 103,\u000a      "name": "Test Item 4",\u000a      "qty": 1,\u000a      "unit_price": 18.0,\u000a      "line_total": 18.0\u000a    },\u000a    {\u000a      "itm_id": 203,\u000a      "name": "Test Item 5",\u000a      "qty": 2,\u000a      "unit_price": 10.0,\u000a      "line_total": 20.0\u000a    }\u000a  ],\u000a  "charges": {\u000a    "subtotal": 38.0,\u000a    "tax": 2.75,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.0,\u000a    "total": 51.24\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 45,\u000a  "notes": "Test order 4"\u000a}'),'Ordered');
+INSERT INTO "Order" VALUES(150,1,104,'{
+  "placed_at": "2025-12-05T13:34:22-05:00",
+  "restaurant_id": 1,
+  "restaurant_name": "Bida Manda",
+  "items": [
+    {
+      "itm_id": 100,
+      "name": "Test Item 1",
+      "qty": 1,
+      "unit_price": 15.0,
+      "line_total": 15.0
+    },
+    {
+      "itm_id": 200,
+      "name": "Test Item 2",
+      "qty": 2,
+      "unit_price": 10.0,
+      "line_total": 20.0
+    }
+  ],
+  "charges": {
+    "subtotal": 35.0,
+    "tax": 2.54,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 5.0,
+    "total": 48.02
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 30,
+  "notes": "Test order 1"
+}','Delivered');
+INSERT INTO "Order" VALUES(151,2,104,'{
+  "placed_at": "2025-12-04T13:34:22-05:00",
+  "restaurant_id": 2,
+  "restaurant_name": "Poole''side Pies",
+  "items": [
+    {
+      "itm_id": 101,
+      "name": "Test Item 2",
+      "qty": 1,
+      "unit_price": 16.0,
+      "line_total": 16.0
+    },
+    {
+      "itm_id": 201,
+      "name": "Test Item 3",
+      "qty": 2,
+      "unit_price": 10.0,
+      "line_total": 20.0
+    }
+  ],
+  "charges": {
+    "subtotal": 36.0,
+    "tax": 2.61,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 5.0,
+    "total": 49.09
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 35,
+  "notes": "Test order 2"
+}','Delivered');
+INSERT INTO "Order" VALUES(152,3,104,'{
+  "placed_at": "2025-12-03T13:34:22-05:00",
+  "restaurant_id": 3,
+  "restaurant_name": "Morgan Street Food Hall",
+  "items": [
+    {
+      "itm_id": 102,
+      "name": "Test Item 3",
+      "qty": 1,
+      "unit_price": 17.0,
+      "line_total": 17.0
+    },
+    {
+      "itm_id": 202,
+      "name": "Test Item 4",
+      "qty": 2,
+      "unit_price": 10.0,
+      "line_total": 20.0
+    }
+  ],
+  "charges": {
+    "subtotal": 37.0,
+    "tax": 2.68,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 5.0,
+    "total": 50.16
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 40,
+  "notes": "Test order 3"
+}','Delivered');
+INSERT INTO "Order" VALUES(153,4,104,'{
+  "placed_at": "2025-12-02T13:34:22-05:00",
+  "restaurant_id": 4,
+  "restaurant_name": "Beasley''s Chicken + Honey",
+  "items": [
+    {
+      "itm_id": 103,
+      "name": "Test Item 4",
+      "qty": 1,
+      "unit_price": 18.0,
+      "line_total": 18.0
+    },
+    {
+      "itm_id": 203,
+      "name": "Test Item 5",
+      "qty": 2,
+      "unit_price": 10.0,
+      "line_total": 20.0
+    }
+  ],
+  "charges": {
+    "subtotal": 38.0,
+    "tax": 2.75,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 5.0,
+    "total": 51.24
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 45,
+  "notes": "Test order 4"
+}','Ordered');
 INSERT INTO "Order" VALUES(154,17,105,'{"placed_at": "2025-12-07T00:47:24.092329-05:00", "restaurant_id": 17, "items": [{"itm_id": 218, "name": "Pancakes", "qty": 1, "unit_price": 3.0, "line_total": 3.0}], "charges": {"subtotal": 3.0, "tax": 0.22, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 8.7}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-12-08", "meal": 1}','Ordered');
-INSERT INTO "Order" VALUES(155,2,101,unistr('{\u000a  "placed_at": "2025-10-18T18:22:00-04:00",\u000a  "restaurant_id": 2,\u000a  "items": [\u000a    {"itm_id":25,"name":"Margherita Pizza","qty":1,"unit_price":16.00,"line_total":16.00},\u000a    {"itm_id":26,"name":"Pepperoni Pizza","qty":1,"unit_price":18.00,"line_total":18.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 34.00,\u000a    "tax": 2.47,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.00,\u000a    "total": 46.95\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 40,\u000a  "notes": "Extra napkins, cut into squares"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(156,1,101,unistr('{\u000a  "placed_at": "2025-10-19T12:05:00-04:00",\u000a  "restaurant_id": 1,\u000a  "items": [\u000a    {"itm_id":22,"name":"Drunken Noodles","qty":1,"unit_price":16.00,"line_total":16.00},\u000a    {"itm_id":23,"name":"Green Papaya Salad","qty":1,"unit_price":14.00,"line_total":14.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 30.00,\u000a    "tax": 2.18,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.29,\u000a    "tip": 4.00,\u000a    "total": 40.46\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 35,\u000a  "notes": "No peanuts on salad"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(157,7,101,unistr('{\u000a  "placed_at": "2025-10-19T18:41:00-04:00",\u000a  "restaurant_id": 7,\u000a  "items": [\u000a    {"itm_id":17,"name":"Pulled Pork Plate","qty":2,"unit_price":16.00,"line_total":32.00},\u000a    {"itm_id":18,"name":"Brisket Plate","qty":1,"unit_price":18.00,"line_total":18.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 50.00,\u000a    "tax": 3.63,\u000a    "delivery_fee": 4.49,\u000a    "service_fee": 1.99,\u000a    "tip": 6.00,\u000a    "total": 66.11\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 50,\u000a  "notes": "Sauce on the side"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(158,10,101,unistr('{\u000a  "placed_at": "2025-10-20T19:12:00-04:00",\u000a  "restaurant_id": 10,\u000a  "items": [\u000a    {"itm_id":8,"name":"Roasted Beet Salad","qty":1,"unit_price":16.00,"line_total":16.00},\u000a    {"itm_id":9,"name":"Pan Seared Duck Breast","qty":1,"unit_price":32.00,"line_total":32.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 48.00,\u000a    "tax": 3.48,\u000a    "delivery_fee": 3.49,\u000a    "service_fee": 1.49,\u000a    "tip": 6.00,\u000a    "total": 62.46\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 45,\u000a  "notes": "Dressing on the side"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(159,4,101,unistr('{\u000a  "placed_at": "2025-10-20T12:37:00-04:00",\u000a  "restaurant_id": 4,\u000a  "items": [\u000a    {"itm_id":12,"name":"Fried Chicken","qty":1,"unit_price":20.00,"line_total":20.00},\u000a    {"itm_id":13,"name":"Mac & Cheese","qty":1,"unit_price":12.00,"line_total":12.00},\u000a    {"itm_id":14,"name":"Collard Greens","qty":1,"unit_price":10.00,"line_total":10.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 42.00,\u000a    "tax": 3.05,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.00,\u000a    "total": 54.53\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 32,\u000a  "notes": "Honey on the side"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(160,5,101,unistr('{\u000a  "placed_at": "2025-10-20T21:05:00-04:00",\u000a  "restaurant_id": 5,\u000a  "items": [\u000a    {"itm_id":15,"name":"Charcuterie Board","qty":1,"unit_price":25.00,"line_total":25.00},\u000a    {"itm_id":16,"name":"Roasted Cauliflower","qty":1,"unit_price":14.00,"line_total":14.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 39.00,\u000a    "tax": 2.83,\u000a    "delivery_fee": 0.00,\u000a    "service_fee": 0.00,\u000a    "tip": 0.00,\u000a    "total": 41.83\u000a  },\u000a  "delivery_type": "pickup",\u000a  "eta_minutes": 20,\u000a  "notes": "Pickup under name Taylor"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(161,11,101,unistr('{\u000a  "placed_at": "2025-10-21T18:01:00-04:00",\u000a  "restaurant_id": 11,\u000a  "items": [\u000a    {"itm_id":10,"name":"Pad Thai","qty":1,"unit_price":18.00,"line_total":18.00},\u000a    {"itm_id":11,"name":"Sushi Roll","qty":2,"unit_price":12.00,"line_total":24.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 42.00,\u000a    "tax": 3.05,\u000a    "delivery_fee": 3.49,\u000a    "service_fee": 1.49,\u000a    "tip": 5.00,\u000a    "total": 55.03\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 38,\u000a  "notes": "No peanut topping on Pad Thai"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(162,9,101,unistr('{\u000a  "placed_at": "2025-10-21T20:14:00-04:00",\u000a  "restaurant_id": 9,\u000a  "items": [\u000a    {"itm_id":33,"name":"Seared Scallops with Cauliflower Puree","qty":1,"unit_price":32.00,"line_total":32.00},\u000a    {"itm_id":37,"name":"Chocolate Lava Cake","qty":1,"unit_price":15.00,"line_total":15.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 47.00,\u000a    "tax": 3.41,\u000a    "delivery_fee": 4.99,\u000a    "service_fee": 2.49,\u000a    "tip": 7.00,\u000a    "total": 64.89\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 52,\u000a  "notes": "Dessert first ;)"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(163,3,101,unistr('{\u000a  "placed_at": "2025-10-22T11:48:00-04:00",\u000a  "restaurant_id": 3,\u000a  "items": [\u000a    {"itm_id":29,"name":"Smokehouse Q BBQ Pulled Pork Sandwich","qty":2,"unit_price":14.00,"line_total":28.00},\u000a    {"itm_id":31,"name":"A&M Dairy Bar Milkshake","qty":1,"unit_price":7.00,"line_total":7.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 35.00,\u000a    "tax": 2.54,\u000a    "delivery_fee": 2.49,\u000a    "service_fee": 1.29,\u000a    "tip": 4.00,\u000a    "total": 45.32\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 28,\u000a  "notes": "Strawberry milkshake"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(164,2,101,unistr('{\u000a  "placed_at": "2025-10-22T13:06:00-04:00",\u000a  "restaurant_id": 2,\u000a  "items": [\u000a    {"itm_id":28,"name":"Veggie Supreme","qty":1,"unit_price":20.00,"line_total":20.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 20.00,\u000a    "tax": 1.45,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.29,\u000a    "tip": 3.00,\u000a    "total": 28.73\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 30,\u000a  "notes": "Light cheese"\u000a}'),'Preparing');
-INSERT INTO "Order" VALUES(165,1,101,unistr('{\u000a  "placed_at": "2025-10-16T19:30:00-04:00",\u000a  "restaurant_id": 1,\u000a  "items": [\u000a    {"itm_id":24,"name":"Coconut Curry Soup","qty":2,"unit_price":15.00,"line_total":30.00},\u000a    {"itm_id":21,"name":"Lemongrass Beef Stir-Fry","qty":1,"unit_price":17.00,"line_total":17.00}\u000a  ],\u000a  "charges_planned": {\u000a    "subtotal": 47.00,\u000a    "tax": 3.41,\u000a    "delivery_fee": 3.49,\u000a    "service_fee": 1.49,\u000a    "tip": 0.00,\u000a    "would_total": 55.39\u000a  },\u000a  "refund": {"refunded": true, "total_refund": 55.39, "reason": "Restaurant outage"},\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": null,\u000a  "notes": "Cancelled before prep"\u000a}'),'Cancelled');
-INSERT INTO "Order" VALUES(166,17,101,unistr('{\u000a  "placed_at": "2025-10-15T18:03:00-04:00",\u000a  "restaurant_id": 17,\u000a  "items": [\u000a    {"itm_id":1,"name":"Fried Chicken","qty":4,"unit_price":7.00,"line_total":28.00},\u000a    {"itm_id":2,"name":"Macaroni and Cheese","qty":2,"unit_price":5.00,"line_total":10.00},\u000a    {"itm_id":3,"name":"Steak","qty":1,"unit_price":10.00,"line_total":10.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 48.00,\u000a    "tax": 3.48,\u000a    "delivery_fee": 5.99,\u000a    "service_fee": 2.49,\u000a    "tip": 6.00,\u000a    "total": 65.96\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 55,\u000a  "notes": "Family share pack"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(167,8,101,unistr('{\u000a  "placed_at": "2025-10-22T17:45:00-04:00",\u000a  "restaurant_id": 8,\u000a  "items": [\u000a    {"itm_id":6,"name":"Spaghetti Carbonara","qty":1,"unit_price":22.00,"line_total":22.00},\u000a    {"itm_id":7,"name":"Lobster Ravioli","qty":1,"unit_price":28.00,"line_total":28.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 50.00,\u000a    "tax": 3.63,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 6.00,\u000a    "total": 65.11\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 55,\u000a  "notes": "Fresh pasta, no extra parmesan"\u000a}'),'Ordered');
-INSERT INTO "Order" VALUES(168,16,101,unistr('{\u000a  "placed_at": "2025-10-22T18:10:00-04:00",\u000a  "restaurant_id": 16,\u000a  "items": [\u000a    {"itm_id":0,"name":"Greek Platter Special","qty":1,"unit_price":24.00,"line_total":24.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 24.00,\u000a    "tax": 1.74,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.29,\u000a    "tip": 4.00,\u000a    "total": 34.02\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 45,\u000a  "notes": "Extra pita bread"\u000a}'),'Ordered');
+INSERT INTO "Order" VALUES(155,2,101,'{
+  "placed_at": "2025-10-18T18:22:00-04:00",
+  "restaurant_id": 2,
+  "items": [
+    {"itm_id":25,"name":"Margherita Pizza","qty":1,"unit_price":16.00,"line_total":16.00},
+    {"itm_id":26,"name":"Pepperoni Pizza","qty":1,"unit_price":18.00,"line_total":18.00}
+  ],
+  "charges": {
+    "subtotal": 34.00,
+    "tax": 2.47,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 5.00,
+    "total": 46.95
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 40,
+  "notes": "Extra napkins, cut into squares"
+}','Delivered');
+INSERT INTO "Order" VALUES(156,1,101,'{
+  "placed_at": "2025-10-19T12:05:00-04:00",
+  "restaurant_id": 1,
+  "items": [
+    {"itm_id":22,"name":"Drunken Noodles","qty":1,"unit_price":16.00,"line_total":16.00},
+    {"itm_id":23,"name":"Green Papaya Salad","qty":1,"unit_price":14.00,"line_total":14.00}
+  ],
+  "charges": {
+    "subtotal": 30.00,
+    "tax": 2.18,
+    "delivery_fee": 2.99,
+    "service_fee": 1.29,
+    "tip": 4.00,
+    "total": 40.46
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 35,
+  "notes": "No peanuts on salad"
+}','Delivered');
+INSERT INTO "Order" VALUES(157,7,101,'{
+  "placed_at": "2025-10-19T18:41:00-04:00",
+  "restaurant_id": 7,
+  "items": [
+    {"itm_id":17,"name":"Pulled Pork Plate","qty":2,"unit_price":16.00,"line_total":32.00},
+    {"itm_id":18,"name":"Brisket Plate","qty":1,"unit_price":18.00,"line_total":18.00}
+  ],
+  "charges": {
+    "subtotal": 50.00,
+    "tax": 3.63,
+    "delivery_fee": 4.49,
+    "service_fee": 1.99,
+    "tip": 6.00,
+    "total": 66.11
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 50,
+  "notes": "Sauce on the side"
+}','Delivered');
+INSERT INTO "Order" VALUES(158,10,101,'{
+  "placed_at": "2025-10-20T19:12:00-04:00",
+  "restaurant_id": 10,
+  "items": [
+    {"itm_id":8,"name":"Roasted Beet Salad","qty":1,"unit_price":16.00,"line_total":16.00},
+    {"itm_id":9,"name":"Pan Seared Duck Breast","qty":1,"unit_price":32.00,"line_total":32.00}
+  ],
+  "charges": {
+    "subtotal": 48.00,
+    "tax": 3.48,
+    "delivery_fee": 3.49,
+    "service_fee": 1.49,
+    "tip": 6.00,
+    "total": 62.46
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 45,
+  "notes": "Dressing on the side"
+}','Delivered');
+INSERT INTO "Order" VALUES(159,4,101,'{
+  "placed_at": "2025-10-20T12:37:00-04:00",
+  "restaurant_id": 4,
+  "items": [
+    {"itm_id":12,"name":"Fried Chicken","qty":1,"unit_price":20.00,"line_total":20.00},
+    {"itm_id":13,"name":"Mac & Cheese","qty":1,"unit_price":12.00,"line_total":12.00},
+    {"itm_id":14,"name":"Collard Greens","qty":1,"unit_price":10.00,"line_total":10.00}
+  ],
+  "charges": {
+    "subtotal": 42.00,
+    "tax": 3.05,
+    "delivery_fee": 2.99,
+    "service_fee": 1.49,
+    "tip": 5.00,
+    "total": 54.53
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 32,
+  "notes": "Honey on the side"
+}','Delivered');
+INSERT INTO "Order" VALUES(160,5,101,'{
+  "placed_at": "2025-10-20T21:05:00-04:00",
+  "restaurant_id": 5,
+  "items": [
+    {"itm_id":15,"name":"Charcuterie Board","qty":1,"unit_price":25.00,"line_total":25.00},
+    {"itm_id":16,"name":"Roasted Cauliflower","qty":1,"unit_price":14.00,"line_total":14.00}
+  ],
+  "charges": {
+    "subtotal": 39.00,
+    "tax": 2.83,
+    "delivery_fee": 0.00,
+    "service_fee": 0.00,
+    "tip": 0.00,
+    "total": 41.83
+  },
+  "delivery_type": "pickup",
+  "eta_minutes": 20,
+  "notes": "Pickup under name Taylor"
+}','Delivered');
+INSERT INTO "Order" VALUES(161,11,101,'{
+  "placed_at": "2025-10-21T18:01:00-04:00",
+  "restaurant_id": 11,
+  "items": [
+    {"itm_id":10,"name":"Pad Thai","qty":1,"unit_price":18.00,"line_total":18.00},
+    {"itm_id":11,"name":"Sushi Roll","qty":2,"unit_price":12.00,"line_total":24.00}
+  ],
+  "charges": {
+    "subtotal": 42.00,
+    "tax": 3.05,
+    "delivery_fee": 3.49,
+    "service_fee": 1.49,
+    "tip": 5.00,
+    "total": 55.03
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 38,
+  "notes": "No peanut topping on Pad Thai"
+}','Delivered');
+INSERT INTO "Order" VALUES(162,9,101,'{
+  "placed_at": "2025-10-21T20:14:00-04:00",
+  "restaurant_id": 9,
+  "items": [
+    {"itm_id":33,"name":"Seared Scallops with Cauliflower Puree","qty":1,"unit_price":32.00,"line_total":32.00},
+    {"itm_id":37,"name":"Chocolate Lava Cake","qty":1,"unit_price":15.00,"line_total":15.00}
+  ],
+  "charges": {
+    "subtotal": 47.00,
+    "tax": 3.41,
+    "delivery_fee": 4.99,
+    "service_fee": 2.49,
+    "tip": 7.00,
+    "total": 64.89
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 52,
+  "notes": "Dessert first ;)"
+}','Delivered');
+INSERT INTO "Order" VALUES(163,3,101,'{
+  "placed_at": "2025-10-22T11:48:00-04:00",
+  "restaurant_id": 3,
+  "items": [
+    {"itm_id":29,"name":"Smokehouse Q BBQ Pulled Pork Sandwich","qty":2,"unit_price":14.00,"line_total":28.00},
+    {"itm_id":31,"name":"A&M Dairy Bar Milkshake","qty":1,"unit_price":7.00,"line_total":7.00}
+  ],
+  "charges": {
+    "subtotal": 35.00,
+    "tax": 2.54,
+    "delivery_fee": 2.49,
+    "service_fee": 1.29,
+    "tip": 4.00,
+    "total": 45.32
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 28,
+  "notes": "Strawberry milkshake"
+}','Delivered');
+INSERT INTO "Order" VALUES(164,2,101,'{
+  "placed_at": "2025-10-22T13:06:00-04:00",
+  "restaurant_id": 2,
+  "items": [
+    {"itm_id":28,"name":"Veggie Supreme","qty":1,"unit_price":20.00,"line_total":20.00}
+  ],
+  "charges": {
+    "subtotal": 20.00,
+    "tax": 1.45,
+    "delivery_fee": 2.99,
+    "service_fee": 1.29,
+    "tip": 3.00,
+    "total": 28.73
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 30,
+  "notes": "Light cheese"
+}','Preparing');
+INSERT INTO "Order" VALUES(165,1,101,'{
+  "placed_at": "2025-10-16T19:30:00-04:00",
+  "restaurant_id": 1,
+  "items": [
+    {"itm_id":24,"name":"Coconut Curry Soup","qty":2,"unit_price":15.00,"line_total":30.00},
+    {"itm_id":21,"name":"Lemongrass Beef Stir-Fry","qty":1,"unit_price":17.00,"line_total":17.00}
+  ],
+  "charges_planned": {
+    "subtotal": 47.00,
+    "tax": 3.41,
+    "delivery_fee": 3.49,
+    "service_fee": 1.49,
+    "tip": 0.00,
+    "would_total": 55.39
+  },
+  "refund": {"refunded": true, "total_refund": 55.39, "reason": "Restaurant outage"},
+  "delivery_type": "delivery",
+  "eta_minutes": null,
+  "notes": "Cancelled before prep"
+}','Cancelled');
+INSERT INTO "Order" VALUES(166,17,101,'{
+  "placed_at": "2025-10-15T18:03:00-04:00",
+  "restaurant_id": 17,
+  "items": [
+    {"itm_id":1,"name":"Fried Chicken","qty":4,"unit_price":7.00,"line_total":28.00},
+    {"itm_id":2,"name":"Macaroni and Cheese","qty":2,"unit_price":5.00,"line_total":10.00},
+    {"itm_id":3,"name":"Steak","qty":1,"unit_price":10.00,"line_total":10.00}
+  ],
+  "charges": {
+    "subtotal": 48.00,
+    "tax": 3.48,
+    "delivery_fee": 5.99,
+    "service_fee": 2.49,
+    "tip": 6.00,
+    "total": 65.96
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 55,
+  "notes": "Family share pack"
+}','Delivered');
+INSERT INTO "Order" VALUES(167,8,101,'{
+  "placed_at": "2025-10-22T17:45:00-04:00",
+  "restaurant_id": 8,
+  "items": [
+    {"itm_id":6,"name":"Spaghetti Carbonara","qty":1,"unit_price":22.00,"line_total":22.00},
+    {"itm_id":7,"name":"Lobster Ravioli","qty":1,"unit_price":28.00,"line_total":28.00}
+  ],
+  "charges": {
+    "subtotal": 50.00,
+    "tax": 3.63,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 6.00,
+    "total": 65.11
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 55,
+  "notes": "Fresh pasta, no extra parmesan"
+}','Ordered');
+INSERT INTO "Order" VALUES(168,16,101,'{
+  "placed_at": "2025-10-22T18:10:00-04:00",
+  "restaurant_id": 16,
+  "items": [
+    {"itm_id":0,"name":"Greek Platter Special","qty":1,"unit_price":24.00,"line_total":24.00}
+  ],
+  "charges": {
+    "subtotal": 24.00,
+    "tax": 1.74,
+    "delivery_fee": 2.99,
+    "service_fee": 1.29,
+    "tip": 4.00,
+    "total": 34.02
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 45,
+  "notes": "Extra pita bread"
+}','Ordered');
 INSERT INTO "Order" VALUES(169,7,108,'{"placed_at": "2025-12-07T19:48:57.071720-05:00", "restaurant_id": 7, "items": [{"itm_id": 68, "name": "Baked Beans", "qty": 1, "unit_price": 6.5, "line_total": 6.5}], "charges": {"subtotal": 6.5, "tax": 0.47, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 12.45}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-12-08", "meal": 3}','Ordered');
 INSERT INTO "Order" VALUES(170,17,108,'{"placed_at": "2025-12-07T19:51:22.806403-05:00", "restaurant_id": 17, "items": [{"itm_id": 215, "name": "Salad Bar (Mixed Greens)", "qty": 1, "unit_price": 4.0, "line_total": 4.0}], "charges": {"subtotal": 4.0, "tax": 0.29, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 9.77}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-12-09", "meal": 1}','Delivered');
 CREATE TABLE IF NOT EXISTS "Review" (

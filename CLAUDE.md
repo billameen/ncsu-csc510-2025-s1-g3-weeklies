@@ -46,7 +46,8 @@ python ./scripts/build_docs.py
 
 **Local DB**: `app/CSC510_DB.db` is gitignored; `app/db/seed.sql` (a `sqlite3 .dump`) is the tracked
 source of truth. Build/reset it with `python app/scripts/init_db.py [--force]`; after changing schema or
-demo data, refresh the seed with `sqlite3 app/CSC510_DB.db .dump > app/db/seed.sql`.
+demo data, refresh the seed with `sqlite3 app/CSC510_DB.db ".dump --newlines" > app/db/seed.sql`
+(`--newlines` keeps sqlite3 3.50+ from writing `unistr()`, which CI's older SQLite cannot load).
 
 **DB migrations** (manual, ad hoc scripts — no migration framework/Alembic):
 ```bash
