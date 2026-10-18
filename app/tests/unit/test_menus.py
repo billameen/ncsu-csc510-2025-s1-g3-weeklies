@@ -1,5 +1,14 @@
+import sqlite3
+
 import pandas as pd
-from menu_generation import format_llm_output, filter_allergens, filter_closed_restaurants
+
+import menu_generation
+from menu_generation import (
+    MenuGenerator,
+    format_llm_output,
+    filter_allergens,
+    filter_closed_restaurants,
+)
 
 def test_llm_output_parsing_simple():
     """Test extracting ID from simple string."""
@@ -53,3 +62,62 @@ def test_menu_parsing_regex_safety():
     assert parse_generated_menu(None) == {}
     assert parse_generated_menu("") == {}
     assert parse_generated_menu("[bad data]") == {}
+
+
+def _tiny_menu_db(tmp_path, monkeypatch):
+    """Point MenuGenerator at a one-item menu instead of the real database."""
+    db = tmp_path / "menu.db"
+    conn = sqlite3.connect(db)
+    conn.executescript("""
+        CREATE TABLE Restaurant (rtr_id INTEGER, hours TEXT, status TEXT);
+        CREATE TABLE MenuItem (itm_id INTEGER, rtr_id INTEGER, name TEXT, description TEXT,
+                               price INTEGER, calories INTEGER, instock INTEGER, allergens TEXT);
+        INSERT INTO Restaurant VALUES (1, '{"Mon": [600, 2300]}', 'Open');
+        INSERT INTO MenuItem VALUES (7, 1, 'Oatmeal', 'Warm oats', 500, 300, 1, NULL);
+    """)
+    conn.close()
+    monkeypatch.setattr(menu_generation, "db_file", str(db))
+
+
+def test_menu_generator_uses_an_injected_llm(tmp_path, monkeypatch):
+    """A passed-in LLM is used instead of building the real one."""
+    _tiny_menu_db(tmp_path, monkeypatch)
+
+    def no_real_llm(*args, **kwargs):
+        raise AssertionError("the real LLM must not be built")
+
+    monkeypatch.setattr(menu_generation.llm_toolkit, "LLM", no_real_llm)
+
+    class FakeLLM:
+        def __init__(self):
+            self.prompts = []
+
+        def generate(self, system, prompt):
+            self.prompts.append(prompt)
+            return "7"
+
+    fake = FakeLLM()
+    menu = MenuGenerator(llm=fake).update_menu(
+        menu="", preferences="", allergens="", date="2026-10-19", meal_numbers=[1]
+    )
+
+    assert menu == "[2026-10-19,7,1]"
+    assert len(fake.prompts) == 1
+    assert "7,Oatmeal,Warm oats" in fake.prompts[0]
+
+
+def test_menu_generator_builds_the_real_llm_by_default(tmp_path, monkeypatch):
+    """Without an LLM argument, the real one is built with the requested token limit."""
+    _tiny_menu_db(tmp_path, monkeypatch)
+    built = []
+
+    class RecordingLLM:
+        def __init__(self, tokens):
+            built.append(tokens)
+
+    monkeypatch.setattr(menu_generation.llm_toolkit, "LLM", RecordingLLM)
+
+    gen = MenuGenerator(tokens=123)
+
+    assert built == [123]
+    assert isinstance(gen.generator, RecordingLLM)
