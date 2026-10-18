@@ -18,9 +18,17 @@ from eval.validate import (
 OPEN_ALL_WEEK = {day: (600, 2300) for day in WEEKDAYS}
 
 
-def item(itm_id, price_cents=1000, calories=700, allergens=()):
+def every_day(*times):
+    return {day: times for day in WEEKDAYS}
+
+
+def item(itm_id, price_cents=1000, calories=700, allergens=(), rtr_id=1):
     return Item(
-        itm_id=itm_id, rtr_id=1, price_cents=price_cents, calories=calories, allergens=allergens
+        itm_id=itm_id,
+        rtr_id=rtr_id,
+        price_cents=price_cents,
+        calories=calories,
+        allergens=allergens,
     )
 
 
@@ -28,7 +36,8 @@ def item(itm_id, price_cents=1000, calories=700, allergens=()):
 # order_cost_cents cases below).
 # Calories: two 700 kcal meals plus item 4, 5, 6 or 7 make 1890, 1889, 2310 or 2311 kcal: the
 # edges of 2100 ± 10% and one past each.
-# Allergens: items 9-13 carry raw tags as the menu data stores them.
+# Allergens: items 9-14 carry raw tags as the menu data stores them.
+# Hours: item 2N comes from restaurant N (see RESTAURANTS); meals are at 1000, 1400 and 2000.
 CATALOG = Catalog(
     items={
         1: item(1),
@@ -45,8 +54,25 @@ CATALOG = Catalog(
         12: item(12, allergens=(" dairy ",)),
         13: item(13, allergens=("Shellfish",)),
         14: item(14, allergens=("Egg", "Eggs")),
+        **{20 + n: item(20 + n, rtr_id=n) for n in range(2, 11)},
+        40: item(40, rtr_id=99),  # restaurant not in the catalog
+        31: item(31, rtr_id=2, allergens=("Dairy",)),
     },
-    restaurants={1: Restaurant(rtr_id=1, hours=OPEN_ALL_WEEK)},
+    restaurants={
+        n: Restaurant(rtr_id=n, hours=hours)
+        for n, hours in {
+            1: OPEN_ALL_WEEK,
+            2: {**OPEN_ALL_WEEK, "Mon": ()},  # closed Mondays
+            3: every_day(1000, 2000),  # opens at breakfast, closes at dinner
+            4: every_day(1100, 1400, 1700, 2100),  # lunch and dinner service only
+            5: {},  # no hours
+            6: {day: t for day, t in OPEN_ALL_WEEK.items() if day != "Mon"},  # no Mon entry
+            7: {**OPEN_ALL_WEEK, "Mon": (600,)},  # unreadable on Mon: odd number of times
+            8: every_day(1001, 2300),  # opens a minute after breakfast
+            9: every_day(600, 1959),  # closes a minute before dinner
+            10: every_day(600, 1300, 1500, 2300),  # closed 1300-1500, over lunch
+        }.items()
+    },
 )
 
 # 21 x item 1 costs $340.41, well under budget; 3 x 700 kcal hits the target exactly.
@@ -412,6 +438,79 @@ def test_meal_with_an_allergen_still_counts_for_calories_and_budget():
 
     assert validate_week(meals, replace(with_budget(340), allergens=("Dairy",)), CATALOG) == [
         Violation(ViolationKind.ALLERGEN, day="Mon", meal=1),
+        Violation(ViolationKind.OVER_KCAL, day="Mon"),
+        Violation(ViolationKind.OVER_BUDGET),
+    ]
+
+
+def test_restaurant_closed_that_weekday():
+    assert validate_week(swap(full_week(), "Mon", 1, itm_id=22), PROFILE, CATALOG) == [
+        Violation(ViolationKind.CLOSED_RESTAURANT, day="Mon", meal=1)
+    ]
+    assert validate_week(swap(full_week(), "Tue", 1, itm_id=22), PROFILE, CATALOG) == []
+
+
+def test_opening_and_closing_minutes_count_as_open():
+    meals = swap(swap(full_week(), "Mon", 1, itm_id=23), "Mon", 3, itm_id=23)
+
+    assert validate_week(meals, PROFILE, CATALOG) == []
+
+
+@pytest.mark.parametrize("itm_id, meal", [(28, 1), (29, 3)])
+def test_a_minute_outside_opening_hours_is_closed(itm_id, meal):
+    meals = swap(full_week(), "Mon", meal, itm_id=itm_id)
+
+    assert validate_week(meals, PROFILE, CATALOG) == [
+        Violation(ViolationKind.CLOSED_RESTAURANT, day="Mon", meal=meal)
+    ]
+
+
+def test_each_opening_window_counts():
+    # Lunch-and-dinner restaurant: closed at breakfast, open at 1400 (end of the first window)
+    # and at 2000 (inside the second).
+    meals = [m if m.day != "Wed" else Meal("Wed", m.meal, 24) for m in full_week()]
+
+    assert validate_week(meals, PROFILE, CATALOG) == [
+        Violation(ViolationKind.CLOSED_RESTAURANT, day="Wed", meal=1)
+    ]
+
+
+def test_time_between_two_opening_windows_is_closed():
+    assert validate_week(swap(full_week(), "Mon", 2, itm_id=30), PROFILE, CATALOG) == [
+        Violation(ViolationKind.CLOSED_RESTAURANT, day="Mon", meal=2)
+    ]
+
+
+@pytest.mark.parametrize("itm_id", [25, 26, 27, 40])
+def test_missing_or_unreadable_hours_count_as_closed(itm_id):
+    # No hours at all, no Mon entry, an odd number of times, and a restaurant not in the catalog.
+    meals = swap(full_week(), "Mon", 1, itm_id=itm_id)
+
+    assert validate_week(meals, PROFILE, CATALOG) == [
+        Violation(ViolationKind.CLOSED_RESTAURANT, day="Mon", meal=1)
+    ]
+
+
+def test_unreadable_hours_on_one_day_do_not_close_the_others():
+    assert validate_week(swap(full_week(), "Tue", 1, itm_id=27), PROFILE, CATALOG) == []
+
+
+def test_meal_with_an_allergen_at_a_closed_restaurant_reports_both():
+    meals = swap(full_week(), "Mon", 1, itm_id=31)
+
+    assert validate_week(meals, with_allergens("Dairy"), CATALOG) == [
+        Violation(ViolationKind.ALLERGEN, day="Mon", meal=1),
+        Violation(ViolationKind.CLOSED_RESTAURANT, day="Mon", meal=1),
+    ]
+
+
+def test_meal_at_a_closed_restaurant_still_counts_for_calories_and_budget():
+    # Same numbers as the allergen case: leaving out the closed $10.00, 700 kcal meal would hide
+    # 2600 kcal on Mon and the $340.41 week.
+    meals = swap(swap(full_week(), "Mon", 1, itm_id=22), "Mon", 2, itm_id=8)
+
+    assert validate_week(meals, with_budget(340), CATALOG) == [
+        Violation(ViolationKind.CLOSED_RESTAURANT, day="Mon", meal=1),
         Violation(ViolationKind.OVER_KCAL, day="Mon"),
         Violation(ViolationKind.OVER_BUDGET),
     ]

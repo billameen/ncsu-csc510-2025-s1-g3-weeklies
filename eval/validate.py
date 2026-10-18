@@ -34,6 +34,7 @@ class ViolationKind(StrEnum):
     EXTRA_MEAL = "extra_meal"
     UNKNOWN_ITEM = "unknown_item"
     ALLERGEN = "allergen"
+    CLOSED_RESTAURANT = "closed_restaurant"
     UNDER_KCAL = "under_kcal"
     OVER_KCAL = "over_kcal"
     OVER_BUDGET = "over_budget"
@@ -102,6 +103,17 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
                     f"item {m.itm_id} contains {', '.join(found)}",
                 )
             )
+        rtr_id = catalog.items[m.itm_id].rtr_id
+        restaurant = catalog.restaurants.get(rtr_id)
+        if restaurant is None or not _is_open(restaurant.hours, m.day, MEAL_TIMES[m.meal]):
+            violations.append(
+                Violation(
+                    ViolationKind.CLOSED_RESTAURANT,
+                    m.day,
+                    m.meal,
+                    f"restaurant {rtr_id} is closed {m.day} at {MEAL_TIMES[m.meal]:04d}",
+                )
+            )
         placed.append(m)
 
     violations.extend(
@@ -149,3 +161,14 @@ def normalize_allergen(tag: str) -> str:
     """
     tag = " ".join(tag.lower().split())
     return _ALLERGEN_ALIASES.get(tag, tag)
+
+
+def _is_open(hours: dict[str, tuple[int, ...]], day: str, time: int) -> bool:
+    """
+    True if time falls inside one of the day's (open, close) pairs, both ends included. A day
+    with no entry, no times, or an odd number of times (unreadable) is closed.
+    """
+    times = hours.get(day, ())
+    if len(times) % 2:
+        return False
+    return any(times[i] <= time <= times[i + 1] for i in range(0, len(times), 2))
