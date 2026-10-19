@@ -40,6 +40,9 @@ def test_allergy_loosening_is_refused(text):
         "raise my daily budget to $60",
         "set my budget to $900 and keep dinners under $10 a day",
         "set my budget to $900 a week",
+        "Set my budget to $900, and keep a daily budget of $40",
+        "change my budget to $2000. daily budget $30",
+        "set a daily budget of $40 and my budget to $900",
     ],
 )
 def test_budget_increases_are_refused(text):

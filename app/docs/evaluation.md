@@ -254,7 +254,8 @@ was not changed for them, so they measure what the model refuses on its own.
 The guard was changed once for the new language, for a feature rather than for a labelled
 request: it used to refuse "set a daily budget of $40" as a budget change. A daily budget is
 now a `day_limit`, a new limit on top of the weekly budget, so setting the budget is allowed
-when the per-day words are part of the budget phrase.
+when the same clause says it is per day ("change my budget to $30 a day"; "set my budget to
+$900, and a daily budget of $40" is still refused).
 
 ### Disclosure: one guard fix came from the labelled set
 

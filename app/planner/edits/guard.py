@@ -32,12 +32,11 @@ _LOOSEN = (
     r"bypass|cancel|get rid of|take off|stop)"
 )
 
-# "daily budget", "budget per day", "budget to $30 a day": the per-day words must be part of
-# the budget phrase, so "set my budget to $900 and dinners under $10 a day" is still refused.
-_PER_DAY = (
-    r"\b(daily|day'?s|per-day)\s+budget\b|"
-    r"\bbudget\b[^.?!]{0,25}?\b(per day|a day|each day|every day|per-day|daily)\b"
-)
+# A budget pattern is let through only when its own clause says the budget is per day
+# ("set a daily budget of $40", "change my budget to $30 a day"). Clauses end at punctuation
+# or "and"/"but", so "set my budget to $900, and a daily budget of $40" is still refused.
+_PER_DAY = r"\b(daily|day'?s|per day|a day|each day|every day|per-day)\b"
+_CLAUSE_END = re.compile(r"[.,;:!?]|\b(and|but|then|also)\b", re.I)
 
 # Each pattern refuses the request when it matches, unless it is a (pattern, unless) pair
 # and `unless` matches too.
@@ -135,10 +134,25 @@ def check_length(text: str | None) -> str:
     return text
 
 
+def _clause(text: str, start: int, end: int) -> str:
+    """The clause of text that contains text[start:end]."""
+    before = [m.end() for m in _CLAUSE_END.finditer(text, 0, start)]
+    after = _CLAUSE_END.search(text, end)
+    return text[before[-1] if before else 0 : after.start() if after else len(text)]
+
+
+def _refuses(pattern, unless, text: str) -> bool:
+    """True if some match of pattern is not excused by `unless` in its own clause."""
+    return any(
+        not (unless and unless.search(_clause(text, m.start(), m.end())))
+        for m in pattern.finditer(text)
+    )
+
+
 def check(text: str) -> Refusal | None:
     """The refusal for a request that tries to loosen a rule or instruct the assistant."""
     flat = " ".join(text.split())
     for category, message, patterns in _COMPILED:
-        if any(p.search(flat) and not (unless and unless.search(flat)) for p, unless in patterns):
+        if any(_refuses(p, unless, flat) for p, unless in patterns):
             return Refusal(category, message)
     return None
