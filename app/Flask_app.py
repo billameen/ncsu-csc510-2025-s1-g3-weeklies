@@ -97,7 +97,7 @@ def require_rows(query: str, params: tuple) -> tuple:
     return (query, params, True)
 
 
-def _execute_transaction(conn, queries_and_params: list) -> bool:
+def _execute_transaction(conn, queries_and_params: list, result: dict = None) -> bool:
     """
     Execute multiple queries in a single, atomic transaction.
     Args:
@@ -105,18 +105,25 @@ def _execute_transaction(conn, queries_and_params: list) -> bool:
         queries_and_params (list): List of (query, params) pairs, or
             ``require_rows(query, params)`` entries that abort the whole
             transaction if they change no rows.
+        result (dict, optional): If given, ``result["lastrowid"]`` is set to the
+            ID of the last row inserted by this transaction.
     Returns:
         bool: True on success, False on failure (with automatic rollback).
     """
     try:
         cur = conn.cursor()
+        lastrowid = None
         for entry in queries_and_params:
             query, params = entry[0], entry[1]
             must_change_rows = len(entry) > 2 and entry[2]
             cur.execute(query, params)
             if must_change_rows and cur.rowcount < 1:
                 raise _NoRowsChanged(query)
+            if query.lstrip().upper().startswith("INSERT"):
+                lastrowid = cur.lastrowid
         conn.commit()
+        if result is not None:
+            result["lastrowid"] = lastrowid
         return True
     except Exception as e:
         print(f"Transaction failed, rolling back: {e}")
@@ -1072,11 +1079,12 @@ def order():
                 ('INSERT INTO "Order" (rtr_id, usr_id, details, status) VALUES (?, ?, ?, ?)', (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value))
             ]
 
-            if _execute_transaction(conn, queries_and_params):
+            tx_result = {}
+            if _execute_transaction(conn, queries_and_params, result=tx_result):
                 # Transaction succeeded. Wallet debited and order inserted.
-                # Get the order ID.
-                row = fetch_one(conn, 'SELECT ord_id FROM "Order" WHERE usr_id = ? ORDER BY ord_id DESC LIMIT 1', (usr_id,))
-                new_ord_id = row[0] if row else None
+                # Use the ID SQLite assigned to *this* insert, not "the user's newest
+                # order", which may belong to another request (M2 bug 5).
+                new_ord_id = tx_result.get("lastrowid")
 
                 # Refresh the session's display balance from the database
                 wallet_row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
