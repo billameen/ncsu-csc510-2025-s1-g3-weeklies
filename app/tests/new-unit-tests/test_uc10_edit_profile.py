@@ -127,36 +127,59 @@ def test_an_unknown_allergy_on_edit_is_rejected_and_nothing_is_saved(client, tem
 
 # This proves an allergy the meal-plan filter cannot match is refused on edit instead of being saved and silently ignored.
 
-def test_the_phone_validation_enforced_at_registration_is_not_enforced_on_edit(client, temp_db_path):
-    """POST /register normalises phone with ``re.sub(r"\\D+", "", phone)`` and
-    rejects anything under seven digits. POST /profile/edit applies neither
-    rule and writes the raw submitted string.
+@pytest.mark.parametrize("phone", ["not-a-phone", "555-12", "abc 123 def"])
+def test_an_invalid_phone_is_rejected_on_edit_just_as_it_is_at_registration(client, temp_db_path, phone):
+    """POST /register and POST /profile/edit share ``_normalize_phone``: both
+    strip non-digits and require at least seven, with the same error message.
     """
-    usr_id = _make_user(temp_db_path, "uc10-phone@example.test", phone="9195550300")
-    _login(client, "uc10-phone@example.test")
+    email = f"uc10-phone-{phone.replace(' ', '-')}@example.test"
+    usr_id = _make_user(temp_db_path, email, phone="9195550300")
+    _login(client, email)
 
     rejected_at_registration = client.post(
         "/register",
         data={
             "fname": "Uc10",
             "lname": "Tester",
-            "email": "uc10-phone-reg@example.test",
-            "phone": "not-a-phone",
+            "email": f"reg-{email}",
+            "phone": phone,
             "password": PASSWORD,
             "confirm_password": PASSWORD,
         },
     )
     assert rejected_at_registration.status_code == 200
-    assert "valid phone number" in rejected_at_registration.get_data(as_text=True)
+    assert "Please enter a valid phone number" in rejected_at_registration.get_data(as_text=True)
 
-    accepted_at_edit = client.post(
+    rejected_at_edit = client.post(
         "/profile/edit",
-        data={"phone": "not-a-phone", "preferences": "vegetarian", "allergies": "peanuts"},
+        data={"phone": phone, "preferences": "vegetarian", "allergies": "peanuts"},
         follow_redirects=False,
     )
 
-    assert accepted_at_edit.status_code == 302
-    assert _profile_fields(temp_db_path, usr_id)[0] == "not-a-phone"
+    assert rejected_at_edit.status_code == 400
+    assert "Please enter a valid phone number" in rejected_at_edit.get_data(as_text=True)
+    assert _profile_fields(temp_db_path, usr_id)[0] == "9195550300"
+    with client.session_transaction() as sess:
+        assert sess["Phone"] == "9195550300"
 
 
-# This proves the same phone string is rejected on the create path and stored verbatim on the update path, so registration validation can be bypassed by editing afterwards -- a real defect.
+# This proves a phone rejected at registration is also rejected on edit, with the same message, and the stored number is left alone.
+
+
+def test_a_formatted_phone_on_edit_is_stored_as_digits_like_registration(client, temp_db_path):
+    usr_id = _make_user(temp_db_path, "uc10-format@example.test", phone="9195550300")
+    _login(client, "uc10-format@example.test")
+
+    response = client.post(
+        "/profile/edit",
+        data={"phone": "(919) 555-0123", "preferences": "vegetarian", "allergies": "peanuts"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    assert _profile_fields(temp_db_path, usr_id)[0] == "9195550123"
+    with client.session_transaction() as sess:
+        assert sess["Phone"] == "9195550123"
+
+
+# This proves a phone edited with punctuation is saved in the same digits-only format /register uses, in both the database and the session.

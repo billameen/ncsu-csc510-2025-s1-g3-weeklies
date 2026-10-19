@@ -412,6 +412,20 @@ def logout():
         session.pop(k, None)
     return redirect(url_for("login"))
 
+PHONE_ERROR = "Please enter a valid phone number"
+
+def _normalize_phone(raw):
+    """
+    Normalize a user-entered phone number to its digits, as stored in "User".phone.
+    Shared by /register and /profile/edit so both accept and store phones the same way.
+    Args:
+        raw (str | None): The phone number as entered, e.g. "(919) 555-0123".
+    Returns:
+        str | None: The digits (e.g. "9195550123") if there are at least 7, else None.
+    """
+    digits = re.sub(r"\D+", "", raw or "")
+    return digits if len(digits) >= 7 else None
+
 # Registration route
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -442,9 +456,9 @@ def register():
         if len(password) < 6:
             return render_template('register.html', error="Password must be at least 6 characters")
 
-        digits_only = re.sub(r"\D+", "", phone)
-        if len(digits_only) < 7:
-            return render_template('register.html', error="Please enter a valid phone number")
+        digits_only = _normalize_phone(phone)
+        if digits_only is None:
+            return render_template('register.html', error=PHONE_ERROR)
         # Allergies drive meal-plan filtering, so only accept allergens the filter understands
         unknown = invalid_allergies(allergies)
         if unknown:
@@ -683,9 +697,17 @@ def edit_profile():
         # Example: update phone, preferences, allergies
         # Phone is required at registration, so an empty value keeps the stored one. Preferences
         # and allergies can be cleared: only fall back when the field is absent, not when it is "".
-        new_phone = request.form.get('phone') or user['phone']
+        raw_phone = (request.form.get('phone') or '').strip()
         new_prefs = (request.form.get('preferences', user['preferences']) or '').strip()
         new_allergies = (request.form.get('allergies', user['allergies']) or '').strip()
+
+        # Validate and store phones exactly as /register does (digits only)
+        if raw_phone:
+            new_phone = _normalize_phone(raw_phone)
+            if new_phone is None:
+                return render_template("edit_profile.html", user=user, error=PHONE_ERROR), 400
+        else:
+            new_phone = user['phone']
 
         # Allergies drive meal-plan filtering, so only accept allergens the filter understands
         unknown = invalid_allergies(new_allergies)
@@ -741,10 +763,11 @@ def change_password():
         finally:
             close_connection(conn)
 
-    # Read form fields
-    current_password = (request.form.get('current_password') or '').strip()
-    new_password     = (request.form.get('new_password') or '').strip()
-    confirm_password = (request.form.get('confirm_password') or '').strip()
+    # Read form fields. Passwords are not stripped, matching /register and /login: spaces are
+    # part of the password, and stripping them here would hash a different value than was typed.
+    current_password = request.form.get('current_password') or ''
+    new_password     = request.form.get('new_password') or ''
+    confirm_password = request.form.get('confirm_password') or ''
 
     # Basic validations (mirror your frontend behavior)
     if not current_password:
