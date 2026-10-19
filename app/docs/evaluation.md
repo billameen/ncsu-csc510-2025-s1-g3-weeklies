@@ -228,7 +228,7 @@ M1 is already in the list.
   solver calls a plan a full match (not a closest option), each edit's own check
   (`unmet`) must find nothing missed. The command exits 1, failing CI, if any rule breaks,
   any meal outside the edit changes, or an edit is missed in a plan called a full match.
-- **Re-plan time:** p95 over the 20 one-day edits, using the expected edits so it does not
+- **Re-plan time:** p95 over the one-day edits, using the expected edits so it does not
   depend on a parser, with the rest of the week pinned, against re-solving the whole week.
   Neither includes the model call.
 

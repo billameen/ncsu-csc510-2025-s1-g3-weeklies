@@ -29,9 +29,11 @@ saved until the user accepts a diff.
 4. **Re-plan (solver).** Every meal outside the edit is pinned. The edit's rules are added
    to the plan's usual rules (allergens, opening hours, stock, daily calories, weekly
    budget, variety), and the solver re-plans the rest, changing as few meals as it can.
-   If the edit can't be met, the user gets the reason and the closest plan: every edit is
-   turned into a strong preference, and the preview says what that plan still misses
-   ("Every day costs $42.18 (you asked for at most $4.00 a day)").
+   If the edit can't be met, the user gets the reason and the closest plan: each filter,
+   inclusion and daily limit becomes a strong preference (a calorie shift stays as asked,
+   and wishes only break ties), and the preview says what that plan still misses ("Every
+   day costs $42.18 (you asked for at most $4.00 a day)"). If even that plan changes
+   nothing, the edit is reported as impossible, with the reason.
 5. **Accept or Discard.** The diff shows each changed meal, its price change, and the
    week's cost and calories before and after. Accept checks the proposal again against the
    menu and profile as they are now (stock, opening hours, allergies, budget, calories) and
@@ -78,7 +80,8 @@ result. CI fails if a single rule is broken or a meal outside the edit changes.
 
 ## Results
 
-Run `python -m eval.edits` (no key or model needed: it replays recorded model answers).
+Run `python -m eval.edits` (no key or model needed: it replays recorded model answers once
+a recording exists; `--live` makes one).
 The current numbers are in the README and `eval/results/m3.md`. Without a model, the
 regex baseline already shows the solver's guarantee: its edits break **0** rules, even
 when it turns an adversarial request into edits, because the solver enforces them all.

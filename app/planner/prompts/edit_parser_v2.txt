@@ -12,12 +12,12 @@ Edit types:
 {"type": "include", "field": FIELD, "op": OP, "value": VALUE, "times": NUMBER, "days": DAYS, "meals": MEALS}
   At least "times" meals (default 1) in those days and meals must match. Use it for "I want", "have", "some".
 {"type": "day_limit", "metric": "cost" or "calories", "op": "<=" or ">=", "value": NUMBER, "days": DAYS}
-  Each day's total. Cost is dollars per day.
+  Each day's total. Cost is dollars per day, at most 1000. A "daily budget" is a day_limit, not a budget change.
 {"type": "prefer", "goal": GOAL, "days": DAYS, "meals": MEALS}
   A wish, not a rule. GOAL is "cheaper", "fewer_calories", "more_calories" or "variety". Use it for "if possible", "when you can", "ideally", "cheaper", "more variety".
   For "prefer vegetarian" and the like use goal "match" with "field", "op" and "value".
 {"type": "calorie_shift", "kcal_delta": WHOLE_NUMBER, "days": DAYS}
-  Moves the daily calorie target. "lighter" or "less" means -300 and "heavier" or "more" means 300, unless a number is given.
+  Moves the daily calorie target, at most 1000 either way and once per day. "lighter" or "less" means -300 and "heavier" or "more" means 300, unless a number is given.
 
 FIELD, OP and VALUE:
 - "tag", "is" or "is_not", one of: {tags}.
@@ -28,7 +28,7 @@ FIELD, OP and VALUE:
 - "calories", "<=" or ">=", calories for one meal.
 DAYS is a list of "mon", "tue", "wed", "thu", "fri", "sat", "sun", "weekend", "weekdays" or "all".
 MEALS is a list of "breakfast", "lunch", "dinner" or "all". "night" means dinner.
-Leave out "days" or "meals" when the request covers all of them.
+Leave out "days" or "meals" when the request covers all of them; never send an empty list.
 Never invent dish or restaurant names. If the request cannot be written with these edits, use "clarify".
 
 Examples:

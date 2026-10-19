@@ -130,8 +130,8 @@ class DayLimit(Constraint):
 class PreferDayLimit(SoftConstraint):
     """
     The soft version of day_limit, for the closest option when it cannot be met: each cent
-    (or calorie) past the limit costs `weight`. The default, 50, makes a dollar over the
-    limit cost as much as half a meal that misses an item edit (prefer_edits).
+    (or calorie) past the limit costs `weight`. The default, 50, makes a dollar (or 100
+    kcal) over the limit cost as much as a meal that misses an item edit (prefer_edits, 5000).
     """
 
     name = "prefer_day_limit"
