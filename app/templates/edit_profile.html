@@ -17,8 +17,8 @@
       <a href="{{ url_for('profile') }}">Profile</a>
       <a href="{{ url_for('restaurants') }}">Restaurants</a>
       <a href="{{ url_for('orders') }}">Order</a>
-      <a href="{{ url_for('db_view') }}">DB</a>
       {% if session.get('is_admin') %}
+      <a href="{{ url_for('db_view') }}">DB</a>
       <a href="{{ url_for('admin_dashboard') }}">Admin</a>
       {% endif %}
       <a href="{{ url_for('logout') }}" data-confirm="Log out now?">Logout</a>
@@ -90,6 +90,35 @@
             <div class="bubbles" id="bubbles" data-existing="{{ (user.preferences or '') | e }}"></div>
           </div>
 
+          <!-- Weekly plan targets (used by the meal planner) -->
+          <div class="section" style="margin-bottom:16px;">
+            <h3 class="section-title">Weekly plan targets</h3>
+            <p class="muted">The planner keeps every day within 10% of your calorie target and the whole
+              week, tax and delivery fees included, within your budget.</p>
+            <div class="form-grid">
+              <div>
+                <label for="dailyCalorieTarget">Daily calories</label>
+                <input class="input" id="dailyCalorieTarget" name="daily_calorie_target" type="text"
+                       inputmode="numeric" placeholder="e.g. 2000"
+                       value="{{ targets.daily_calorie_target }}"
+                       {% if errors.daily_calorie_target %}aria-invalid="true" aria-describedby="kcalError"{% endif %}>
+                {% if errors.daily_calorie_target %}
+                <p class="field-error" id="kcalError">{{ errors.daily_calorie_target }}</p>
+                {% endif %}
+              </div>
+              <div>
+                <label for="weeklyBudget">Weekly budget ($)</label>
+                <input class="input" id="weeklyBudget" name="weekly_budget" type="text"
+                       inputmode="decimal" placeholder="e.g. 150"
+                       value="{{ targets.weekly_budget }}"
+                       {% if errors.weekly_budget %}aria-invalid="true" aria-describedby="budgetError"{% endif %}>
+                {% if errors.weekly_budget %}
+                <p class="field-error" id="budgetError">{{ errors.weekly_budget }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
           <!-- Hidden serialized fields for server -->
           <input type="hidden" name="allergies" id="allergiesField" value="">
           <input type="hidden" name="preferences" id="preferencesField" value="">
@@ -109,6 +138,9 @@
 </footer>
 
 <style>
+  .field-error { color: #b42318; font-size: 13px; margin: 6px 0 0; }
+  .input[aria-invalid="true"] { border-color: #b42318; }
+
   /* Header actions */
   .card-head {
     display:flex; align-items:center; justify-content:space-between;

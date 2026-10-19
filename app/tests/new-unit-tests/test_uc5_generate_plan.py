@@ -78,6 +78,8 @@ def _planned_item_id(client):
 
 def test_a_nan_allergen_cell_no_longer_crashes_and_the_unknown_item_is_excluded(client, monkeypatch):
     monkeypatch.setattr(Flask_app, "MenuGenerator", _NanMenuGenerator)
+    monkeypatch.setenv("PLANNER", "llm")  # these tests cover the v1 LLM planner
+
     _register_and_login(client, "nan-allergy@example.test", "Peanuts")
 
     response = client.post("/generate_plan")
@@ -94,6 +96,8 @@ def test_a_nan_allergen_cell_no_longer_crashes_and_the_unknown_item_is_excluded(
 
 def test_a_user_with_no_recorded_allergies_can_still_be_served_an_unknown_allergen_item(client, monkeypatch):
     monkeypatch.setattr(Flask_app, "MenuGenerator", _NanMenuGenerator)
+    monkeypatch.setenv("PLANNER", "llm")  # these tests cover the v1 LLM planner
+
     _register_and_login(client, "no-allergy@example.test", "")  # allergies left blank
 
     response = client.post("/generate_plan")
@@ -112,6 +116,8 @@ def test_a_generation_error_returns_a_generic_500_without_internal_details(clien
             raise AttributeError("'float' object has no attribute 'split'")
 
     monkeypatch.setattr(Flask_app, "MenuGenerator", _Boom)
+    monkeypatch.setenv("PLANNER", "llm")  # these tests cover the v1 LLM planner
+
     _register_and_login(client, "boom@example.test", "")
 
     response = client.post("/generate_plan")

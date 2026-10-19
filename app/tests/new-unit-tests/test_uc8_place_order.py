@@ -1,4 +1,4 @@
-"""Unit tests for POST /order (JSON) and the legacy GET /order path.
+"""Unit tests for POST /order (JSON), including rejection of the removed legacy GET path.
 
 Environment assumptions: pytest is run from the repository root with the
 project's Python dependencies installed. The shared ``client``/``temp_db_path``
@@ -9,11 +9,6 @@ database, so these tests never touch ``app/CSC510_DB.db``.
 persist for the rest of the run. Every test below therefore creates its own
 user, restaurant and menu item under a name unique to that test rather than
 reusing ``seed_minimal_data``.
-
-Flask's test client is configured with ``TESTING = True`` (set in the ``app``
-fixture), so an unhandled exception in a view propagates to the caller instead
-of being converted into an HTTP 500 -- the zero-item-id test below therefore
-asserts a raised ``KeyError`` rather than a status code.
 """
 import json
 
@@ -131,16 +126,10 @@ def test_placing_a_json_order_debits_the_wallet_and_stores_the_computed_charges(
 # This proves a valid JSON order computes tax and fees as documented, writes an "Ordered" row, and debits the wallet by exactly the charged total.
 
 
-def test_a_negative_tip_inverts_the_total_and_credits_the_wallet_instead_of_debiting_it(client, temp_db_path):
-    """``tip`` is read straight from the payload with no lower bound:
-
-        tip_dollars = _money(payload.get("tip") or 0)
-        total = _money(subtotal + tax + delivery_fee + service_fee + tip_dollars)
-
-    A large negative tip drives ``total`` below zero. The affordability guard
-    is ``if user_wallet_cents < total_cents``, which a negative total always
-    passes, and the debit is ``SET wallet = wallet - ?``, so subtracting a
-    negative number pays the user.
+def test_a_negative_tip_is_rejected_and_leaves_the_wallet_untouched(client, temp_db_path):
+    """A negative tip used to drive ``total`` below zero, pass the affordability
+    guard, and credit the wallet via ``SET wallet = wallet - ?``. It must now be
+    rejected before any charge is computed.
     """
     usr_id = _make_user(temp_db_path, "uc8-tip@example.test", wallet_cents=0)
     rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, "UC8 Tip Cafe", price_cents=1000)
@@ -151,23 +140,42 @@ def test_a_negative_tip_inverts_the_total_and_credits_the_wallet_instead_of_debi
         json={"restaurant_id": rtr_id, "items": [{"itm_id": itm_id, "qty": 1}], "tip": -100},
     )
 
-    assert response.status_code == 200
-    assert response.get_json()["ok"] is True
-    # $10.00 + $0.73 tax + $3.99 + $1.49 - $100.00 = -$83.79
-    _, details, _ = _latest_order(temp_db_path, usr_id)
-    assert json.loads(details)["charges"]["total"] == -83.79
-    assert _wallet_cents(temp_db_path, usr_id) == 8379
-    with client.session_transaction() as sess:
-        assert sess["Wallet"] == 8379
+    assert response.status_code == 400
+    assert response.get_json() == {"ok": False, "error": "invalid_tip"}
+    assert _latest_order(temp_db_path, usr_id) is None
+    assert _wallet_cents(temp_db_path, usr_id) == 0
 
 
-# This proves a negative tip is accepted unvalidated, produces a negative order total, and credits the user's wallet -- a real defect that lets an order mint money.
+# This proves a negative tip is rejected with invalid_tip, no order is stored, and the wallet is not credited.
 
 
-def test_the_legacy_get_path_places_an_order_with_no_wallet_check_and_no_debit(client, temp_db_path):
-    """The POST/JSON branch checks funds and debits atomically. The legacy GET
-    branch further down the same view does neither: it computes the same
-    charges and runs a bare INSERT into "Order" with no balance check.
+@pytest.mark.parametrize("tip", ["nan", "inf", "Infinity", "abc"])
+def test_a_non_finite_or_non_numeric_tip_is_rejected(client, temp_db_path, tip):
+    """``_dollars_to_cents`` swallows the error from ``int(nan)``/``int(inf)`` and
+    returns 0, so a non-finite tip used to price the whole order at $0.00.
+    """
+    email = f"uc8-tip-{tip.lower()}@example.test"
+    usr_id = _make_user(temp_db_path, email, wallet_cents=0)
+    rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, f"UC8 Tip {tip} Cafe", price_cents=1000)
+    _login(client, email)
+
+    response = client.post(
+        "/order",
+        json={"restaurant_id": rtr_id, "items": [{"itm_id": itm_id, "qty": 1}], "tip": tip},
+    )
+
+    assert response.status_code == 400
+    assert response.get_json() == {"ok": False, "error": "invalid_tip"}
+    assert _latest_order(temp_db_path, usr_id) is None
+    assert _wallet_cents(temp_db_path, usr_id) == 0
+
+
+# This proves NaN, infinite and non-numeric tips are rejected instead of producing a free order.
+
+
+def test_the_legacy_get_path_is_removed_and_places_no_order(client, temp_db_path):
+    """The legacy GET branch inserted an "Ordered" row with no balance check and
+    no debit. The route now only accepts POST.
     """
     usr_id = _make_user(temp_db_path, "uc8-legacy@example.test", wallet_cents=0)
     rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, "UC8 Legacy Cafe", price_cents=1000)
@@ -175,38 +183,81 @@ def test_the_legacy_get_path_places_an_order_with_no_wallet_check_and_no_debit(c
 
     response = client.get(f"/order?itm_id={itm_id}&qty=3", follow_redirects=False)
 
-    assert response.status_code == 302
-    assert "/profile?ordered=" in response.headers["Location"]
-    ord_id, details, status = _latest_order(temp_db_path, usr_id)
-    assert status == "Ordered"
-    assert json.loads(details)["charges"]["total"] == 37.66
+    assert response.status_code == 405
+    assert _latest_order(temp_db_path, usr_id) is None
     assert _wallet_cents(temp_db_path, usr_id) == 0
 
 
-# This proves a user with a $0.00 balance can place a $37.66 order through the legacy GET path, which skips both the insufficient_funds check and the wallet debit entirely -- a real defect.
+# This proves GET /order no longer places an unpaid order.
 
 
-def test_an_item_id_of_zero_alongside_a_valid_one_escapes_validation_and_raises_a_key_error(
-    client, temp_db_path
-):
-    """Validation builds ``itm_ids`` from items with ``itm_id > 0``, so a
-    zero id is dropped before the "does this item exist" checks run. The
-    charge loop that follows iterates the *original* ``items_in`` list and
-    does ``meta = dbmap[iid]``, so the id that validation discarded is looked
-    up anyway and misses. That lookup sits outside the route's try/except.
+def test_a_non_json_post_is_rejected(client, temp_db_path):
+    usr_id = _make_user(temp_db_path, "uc8-form@example.test", wallet_cents=10_000)
+    rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, "UC8 Form Cafe", price_cents=1000)
+    _login(client, "uc8-form@example.test")
+
+    response = client.post("/order", data={"itm_id": itm_id, "qty": 1})
+
+    assert response.status_code == 400
+    assert response.get_json() == {"ok": False, "error": "invalid_input"}
+    assert _latest_order(temp_db_path, usr_id) is None
+
+
+# This proves a form-encoded POST no longer falls through to the removed legacy path.
+
+
+@pytest.mark.parametrize("bad_id", [0, -1, "abc", None])
+def test_an_invalid_item_id_alongside_a_valid_one_is_rejected(client, temp_db_path, bad_id):
+    """Validation used to drop non-positive ids, after which the charge loop looked
+    them up in ``dbmap`` anyway and raised ``KeyError``. Any bad id must now reject
+    the whole request.
     """
-    _make_user(temp_db_path, "uc8-mixed@example.test", wallet_cents=100_000)
-    rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, "UC8 Mixed Cafe", price_cents=1000)
-    _login(client, "uc8-mixed@example.test")
+    email = f"uc8-mixed-{str(bad_id).lower()}@example.test"
+    usr_id = _make_user(temp_db_path, email, wallet_cents=100_000)
+    rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, f"UC8 Mixed {bad_id} Cafe", price_cents=1000)
+    _login(client, email)
 
-    with pytest.raises(KeyError):
-        client.post(
-            "/order",
-            json={
-                "restaurant_id": rtr_id,
-                "items": [{"itm_id": itm_id, "qty": 1}, {"itm_id": 0, "qty": 1}],
-            },
-        )
+    response = client.post(
+        "/order",
+        json={
+            "restaurant_id": rtr_id,
+            "items": [{"itm_id": itm_id, "qty": 1}, {"itm_id": bad_id, "qty": 1}],
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.get_json() == {"ok": False, "error": "invalid_item"}
+    assert _latest_order(temp_db_path, usr_id) is None
+    assert _wallet_cents(temp_db_path, usr_id) == 100_000
 
 
-# This proves a payload mixing one valid item with an itm_id of 0 slips past every validation branch and crashes on an unguarded dict lookup, rather than returning the no_items or item_not_found error the route defines -- a real defect.
+# This proves a payload mixing a valid item with a zero, negative, non-numeric or missing id returns invalid_item instead of crashing.
+
+
+def test_a_stale_session_wallet_cannot_buy_an_order_the_database_balance_cannot_cover(client, temp_db_path):
+    """The affordability check used to trust ``session['Wallet']``, and the guarded
+    debit (``WHERE wallet >= ?``) silently matched zero rows while the order insert
+    still committed -- so a stale session (e.g. funds spent on another device) got
+    free food. The check now reads the database, and the debit must hit exactly one
+    row or the whole transaction rolls back.
+    """
+    usr_id = _make_user(temp_db_path, "uc8-stale@example.test", wallet_cents=0)
+    rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, "UC8 Stale Cafe", price_cents=1000)
+    _login(client, "uc8-stale@example.test")
+    with client.session_transaction() as sess:
+        sess["Wallet"] = 100_000
+
+    response = client.post(
+        "/order",
+        json={"restaurant_id": rtr_id, "items": [{"itm_id": itm_id, "qty": 1}]},
+    )
+
+    assert response.status_code == 402
+    assert response.get_json() == {"ok": False, "error": "insufficient_funds"}
+    assert _latest_order(temp_db_path, usr_id) is None
+    assert _wallet_cents(temp_db_path, usr_id) == 0
+    with client.session_transaction() as sess:
+        assert sess["Wallet"] == 0
+
+
+# This proves an order is charged against the database balance, not a stale session copy, and the session is corrected.

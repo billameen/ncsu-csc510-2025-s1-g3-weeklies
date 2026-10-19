@@ -81,18 +81,10 @@ def test_a_gift_moves_the_exact_amount_from_sender_to_recipient(client, temp_db_
 # This proves a funded gift debits the sender and credits the recipient by the same number of cents in one atomic transaction, leaving the sender's session balance correct.
 
 
-def test_a_stale_session_wallet_survives_a_gift_and_diverges_further_from_the_database(
-    client, temp_db_path
-):
-    """The route refreshes the session by arithmetic on the session's own
-    value rather than re-reading the row it just wrote::
-
-        session['Wallet'] = session['Wallet'] - amount_cents
-
-    So a session balance that is already wrong stays wrong. That matters
-    because POST /order gates affordability on the session value
-    (``user_wallet_cents = session.get('Wallet', 0)``) before it reaches the
-    database, so the divergence is load-bearing rather than cosmetic.
+def test_a_gift_resyncs_a_stale_session_wallet_with_the_database(client, temp_db_path):
+    """The route used to refresh the session by arithmetic on the session's own
+    value (``session['Wallet'] - amount_cents``), so a wrong balance was carried
+    forward. It now re-reads the sender's row after the transaction.
     """
     sender_id = _make_user(temp_db_path, "uc13-stale@example.test", wallet_cents=5000)
     _make_user(temp_db_path, "uc13-stale-recipient@example.test", wallet_cents=0)
@@ -110,11 +102,30 @@ def test_a_stale_session_wallet_survives_a_gift_and_diverges_further_from_the_da
     assert response.headers["Location"] == "/profile?wallet_updated=gift"
     assert _wallet_cents(temp_db_path, sender_id) == 4000
     with client.session_transaction() as sess:
-        assert sess["Wallet"] == 998_999
-        assert sess["Wallet"] != _wallet_cents(temp_db_path, sender_id)
+        assert sess["Wallet"] == 4000
 
 
-# This proves the gift route never reconciles the session against the row it just updated, so a wrong session balance is carried forward and compounded instead of corrected -- a real defect, and one the order route then trusts.
+# This proves the gift route corrects a stale session balance to the database value instead of compounding the error.
+
+
+def test_a_non_numeric_gift_amount_reports_invalid_amount(client, temp_db_path):
+    sender_id = _make_user(temp_db_path, "uc13-invalid@example.test", wallet_cents=5000)
+    recipient_id = _make_user(temp_db_path, "uc13-invalid-recipient@example.test", wallet_cents=0)
+    _login(client, "uc13-invalid@example.test")
+
+    response = client.post(
+        "/profile/wallet/gift",
+        data={"recipient_email": "uc13-invalid-recipient@example.test", "amount": "abc"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/profile?wallet_error=invalid_amount"
+    assert _wallet_cents(temp_db_path, sender_id) == 5000
+    assert _wallet_cents(temp_db_path, recipient_id) == 0
+
+
+# This proves the gift route's invalid_amount branch is now reachable for garbage input.
 
 
 def test_a_completed_gift_leaves_no_audit_record_anywhere_in_the_schema(client, temp_db_path):

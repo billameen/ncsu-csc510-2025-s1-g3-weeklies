@@ -11,8 +11,7 @@ def seed_review_order(temp_db_path, seed_minimal_data):
     Creates multiple orders for the seeded user/restaurant.
     
     Returns a dict with:
-    - reviewable_ord_id: An order in 'Ordered' status (which Flask_app currently uses
-      to incorrectly identify 'Delivered' orders), ready for a first review.
+    - reviewable_ord_id: An order in 'Delivered' status, ready for a first review.
     - unreviewable_ord_id: An order in 'Preparing' status, which should not be reviewable.
     """
     conn = create_connection(temp_db_path)
@@ -26,12 +25,10 @@ def seed_review_order(temp_db_path, seed_minimal_data):
         "charges": {"total": 15.00}
     })
     
-    # Order 1: Ready for review (status='Ordered')
-    # NOTE: This status check is currently bugged in Flask_app.py (lines 331, 626),
-    # where it checks for 'ordered' instead of 'delivered'. We test the current logic.
+    # Order 1: Ready for review (status='Delivered')
     execute_query(conn, '''
         INSERT INTO "Order" (rtr_id, usr_id, details, status)
-        VALUES (?, ?, ?, 'Ordered')
+        VALUES (?, ?, ?, 'Delivered')
     ''', (rtr_id, usr_id, order_details))
     
     ord_id_1 = fetch_one(conn, 'SELECT last_insert_rowid()')[0]
@@ -129,7 +126,7 @@ class TestReviewSubmission:
         assert resp.get_json()["error"] == "Restaurant already reviewed"
 
     def test_submit_review_order_not_reviewable_status(self, client, login_session, seed_review_order):
-        """Should fail if the associated order status is not 'Ordered' (403)."""
+        """Should fail if the associated order status is not 'Delivered' (403)."""
         data = seed_review_order
         # Use the order that is in 'Preparing' status
         resp = client.post(self.URL, json={
@@ -177,7 +174,7 @@ class TestReviewDisplayRoutes:
         rtr_id = data['rtr_id']
         usr_id = data['usr_id']
         
-        # Initial State: One reviewable order ('Ordered'), no reviews.
+        # Initial State: One reviewable order ('Delivered'), no reviews.
         # Logic: order: reviewable=True, reviewed=False
         resp_initial = client.get("/profile")
         assert resp_initial.status_code == 200
@@ -188,7 +185,7 @@ class TestReviewDisplayRoutes:
             "restaurant_id": rtr_id, "rating": 5, "title": "R1", "comment": "C1", "order_id": data['reviewable_ord_id']
         })
 
-        # Insert a *new* 'Ordered' order for the same restaurant.
+        # Insert a *new* 'Delivered' order for the same restaurant.
         conn = create_connection(temp_db_path)
         try:
             order_details = json.dumps({
@@ -198,7 +195,7 @@ class TestReviewDisplayRoutes:
             })
             execute_query(conn, '''
                 INSERT INTO "Order" (rtr_id, usr_id, details, status)
-                VALUES (?, ?, ?, 'Ordered')
+                VALUES (?, ?, ?, 'Delivered')
             ''', (rtr_id, usr_id, order_details))
         finally:
             close_connection(conn)

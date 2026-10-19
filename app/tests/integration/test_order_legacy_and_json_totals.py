@@ -107,11 +107,11 @@ def test_orders_json_mixed_restaurants_400(client, temp_db_path, seed_minimal_da
 #     assert isinstance(body.get("ord_id"), int)
 
 
-def test_order_legacy_missing_item_redirects(client, login_session):
+def test_order_legacy_get_not_allowed(client, login_session):
     resp = client.get("/order")
-    assert resp.status_code in (302, 303)
+    assert resp.status_code == 405
 
 
-def test_order_legacy_bad_item_redirects(client, login_session):
+def test_order_legacy_get_with_item_not_allowed(client, login_session):
     resp = client.get("/order?itm_id=999999")
-    assert resp.status_code in (302, 303)
+    assert resp.status_code == 405

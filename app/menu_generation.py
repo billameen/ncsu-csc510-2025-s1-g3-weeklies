@@ -220,7 +220,7 @@ class MenuGenerator:
         self.strict_allergens = strict_allergens
         conn = create_connection(db_file)
         # Ensure we only fetch active items
-        self.menu_items = pd.read_sql_query("SELECT * FROM MenuItem WHERE instock = 1 OR instock IS NULL", conn)
+        self.menu_items = pd.read_sql_query("SELECT * FROM MenuItem WHERE instock = 1", conn)
         self.restaurants = pd.read_sql_query("SELECT rtr_id, hours FROM Restaurant WHERE status='Open' OR status IS NULL", conn)
         close_connection(conn)
         
