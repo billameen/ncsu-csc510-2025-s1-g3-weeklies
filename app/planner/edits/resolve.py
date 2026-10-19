@@ -2,7 +2,7 @@
 Turn parsed edits into M1 rule plug-ins for one plan window.
 
 Day words become the dates in the window that fall on those weekdays, meal words become meal
-numbers, and dish or restaurant names become menu ids. A name that matches nothing raises
+numbers, and dish or restaurant names become menu ids (planner.match.Condition). A name that matches nothing raises
 `Unresolvable` with a question for the user, rather than guessing.
 """
 
@@ -14,11 +14,12 @@ from planner.edits.schema import (
     MEAL_CODES,
     WEEKDAY_CODES,
     CalorieShift,
-    ExcludeItem,
-    ExcludeRestaurant,
-    MaxPrice,
-    RequireTag,
+    DayLimit,
+    Filter,
+    Include,
+    Prefer,
 )
+from planner.match import Condition
 from planner.menu import Menu
 from planner.registry import get
 from planner.scope import MealScope
@@ -48,27 +49,61 @@ def resolve_scope(edit, window: Sequence[date]) -> MealScope:
     )
 
 
+def _phrase_pattern(phrase: str) -> re.Pattern:
+    """Whole words, the last one singular or plural: "burgers" matches "Burger" and "Burgers"."""
+    words = phrase.lower().split()
+    last = words[-1]
+    if len(last) > 3 and last.endswith("s") and not last.endswith("ss"):
+        last = last[:-1]
+    body = r"\s+".join([*(re.escape(w) for w in words[:-1]), re.escape(last) + r"(?:e?s)?"])
+    return re.compile(rf"\b{body}\b")
+
+
 def find_items(menu: Menu, name: str):
     """
-    Menu items a dish name refers to: an exact (case-insensitive) name match if there is
-    one, otherwise every item whose name contains the phrase as whole words.
+    Menu items a dish name or food word refers to: an exact (case-insensitive) name match if
+    there is one ("Beef Ribs"), otherwise every item whose name or description contains the
+    words, singular or plural ("pork", "burgers").
     """
     wanted = " ".join(name.lower().split())
     exact = [i for i in menu.items.values() if i.name.lower() == wanted]
     if exact:
         return exact
-    pattern = re.compile(rf"\b{re.escape(wanted)}\b")
-    return [i for i in menu.items.values() if pattern.search(i.name.lower())]
+    pattern = _phrase_pattern(wanted)
+    return [i for i in menu.items.values() if pattern.search(f"{i.name} {i.description}".lower())]
 
 
 def find_restaurants(menu: Menu, name: str):
-    """Restaurants a name refers to, matched the same way as dishes."""
+    """Restaurants a name refers to: an exact name match, otherwise whole words in the name."""
     wanted = " ".join(name.lower().split())
     exact = [r for r in menu.restaurants.values() if r.name.lower() == wanted]
     if exact:
         return exact
-    pattern = re.compile(rf"\b{re.escape(wanted)}\b")
+    pattern = _phrase_pattern(wanted)
     return [r for r in menu.restaurants.values() if pattern.search(r.name.lower())]
+
+
+def to_condition(field: str, op: str, value, menu: Menu) -> Condition:
+    """
+    The planner.match.Condition for a parsed condition, with names matched to menu ids.
+    Raises:
+        Unresolvable: A dish or restaurant name matches nothing on the menu.
+    """
+    if field == "dish":
+        items = find_items(menu, value)
+        if not items:
+            raise Unresolvable(f'I couldn\'t find "{value}" on the menu. Which dish did you mean?')
+        return Condition(field, op, value, ids={i.itm_id for i in items})
+    if field == "restaurant":
+        found = find_restaurants(menu, value)
+        if not found:
+            raise Unresolvable(
+                f'I couldn\'t find a restaurant called "{value}". Which one did you mean?'
+            )
+        return Condition(field, op, value, ids={r.rtr_id for r in found})
+    if field == "price":
+        return Condition(field, op, round(value * 100))
+    return Condition(field, op, value)
 
 
 def to_rule(edit, window: Sequence[date], menu: Menu):
@@ -78,30 +113,26 @@ def to_rule(edit, window: Sequence[date], menu: Menu):
         Unresolvable: The edit names a dish, restaurant or day that cannot be found.
     """
     scope = resolve_scope(edit, window)
-    if isinstance(edit, RequireTag):
-        return get("require_tag")(edit.tag, scope)
-    if isinstance(edit, MaxPrice):
-        return get("max_price")(round(edit.max_price * 100), scope)
-    if isinstance(edit, ExcludeItem):
-        items = find_items(menu, edit.item)
-        if not items:
-            raise Unresolvable(
-                f'I couldn\'t find "{edit.item}" on the menu. Which dish did you mean?'
-            )
-        return get("exclude_item")({i.itm_id for i in items}, edit.item, scope)
-    if isinstance(edit, ExcludeRestaurant):
-        found = find_restaurants(menu, edit.restaurant)
-        if not found:
-            raise Unresolvable(
-                f'I couldn\'t find a restaurant called "{edit.restaurant}". Which one did you mean?'
-            )
-        return get("exclude_restaurant")({r.rtr_id for r in found}, edit.restaurant, scope)
+    if isinstance(edit, Filter):
+        return get("filter_meals")(to_condition(edit.field, edit.op, edit.value, menu), scope)
+    if isinstance(edit, Include):
+        condition = to_condition(edit.field, edit.op, edit.value, menu)
+        return get("include_meals")(condition, scope, edit.times)
+    if isinstance(edit, DayLimit):
+        value = round(edit.value * 100) if edit.metric == "cost" else int(edit.value)
+        return get("day_limit")(edit.metric, edit.op, value, scope.days)
+    if isinstance(edit, Prefer):
+        condition = (
+            to_condition(edit.field, edit.op, edit.value, menu) if edit.goal == "match" else None
+        )
+        return get("prefer_meals")(edit.goal, scope, condition)
     if isinstance(edit, CalorieShift):
         return get("calorie_shift")(edit.kcal_delta, scope.days)
     raise TypeError(f"unknown edit {edit!r}")  # pragma: no cover - the schema rules this out
 
 
 def affected_scope(edit, window: Sequence[date]) -> MealScope:
-    """The meals an edit re-plans. A calorie shift re-plans its whole days."""
+    """The meals an edit re-plans. Calorie shifts and daily limits re-plan whole days."""
     scope = resolve_scope(edit, window)
-    return MealScope(days=scope.days) if isinstance(edit, CalorieShift) else scope
+    whole_days = isinstance(edit, (CalorieShift, DayLimit))
+    return MealScope(days=scope.days) if whole_days else scope

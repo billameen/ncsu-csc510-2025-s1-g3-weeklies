@@ -6,8 +6,8 @@ Evaluate plain-English plan edits (GitHub issue #8, M3).
                                         # else the local model), then replay
     python -m eval.edits --readme       # also refresh the M3 table in README.md
 
-60 labelled requests (eval/data/edit_requests.json): 40 normal ones with the exact edits
-expected, 10 ambiguous ones that should get a clarifying question and 10 adversarial ones
+82 labelled requests (eval/data/edit_requests.json): 60 normal ones with the exact edits
+expected, 10 ambiguous ones that should get a clarifying question and 12 adversarial ones
 that should be refused. Three parsers are scored: the regex baseline from the issue (no model,
 no guard), the app's model-free mode (EDIT_PARSER=regex: the guard, then the regex parser) and
 the M3 pipeline (guard + LLM parser), whose model answers come from a recording so CI needs

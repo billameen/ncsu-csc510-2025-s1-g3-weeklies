@@ -1,9 +1,12 @@
-"""The fixed format the parser must produce."""
+"""The edit language the parser must produce."""
 
 import pytest
 from pydantic import ValidationError
 
 from planner.edits.schema import ParsedRequest, edit_keys
+
+
+VEGAN = {"type": "filter", "field": "tag", "op": "is", "value": "vegan"}
 
 
 def parse(data):
@@ -15,18 +18,38 @@ def test_a_two_edit_request_parses_and_normalizes_spellings():
         {
             "action": "edit",
             "edits": [
-                {"type": "require_tag", "tag": "Veggie", "days": "Thursday"},
-                {"type": "max_price", "max_price": "$10", "days": ["thu"], "meals": "dinners"},
+                {
+                    "type": "filter",
+                    "field": "diet",
+                    "op": "=",
+                    "value": "Veggie",
+                    "days": "Thursday",
+                },
+                {
+                    "type": "filter",
+                    "field": "cost",
+                    "op": "under",
+                    "value": "$10",
+                    "days": ["thu"],
+                    "meals": "dinners",
+                },
             ],
         }
     )
     tag, price = parsed.edits
-    assert (tag.tag, tag.day_codes(), tag.meal_codes()) == (
+    assert (tag.field, tag.op, tag.value, tag.day_codes(), tag.meal_codes()) == (
+        "tag",
+        "is",
         "vegetarian",
         {"thu"},
         {"breakfast", "lunch", "dinner"},
     )
-    assert (price.max_price, price.meal_codes()) == (10.0, {"dinner"})
+    assert (price.field, price.op, price.value, price.meal_codes()) == (
+        "price",
+        "<=",
+        10.0,
+        {"dinner"},
+    )
 
 
 @pytest.mark.parametrize(
@@ -40,9 +63,7 @@ def test_a_two_edit_request_parses_and_normalizes_spellings():
     ],
 )
 def test_day_phrases_resolve(days, expected):
-    edit = parse(
-        {"action": "edit", "edits": [{"type": "require_tag", "tag": "vegan", "days": days}]}
-    )
+    edit = parse({"action": "edit", "edits": [{**VEGAN, "days": days}]})
     assert edit.edits[0].day_codes() == expected
 
 
@@ -52,15 +73,40 @@ def test_day_phrases_resolve(days, expected):
         {"action": "edit", "edits": []},
         {"action": "edit", "edits": [{"type": "remove_allergy", "allergen": "peanuts"}]},
         {"action": "edit", "edits": [{"type": "raise_budget", "amount": 500}]},
-        {"action": "edit", "edits": [{"type": "require_tag", "tag": "keto"}]},
-        {"action": "edit", "edits": [{"type": "max_price", "max_price": -5}]},
+        {"action": "edit", "edits": [{"type": "require_tag", "tag": "vegan"}]},  # v1 format
+        {"action": "edit", "edits": [{**VEGAN, "value": "keto"}]},
+        {"action": "edit", "edits": [{**VEGAN, "op": "<="}]},
+        {"action": "edit", "edits": [{**VEGAN, "field": "colour"}]},
+        {"action": "edit", "edits": [{**VEGAN, "field": "price", "op": "<=", "value": -5}]},
+        {"action": "edit", "edits": [{**VEGAN, "field": "price", "op": "<=", "value": 500}]},
+        {"action": "edit", "edits": [{**VEGAN, "field": "price", "op": "<=", "value": "cheap"}]},
+        {"action": "edit", "edits": [{**VEGAN, "field": "calories", "op": ">=", "value": 9000}]},
+        {"action": "edit", "edits": [{**VEGAN, "field": "dish", "op": "is", "value": ""}]},
+        {"action": "edit", "edits": [{**VEGAN, "value": True}]},
+        {"action": "edit", "edits": [{**VEGAN, "type": "include", "times": 0}]},
+        {"action": "edit", "edits": [{**VEGAN, "type": "include", "times": 30}]},
+        {
+            "action": "edit",
+            "edits": [{"type": "day_limit", "metric": "protein", "op": "<=", "value": 10}],
+        },
+        {
+            "action": "edit",
+            "edits": [{"type": "day_limit", "metric": "cost", "op": "<=", "value": 0}],
+        },
+        {
+            "action": "edit",
+            "edits": [{"type": "day_limit", "metric": "cost", "op": "<=", "value": 5000}],
+        },
+        {"action": "edit", "edits": [{"type": "prefer", "goal": "tastier"}]},
+        {"action": "edit", "edits": [{"type": "prefer", "goal": "match"}]},
+        {"action": "edit", "edits": [{"type": "prefer", "goal": "cheaper", "field": "tag"}]},
         {"action": "edit", "edits": [{"type": "calorie_shift", "kcal_delta": 0}]},
         {"action": "edit", "edits": [{"type": "calorie_shift", "kcal_delta": 5000}]},
-        {"action": "edit", "edits": [{"type": "require_tag", "tag": "vegan", "days": "someday"}]},
-        {"action": "edit", "edits": [{"type": "require_tag", "tag": "vegan", "extra": 1}]},
+        {"action": "edit", "edits": [{**VEGAN, "days": "someday"}]},
+        {"action": "edit", "edits": [{**VEGAN, "extra": 1}]},
         {"action": "clarify"},
         {"action": "explode"},
-        {"action": "edit", "edits": [{"type": "exclude_item", "item": "x"}] * 6},
+        {"action": "edit", "edits": [VEGAN] * 6},
     ],
 )
 def test_anything_outside_the_format_is_rejected(bad):
@@ -79,9 +125,7 @@ def test_calorie_shifts_always_cover_whole_days():
 
 
 def test_refuse_and_clarify_drop_any_edits():
-    parsed = parse(
-        {"action": "refuse", "edits": [{"type": "require_tag", "tag": "vegan"}], "reason": "no"}
-    )
+    parsed = parse({"action": "refuse", "edits": [VEGAN], "reason": "no"})
     assert parsed.edits == []
 
 
@@ -90,8 +134,8 @@ def test_edit_keys_ignore_order_and_spelling():
         {
             "action": "edit",
             "edits": [
-                {"type": "max_price", "max_price": 10, "days": "thu"},
-                {"type": "require_tag", "tag": "vegetarian", "days": ["Thursday"]},
+                {"type": "filter", "field": "price", "op": "<=", "value": 10, "days": "thu"},
+                {**VEGAN, "value": "vegetarian", "days": ["Thursday"]},
             ],
         }
     )
@@ -99,8 +143,8 @@ def test_edit_keys_ignore_order_and_spelling():
         {
             "action": "edit",
             "edits": [
-                {"type": "require_tag", "tag": "veggie", "days": "thu"},
-                {"type": "max_price", "max_price": "10.00", "days": "thu", "meals": "all"},
+                {**VEGAN, "value": "veggie", "days": "thu"},
+                {"type": "filter", "field": "cost", "op": "<", "value": "10.00", "days": "thu"},
             ],
         }
     )
@@ -137,11 +181,60 @@ def test_calorie_shifts_cannot_stack_on_one_day():
 def test_edit_keys_sort_the_same_however_the_days_were_listed():
     days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
     edits = [
-        {"type": "require_tag", "tag": "vegan", "days": days},
-        {"type": "require_tag", "tag": "vegan", "days": "thu"},
+        {**VEGAN, "days": days},
+        {**VEGAN, "days": "thu"},
     ]
     forward = parse({"action": "edit", "edits": edits})
     backward = parse(
         {"action": "edit", "edits": [{**edits[0], "days": days[::-1]}, edits[1]][::-1]}
     )
     assert edit_keys(forward.edits) == edit_keys(backward.edits)
+
+
+@pytest.mark.parametrize(
+    "edit, key",
+    [
+        (
+            {"type": "include", "field": "food", "op": "is", "value": "Pizza", "meals": "night"},
+            ("include", "dish", "is", "pizza", 1),
+        ),
+        (
+            {"type": "filter", "field": "allergen", "op": "not", "value": "Egg"},
+            ("filter", "allergen", "is_not", "eggs"),
+        ),
+        (
+            {"type": "filter", "field": "kcal", "op": "at most", "value": "700 kcal"},
+            ("filter", "calories", "<=", 700),
+        ),
+        (
+            {"type": "day_limit", "metric": "budget", "op": "<=", "value": "4$"},
+            ("day_limit", "cost", "<=", 4.0),
+        ),
+        ({"type": "prefer", "goal": "lighter"}, ("prefer", "fewer_calories", None, None, None)),
+        (
+            {"type": "prefer", "goal": "match", "field": "tag", "op": "is", "value": "veggie"},
+            ("prefer", "match", "tag", "is", "vegetarian"),
+        ),
+    ],
+)
+def test_each_edit_type_normalizes_what_a_model_might_write(edit, key):
+    parsed = parse({"action": "edit", "edits": [edit]}).edits[0]
+    assert parsed.key()[: len(key)] == key
+
+
+def test_daily_limits_always_cover_whole_days():
+    limit = parse(
+        {
+            "action": "edit",
+            "edits": [
+                {
+                    "type": "day_limit",
+                    "metric": "calories",
+                    "op": ">=",
+                    "value": 2000,
+                    "meals": "lunch",
+                }
+            ],
+        }
+    ).edits[0]
+    assert limit.meal_codes() == {"breakfast", "lunch", "dinner"}

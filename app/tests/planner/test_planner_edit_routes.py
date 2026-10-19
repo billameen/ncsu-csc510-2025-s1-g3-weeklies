@@ -30,7 +30,8 @@ class Scripted:
 
 
 def veg_edit(**extra):
-    edit = {"type": "require_tag", "tag": "vegetarian", "days": [TARGET_CODE]}
+    edit = {"type": "filter", "field": "tag", "op": "is", "value": "vegetarian"}
+    edit["days"] = [TARGET_CODE]
     edit.update(extra)
     return {"action": "edit", "edits": [edit]}
 
@@ -277,7 +278,12 @@ def test_a_vague_request_gets_the_models_question(client, user, monkeypatch):
 def test_an_unknown_dish_becomes_a_question(client, user, monkeypatch):
     use_model(
         monkeypatch,
-        Scripted({"action": "edit", "edits": [{"type": "exclude_item", "item": "Lasagna"}]}),
+        Scripted(
+            {
+                "action": "edit",
+                "edits": [{"type": "filter", "field": "dish", "op": "is_not", "value": "Lasagna"}],
+            }
+        ),
     )
     body = edit(client, "no lasagna").get_json()
     assert body["status"] == "clarify" and "Lasagna" in body["message"]
@@ -323,13 +329,21 @@ def test_an_impossible_edit_offers_the_closest_option(client, user, monkeypatch)
         Scripted(
             {
                 "action": "edit",
-                "edits": [{"type": "max_price", "max_price": 1, "days": [TARGET_CODE]}],
+                "edits": [
+                    {
+                        "type": "filter",
+                        "field": "price",
+                        "op": "<=",
+                        "value": 1,
+                        "days": [TARGET_CODE],
+                    }
+                ],
             }
         ),
     )
     body = edit(client, "under $1").get_json()
-    assert body["status"] == "closest" and "cost more than $1.00" in body["message"]
-    assert body["unmet"] == [f"3 of 3 meals ({TARGET_LABEL}) cost more than $1.00"]
+    assert body["status"] == "closest" and "are over $1.00" in body["message"]
+    assert body["unmet"] == [f"3 of 3 meals ({TARGET_LABEL}) are over $1.00"]
 
 
 def test_editing_before_planning_asks_to_plan_first(client, temp_db_path, user, monkeypatch):
@@ -370,3 +384,17 @@ def test_the_calendar_shows_the_edit_box_examples_and_recent_edits(client, user,
     assert 'id="planEditForm"' in page and 'maxlength="300"' in page
     assert "Make Thursday vegetarian under $10" in page
     assert "pe-refused" in page and "ignore my allergy please" in page
+
+
+def test_a_daily_cost_cap_too_low_for_the_menu_gets_the_reason_and_closest_plan(
+    client, user, monkeypatch
+):
+    cap = {"type": "day_limit", "metric": "cost", "op": "<=", "value": 4, "days": [TARGET_CODE]}
+    use_model(monkeypatch, Scripted({"action": "edit", "edits": [cap]}))
+
+    body = edit(client, "Make it so that the budget for each day doesn't cross 4$").get_json()
+
+    assert body["status"] == "closest", body
+    assert "you asked for at most $4.00 a day" in body["message"]
+    assert len(body["unmet"]) == 1 and body["unmet"][0].startswith(TARGET_LABEL)
+    assert {c["day"] for c in body["changes"]} <= {TARGET_LABEL}

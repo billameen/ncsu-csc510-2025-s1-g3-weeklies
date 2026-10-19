@@ -16,13 +16,15 @@ from planner.edits.llm_parser import (
     load_prompt,
 )
 from planner.edits.result import UNPARSED_MESSAGE
+from planner.edits.schema import EDIT_TYPES, ParsedRequest
+from planner.match import FIELDS
 
 MONDAY = date(2026, 10, 19)
 THU_VEG = {
     "action": "edit",
     "edits": [
-        {"type": "require_tag", "tag": "vegetarian", "days": ["thu"]},
-        {"type": "max_price", "max_price": 10, "days": ["thu"]},
+        {"type": "filter", "field": "tag", "op": "is", "value": "vegetarian", "days": ["thu"]},
+        {"type": "filter", "field": "price", "op": "<=", "value": 10, "days": ["thu"]},
     ],
 }
 
@@ -49,7 +51,7 @@ def parse(llm, text="make Thursday vegetarian under $10", **kw):
 def test_a_valid_reply_becomes_edits():
     result = parse(Scripted(THU_VEG))
     assert result.action == "edit" and result.source == "llm" and result.attempts == 1
-    assert [e.type for e in result.edits] == ["require_tag", "max_price"]
+    assert [(e.type, e.field) for e in result.edits] == [("filter", "tag"), ("filter", "price")]
 
 
 def test_code_fences_and_chatter_around_the_json_are_ignored():
@@ -70,7 +72,11 @@ def test_an_invalid_reply_gets_one_retry_with_the_error():
         "{broken",
         {"action": "edit", "edits": [{"type": "remove_allergy", "allergen": "peanuts"}]},
         {"action": "edit", "edits": [{"type": "raise_budget", "to": 900}]},
-        {"action": "edit", "edits": [{"type": "require_tag", "tag": "keto"}]},
+        {"action": "edit", "edits": [{"type": "require_tag", "tag": "vegan"}]},  # v1 format
+        {
+            "action": "edit",
+            "edits": [{"type": "filter", "field": "tag", "op": "is", "value": "keto"}],
+        },
         ["a", "list"],
     ],
 )
@@ -128,6 +134,17 @@ def test_the_prompt_lists_the_tags_and_includes_the_weekday_and_request():
     parse(llm, "no Beef Ribs")
     assert "Today is Monday." in llm.prompts[0][1]
     assert "Request: no Beef Ribs" in llm.prompts[0][1]
+
+
+def test_the_prompt_covers_the_whole_format_and_its_examples_are_valid():
+    system, _ = load_prompt()
+    for word in (*EDIT_TYPES, *FIELDS, "cheaper", "fewer_calories", "variety", "match"):
+        assert f'"{word}"' in system, word
+    examples = [line for line in system.splitlines() if line.startswith('{"action"')]
+    assert len(examples) >= 8
+    for line in examples:
+        ParsedRequest.model_validate(json.loads(line))
+    assert "require_tag" in load_prompt("v1")[0]  # older prompts stay, for old recordings
 
 
 def test_extract_json_rejects_replies_without_an_object():

@@ -45,12 +45,12 @@ class OracleLLM:
         return json.dumps(oracle_reply(text))
 
 
-def test_the_dataset_has_40_normal_10_ambiguous_10_adversarial_requests(seed):
+def test_the_dataset_has_60_normal_10_ambiguous_12_adversarial_requests(seed):
     menu = seed[0]
     assert [
         sum(r["category"] == c for r in REQUESTS) for c in ("normal", "ambiguous", "adversarial")
-    ] == [40, 10, 10]
-    assert len({r["id"] for r in REQUESTS}) == 60
+    ] == [60, 10, 12]
+    assert len({r["id"] for r in REQUESTS}) == 82
     for r in REQUESTS:
         if r["category"] == "normal":
             parsed = ParsedRequest.model_validate({"action": "edit", "edits": r["expected"]})
@@ -134,7 +134,9 @@ def test_any_meal_outside_the_edit_that_changes_is_counted(seed, monkeypatch):
         return dataclasses.replace(preview, entries=entries, replaced_unavailable=(slot,))
 
     monkeypatch.setattr(edits_eval, "preview_edits", unpinned_preview)
-    thursday_veg = parsed({"type": "require_tag", "tag": "vegetarian", "days": ["thu"]})
+    thursday_veg = parsed(
+        {"type": "filter", "field": "tag", "op": "is", "value": "vegetarian", "days": ["thu"]}
+    )
 
     assert edits_eval.apply_edits(thursday_veg, menu, catalog, current)["pinned_changed"] == 1
 

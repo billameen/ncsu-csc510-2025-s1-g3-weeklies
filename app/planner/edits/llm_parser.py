@@ -27,7 +27,7 @@ from planner.edits.schema import ParsedRequest
 from planner.tags import TAGS
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"
 DEFAULT_TIMEOUT_S = 60.0  # the local model can take ~10 s a call on a laptop CPU
 RETRIES = 1
 
