@@ -6,6 +6,7 @@ import math
 import json
 import calendar
 from enum import Enum
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from io import BytesIO
 from flask import jsonify
 from sqlite3 import IntegrityError
@@ -89,24 +90,66 @@ def _dollars_to_cents(dollars) -> int:
         int: The cent value (0 on failure).
     """
     try:
-        # Use _money to ensure 2 decimal places, then multiply by 100
-        return int(_money(dollars) * 100)
+        # Use _money to ensure 2 decimal places, then round (not truncate) to cents:
+        # e.g. 0.29 * 100 == 28.999999999999996
+        return int(round(_money(dollars) * 100))
     except Exception:
         return 0
+
+def _parse_amount_cents(raw) -> int:
+    """
+    Strictly parse a user-entered dollar amount into cents.
+    Args:
+        raw (str | int | float | None): The amount as entered, e.g. "12.50".
+    Returns:
+        int: The amount in cents, rounded half-up to the nearest cent (may be zero or negative).
+    Raises:
+        ValueError: If the input is not a finite number.
+    """
+    try:
+        d = Decimal(str(raw).strip())
+        if not d.is_finite():
+            raise ValueError(f"invalid amount: {raw!r}")
+        # quantize raises InvalidOperation for absurdly large values like 1e999
+        return int((d * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    except InvalidOperation:
+        raise ValueError(f"invalid amount: {raw!r}")
+
+def _refresh_session_wallet(conn, usr_id) -> int:
+    """
+    Reload the user's wallet balance from the database into the session.
+    Args:
+        conn (sqlite3.Connection): Active database connection.
+        usr_id (int): The user whose balance to load.
+    Returns:
+        int: The current wallet balance in cents.
+    """
+    row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
+    wallet = (row[0] if row else 0) or 0
+    session['Wallet'] = wallet
+    return wallet
 
 def _execute_transaction(conn, queries_and_params: list) -> bool:
     """
     Execute multiple queries in a single, atomic transaction.
     Args:
         conn (sqlite3.Connection): Active database connection.
-        queries_and_params (list): List of (query: str, params: tuple) pairs.
+        queries_and_params (list): List of (query: str, params: tuple) pairs, or
+            (query, params, expected_rowcount) triples. If a statement affects a different
+            number of rows than expected (e.g. a guarded debit matched nothing), the whole
+            transaction is rolled back.
     Returns:
         bool: True on success, False on failure (with automatic rollback).
     """
     try:
         cur = conn.cursor()
-        for query, params in queries_and_params:
+        for entry in queries_and_params:
+            query, params = entry[0], entry[1]
             cur.execute(query, params)
+            if len(entry) > 2 and cur.rowcount != entry[2]:
+                print(f"Transaction aborted, expected {entry[2]} row(s), got {cur.rowcount}: {query}")
+                conn.rollback()
+                return False
         conn.commit()
         return True
     except Exception as e:
@@ -834,26 +877,25 @@ def wallet_topup():
         return redirect(url_for('login'))
 
     try:
-        amount_dollars = _money(request.form.get('amount') or 0)
-        amount_cents = _dollars_to_cents(amount_dollars)
-    except Exception:
+        amount_cents = _parse_amount_cents(request.form.get('amount') or '')
+    except ValueError:
         return redirect(url_for('profile', wallet_error='invalid_amount'))
 
     if amount_cents <= 0:
         return redirect(url_for('profile', wallet_error='zero_amount'))
 
     usr_id = session['usr_id']
-    
+
     conn = create_connection(db_file)
     try:
         # Atomically update the user's wallet balance
         success = _execute_transaction(conn, [
-            ('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, usr_id))
+            ('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, usr_id), 1)
         ])
 
         if success:
-            # Refresh session and redirect
-            session['Wallet'] = session['Wallet'] + amount_cents
+            # Refresh session from the DB (not by arithmetic, which carries forward any staleness)
+            _refresh_session_wallet(conn, usr_id)
             return redirect(url_for('profile', wallet_updated='topup'))
         else:
             return redirect(url_for('profile', wallet_error='db_failed'))
@@ -871,9 +913,8 @@ def wallet_gift():
 
     recipient_email = (request.form.get('recipient_email') or '').strip().lower()
     try:
-        amount_dollars = _money(request.form.get('amount') or 0)
-        amount_cents = _dollars_to_cents(amount_dollars)
-    except Exception:
+        amount_cents = _parse_amount_cents(request.form.get('amount') or '')
+    except ValueError:
         return redirect(url_for('profile', wallet_error='invalid_amount'))
 
     sender_id = session['usr_id']
@@ -900,18 +941,21 @@ def wallet_gift():
 
         # 2. Prepare the atomic transaction (two steps: debit and credit)
         queries_and_params = [
-            # Debit sender
-            ('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ?', (amount_cents, sender_id)),
+            # Debit sender, guarded so a concurrent spend can't overdraw (must hit exactly 1 row)
+            ('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (amount_cents, sender_id, amount_cents), 1),
             # Credit recipient
-            ('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, recipient_id))
+            ('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, recipient_id), 1)
         ]
 
         # 3. Execute the atomic transaction
         if _execute_transaction(conn, queries_and_params):
-            # Refresh sender's session wallet value
-            session['Wallet'] = session['Wallet'] - amount_cents
+            # Refresh sender's session wallet value from the DB
+            _refresh_session_wallet(conn, sender_id)
             return redirect(url_for('profile', wallet_updated='gift'))
         else:
+            # Most likely the guarded debit matched nothing because the balance dropped meanwhile
+            if _refresh_session_wallet(conn, sender_id) < amount_cents:
+                return redirect(url_for('profile', wallet_error='insufficient_funds'))
             return redirect(url_for('profile', wallet_error='db_failed'))
     finally:
         close_connection(conn)
@@ -963,14 +1007,14 @@ def submit_review():
         close_connection(conn)
 
 # Order route (Calendar "Order" button target)
-@app.route('/order', methods=['GET', 'POST'])
+@app.route('/order', methods=['POST'])
 def order():
     """
-    Place an order via JSON (POST) or handle legacy single-item GET flow.
+    Place an order via JSON POST, debiting the user's wallet atomically.
     Args:
         None
     Returns:
-        Response: JSON with {'ok', 'ord_id'} on POST; redirects/HTML for legacy GET.
+        Response: JSON with {'ok', 'ord_id'} on success, or {'ok': False, 'error'} on failure.
     """
     # Must be logged in
     if session.get("Username") is None:
@@ -992,12 +1036,21 @@ def order():
     # ---- POST JSON: place a single order containing ALL items in the restaurant group ----
     if request.method == 'POST' and request.is_json:
         payload = request.get_json(silent=True) or {}
-        rtr_id = int(payload.get("restaurant_id") or 0)
+        try:
+            rtr_id = int(payload.get("restaurant_id") or 0)
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "invalid_input"}), 400
         items_in = payload.get("items") or []     # [{itm_id, qty, notes}]
         delivery_type = (payload.get("delivery_type") or "delivery").lower()
         if delivery_type not in ("delivery", "pickup"):
             delivery_type = "delivery"
-        tip_dollars = _money(payload.get("tip") or 0)
+        try:
+            tip_dollars = _money(float(payload.get("tip") or 0))
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "invalid_tip"}), 400
+        # Reject negative tips (would credit the wallet) and NaN/inf (would price the order at $0)
+        if not math.isfinite(tip_dollars) or tip_dollars < 0:
+            return jsonify({"ok": False, "error": "invalid_tip"}), 400
         eta_minutes = int(payload.get("eta_minutes") or 40)
         iso_date = (payload.get("date") or datetime.now().date().isoformat())
         try:
@@ -1008,10 +1061,14 @@ def order():
         if rtr_id <= 0 or not items_in:
             return jsonify({"ok": False, "error": "invalid_input"}), 400
 
-        # Look up all items strictly from DB to get authoritative prices/names
-        itm_ids = [int(it.get("itm_id") or 0) for it in items_in if int(it.get("itm_id") or 0) > 0]
-        if not itm_ids:
-            return jsonify({"ok": False, "error": "no_items"}), 400
+        # Look up all items strictly from DB to get authoritative prices/names.
+        # Any malformed or non-positive id rejects the whole request rather than being dropped.
+        try:
+            itm_ids = [int(it.get("itm_id")) for it in items_in]
+        except (AttributeError, TypeError, ValueError):
+            return jsonify({"ok": False, "error": "invalid_item"}), 400
+        if any(i <= 0 for i in itm_ids):
+            return jsonify({"ok": False, "error": "invalid_item"}), 400
 
         conn = create_connection(db_file)
         try:
@@ -1040,9 +1097,11 @@ def order():
         # Build items array for details; compute charges
         detail_items = []
         subtotal = 0.0
-        for it in items_in:
-            iid = int(it.get("itm_id"))
-            qty = int(it.get("qty") or 1)
+        for it, iid in zip(items_in, itm_ids):
+            try:
+                qty = int(it.get("qty") or 1)
+            except (TypeError, ValueError):
+                return jsonify({"ok": False, "error": "invalid_input"}), 400
             if qty <= 0: qty = 1
             meta = dbmap[iid]
             unit_price = _cents_to_dollars(meta["price_cents"])
@@ -1084,20 +1143,21 @@ def order():
 
         # Handle amount being debited from user's wallet
         total_cents = _dollars_to_cents(total)
-        user_wallet_cents = session.get('Wallet', 0)
-
-        # Quick check based on session to prevent unnecessary transaction attempt
-        if user_wallet_cents < total_cents:
-            return jsonify({"ok": False, "error": "insufficient_funds"}), 402
-
+        if total_cents <= 0:
+            return jsonify({"ok": False, "error": "invalid_total"}), 400
         # Insert the single order row with status "Ordered" AND debit the wallet atomically
         conn = create_connection(db_file)
         new_ord_id = None
         try:
+            # Quick check against the DB balance (the session copy can be stale, e.g. another device)
+            if _refresh_session_wallet(conn, usr_id) < total_cents:
+                return jsonify({"ok": False, "error": "insufficient_funds"}), 402
+
             # 1. Prepare queries for atomic transaction: Debit wallet AND Insert order
             queries_and_params = [
-                # Debit the wallet, using the WHERE clause as an optimistic check against race conditions
-                ('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (total_cents, usr_id, total_cents)),
+                # Debit the wallet; the WHERE clause guards against races, and the expected rowcount
+                # of 1 aborts the whole transaction (including the insert) if the guard matched nothing
+                ('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (total_cents, usr_id, total_cents), 1),
                 # Insert the new order
                 ('INSERT INTO "Order" (rtr_id, usr_id, details, status) VALUES (?, ?, ?, ?)', (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value))
             ]
@@ -1108,16 +1168,13 @@ def order():
                 row = fetch_one(conn, 'SELECT ord_id FROM "Order" WHERE usr_id = ? ORDER BY ord_id DESC LIMIT 1', (usr_id,))
                 new_ord_id = row[0] if row else None
 
-                # Update session wallet to reflect the debit
-                session['Wallet'] = user_wallet_cents - total_cents
-                
+                # Update session wallet from the DB to reflect the debit
+                _refresh_session_wallet(conn, usr_id)
+
             else:
                 # Transaction failed. Most likely due to the `wallet >= ?` check failing (insufficient funds).
                 # Re-fetch wallet balance to confirm the insufficient funds error.
-                updated_wallet_row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
-                updated_wallet = updated_wallet_row[0] if updated_wallet_row else 0
-                
-                if updated_wallet < total_cents:
+                if _refresh_session_wallet(conn, usr_id) < total_cents:
                     return jsonify({"ok": False, "error": "insufficient_funds"}), 402
                 
                 # Fallback for unexpected DB error during atomic transaction.
@@ -1135,109 +1192,7 @@ def order():
         
         return jsonify({"ok": True, "ord_id": new_ord_id})
 
-        # Insert the single order row with status "Ordered"
-        conn = create_connection(db_file)
-        try:
-            execute_query(conn, '''
-                INSERT INTO "Order" (rtr_id, usr_id, details, status)
-                VALUES (?, ?, ?, ?)
-            ''', (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value))
-            row = fetch_one(conn, 'SELECT last_insert_rowid()')
-            new_ord_id = row[0] if row else None
-        finally:
-            close_connection(conn)
-
-        return jsonify({"ok": True, "ord_id": new_ord_id})
-
-    # ---- (optional) legacy GET single-item path, kept for compatibility ----
-    # If you don't need this anymore, you can remove the whole GET section.
-    # Expect query: itm_id, qty, notes, delivery, tip, eta, date, meal
-    itm_id = int(request.args.get("itm_id") or 0)
-    if itm_id <= 0:
-        return redirect(url_for("orders"))
-
-    try:
-        qty = max(1, int(request.args.get("qty", "1")))
-    except ValueError:
-        qty = 1
-    delivery_type = (request.args.get("delivery") or "delivery").lower()
-    if delivery_type not in ("delivery", "pickup"):
-        delivery_type = "delivery"
-    try:
-        tip_dollars = _money(float(request.args.get("tip", "0")))
-    except Exception:
-        tip_dollars = 0.0
-    try:
-        eta_minutes = int(request.args.get("eta", "40"))
-    except Exception:
-        eta_minutes = 40
-    iso_date = (request.args.get("date") or datetime.now().date().isoformat())
-    try:
-        meal = int(request.args.get("meal", "3"))
-    except Exception:
-        meal = 3
-    notes = (request.args.get("notes") or "").strip()
-
-    # Look up item & restaurant strictly
-    conn = create_connection(db_file)
-    try:
-        mi = fetch_one(conn, '''
-            SELECT m.itm_id, m.rtr_id, m.name, m.price, r.name
-            FROM "MenuItem" m
-            JOIN "Restaurant" r ON r.rtr_id = m.rtr_id
-            WHERE m.itm_id = ?
-        ''', (itm_id,))
-    finally:
-        close_connection(conn)
-    if not mi:
-        return redirect(url_for("orders"))
-
-    item_id, rtr_id, item_name, price_cents, restaurant_name = mi
-    unit_price = _cents_to_dollars(price_cents)
-    line_total = _money(unit_price * qty)
-
-    tax = _money(line_total * TAX_RATE)
-    delivery_fee = DELIVERY_FEE if delivery_type == "delivery" else 0.00
-    service_fee = SERVICE_FEE
-    total = _money(line_total + tax + delivery_fee + service_fee + tip_dollars)
-
-    details = {
-        "placed_at": datetime.now().astimezone().isoformat(),
-        "restaurant_id": int(rtr_id),
-        "items": [{
-            "itm_id": int(item_id),
-            "name": item_name,
-            "qty": int(qty),
-            "unit_price": unit_price,
-            "line_total": line_total,
-            **({"notes": notes} if notes else {})
-        }],
-        "charges": {
-            "subtotal": line_total,
-            "tax": tax,
-            "delivery_fee": delivery_fee,
-            "service_fee": service_fee,
-            "tip": tip_dollars,
-            "total": total
-        },
-        "delivery_type": delivery_type,
-        "eta_minutes": int(eta_minutes),
-        "date": iso_date,
-        "meal": meal
-    }
-
-    conn = create_connection(db_file)
-    try:
-        execute_query(conn, '''
-            INSERT INTO "Order" (rtr_id, usr_id, details, status)
-            VALUES (?, ?, ?, ?)
-        ''', (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value))
-        row = fetch_one(conn, 'SELECT last_insert_rowid()')
-        new_ord_id = row[0] if row else None
-    finally:
-        close_connection(conn)
-
-    return redirect(url_for("profile") + (f"?ordered={new_ord_id}" if new_ord_id else ""))
+    return jsonify({"ok": False, "error": "invalid_input"}), 400
 
 # Orders route
 @app.route('/orders')
