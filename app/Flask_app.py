@@ -1721,8 +1721,11 @@ def plan_edit():
     """
     if session.get("Username") is None:
         return jsonify({"status": "error", "message": "Unauthorized"}), 401
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True)
+    data = data if isinstance(data, dict) else {}
     text = data.get("text", request.form.get("text", ""))
+    if not isinstance(text, str):
+        text = ""  # answered below as an empty request (400)
 
     conn = create_connection(db_file)
     try:

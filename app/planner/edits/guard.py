@@ -102,8 +102,10 @@ def check_length(text: str | None) -> str:
     """
     The request with surrounding whitespace removed.
     Raises:
-        InvalidRequest: It is empty or longer than MAX_REQUEST_CHARS.
+        InvalidRequest: It is not text, is empty, or is longer than MAX_REQUEST_CHARS.
     """
+    if not isinstance(text, str | None):
+        text = None  # a number or list in the JSON body: treat it as no request
     text = (text or "").strip()
     if not text:
         raise InvalidRequest('Type what you would like to change, like "make Thursday vegetarian".')

@@ -282,10 +282,16 @@ def test_an_unknown_dish_becomes_a_question(client, user, monkeypatch):
     assert body["status"] == "clarify" and "Lasagna" in body["message"]
 
 
-@pytest.mark.parametrize("text", ["", "x" * 2000])
-def test_empty_or_overlong_input_is_a_400(client, user, monkeypatch, text):
+@pytest.mark.parametrize(
+    "text",
+    ["", "x" * 2000, 123, ["make it vegetarian"], None],
+    ids=["empty", "overlong", "number", "list", "null"],  # lowercase: the test email uses the id
+)
+def test_empty_overlong_or_non_text_input_is_a_400(client, user, monkeypatch, text):
     use_model(monkeypatch, Scripted())
     resp = edit(client, text)
+    assert resp.status_code == 400 and resp.get_json()["status"] == "error"
+    resp = client.post("/plan/edit", json=["make it vegetarian"])
     assert resp.status_code == 400 and resp.get_json()["status"] == "error"
 
 

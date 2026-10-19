@@ -79,3 +79,9 @@ def test_empty_and_overlong_requests_are_invalid():
         check_length("x" * 2000)
     assert check_length("  make Monday vegan ") == "make Monday vegan"
     assert check_length("x" * MAX_REQUEST_CHARS)
+
+
+@pytest.mark.parametrize("value", [None, 123, ["make Monday vegan"], {"text": "x"}])
+def test_a_request_that_is_not_text_is_invalid(value):
+    with pytest.raises(InvalidRequest, match="Type what"):
+        check_length(value)
