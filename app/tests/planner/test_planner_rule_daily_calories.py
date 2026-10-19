@@ -85,3 +85,24 @@ def test_calories_defer_to_the_empty_meal_explanation():
 def test_no_calorie_explanation_when_every_day_can_reach_the_band():
     ctx = PlanContext(request(kcal=1800), menu([item(1, calories=600)]))
     assert DailyCalories().explain(ctx) is None
+
+
+def test_cheapest_day_is_the_exact_cheapest_combination_in_the_band():
+    from planner.rules.daily_calories import cheapest_day
+
+    # Band 1,620-1,980 kcal over three meals of 300, 600 or 900 kcal.
+    ctx = PlanContext(
+        request(kcal=1800),
+        menu(
+            [
+                item(1, price_cents=300, calories=300),
+                item(2, price_cents=800, calories=600),
+                item(3, price_cents=2000, calories=900),
+            ]
+        ),
+    )
+    cost, items = cheapest_day(ctx.slots, ctx, 1620, 1980)
+    # The only in-band days are 2+2+2 ($42.18 delivered) and 1+2+3 ($49.69).
+    assert [i.itm_id for i in items] == [2, 2, 2]
+    assert cost == 3 * ctx.menu.items[2].cost_cents == 4218
+    assert cheapest_day(ctx.slots, ctx, 5000, 6000) is None

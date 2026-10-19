@@ -100,3 +100,18 @@ def test_weeks_can_start_on_any_day(seed_db, seed_menu):
     )
     result = plan_week(request, seed_menu)
     assert result.ok and result.meals[0].slot.weekday == "Thu"
+
+
+def test_a_budget_just_below_the_cheapest_week_is_proven_quickly(seed_menu):
+    """Found in review: one solver worker used to time out here instead of proving it."""
+    request = PlanRequest(
+        daily_calorie_target=1200,
+        weekly_budget_cents=20_000,
+        start=date(2026, 10, 20),
+        allergens=("Sesame", "Milk"),
+    )
+    result = plan_week(request, seed_menu)
+
+    assert result.status is Status.INFEASIBLE
+    assert result.seconds < 2
+    assert "costs $227.71 with tax and fees; your weekly budget is $200.00" in result.explanation

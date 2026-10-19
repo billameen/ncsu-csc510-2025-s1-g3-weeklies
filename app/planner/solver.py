@@ -268,4 +268,8 @@ def _solver(
     solver.parameters.max_deterministic_time = work_limit
     solver.parameters.num_workers = workers
     solver.parameters.random_seed = RANDOM_SEED
+    # Full LP relaxation. With one worker, CP-SAT's default level could not prove even a
+    # budget that is below the sum of each day's cheapest valid meals infeasible within the
+    # time limit; at level 2 it takes about 0.1 s.
+    solver.parameters.linearization_level = 2
     return solver

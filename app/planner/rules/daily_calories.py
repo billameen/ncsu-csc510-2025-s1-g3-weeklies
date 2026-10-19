@@ -22,12 +22,25 @@ class DailyCalories(Constraint):
     order = 50
 
     def apply(self, ctx):
-        """low <= calories picked on each day <= high."""
+        """
+        low <= calories picked on each day <= high. Also tells the solver, for each day, the
+        cheapest combination that can meet the band (see `cheapest_day`): as a lower bound on
+        that day's cost, which lets it prove at once that a budget is too low, and as a hint
+        to start from, which finds a valid week quickly when the budget allows one.
+        """
         low, high = calorie_band(ctx.request.daily_calorie_target)
         for slots in ctx.slots_by_day().values():
             total = ctx.calories(slots)
             ctx.model.Add(total >= low)
             ctx.model.Add(total <= high)
+            cheapest = cheapest_day(slots, ctx, low, high)
+            if cheapest is None:
+                continue  # no combination meets the band; the model is infeasible as is
+            cost, items = cheapest
+            # Implied by the band and the filters applied so far, so it removes no plan.
+            ctx.model.Add(ctx.cost_cents(slots) >= cost)
+            for slot, item in zip(slots, items):
+                ctx.model.AddHint(ctx.pick(slot, item), 1)
 
     def explain(self, ctx):
         """
@@ -67,6 +80,41 @@ class DailyCalories(Constraint):
 
 def _days(days) -> str:
     return ", ".join(f"{day:%a %b} {day.day}" for day in days)
+
+
+def cheapest_day(slots, ctx, low: int, high: int):
+    """
+    The cheapest way to fill slots (one day) with candidate items totalling low..high kcal.
+    Exact dynamic programming over calorie totals: for each total keep only the cheapest way
+    to reach it, which is enough because what can follow depends only on the total. Ties go
+    to lower item ids, so the result is deterministic.
+    Returns:
+        (cost_cents, items in slot order), or None if no combination lands in the band.
+    """
+    reachable = {0: (0, ())}  # calories so far -> (cost, items)
+    for slot in slots:
+        options = {}  # calories -> cheapest candidate with that many
+        for item in ctx.candidates(slot):
+            best = options.get(item.calories)
+            if best is None or (item.cost_cents, item.itm_id) < (best.cost_cents, best.itm_id):
+                options[item.calories] = item
+        extended = {}
+        for total, (cost, items) in reachable.items():
+            for calories, item in options.items():
+                new_total = total + calories
+                if new_total > high:
+                    continue  # calories only add up, so this cannot come back into the band
+                candidate = (cost + item.cost_cents, items + (item,))
+                if new_total not in extended or _key(candidate) < _key(extended[new_total]):
+                    extended[new_total] = candidate
+        reachable = extended
+    in_band = [best for total, best in reachable.items() if total >= low]
+    return min(in_band, key=_key) if in_band else None
+
+
+def _key(option):
+    cost, items = option
+    return cost, tuple(i.itm_id for i in items)
 
 
 def reachable_totals(options: list[set[int]]) -> set[int]:
