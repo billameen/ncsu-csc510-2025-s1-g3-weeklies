@@ -1,5 +1,6 @@
 """The M3 plan-edit evaluation (eval.edits), on the seed menu with a few requests."""
 
+import dataclasses
 import json
 
 import pytest
@@ -86,6 +87,56 @@ def test_edits_from_any_request_are_applied_and_checked(seed):
         edits_eval.regex_parser.parse, SAMPLE, menu, catalog, current
     )
     assert metrics["refused_pct"] == 0 and metrics["violations"] == 0
+
+
+def parsed(*edits):
+    return ParsedRequest.model_validate({"action": "edit", "edits": list(edits)}).edits
+
+
+@pytest.mark.parametrize("delta", [-600, 600])
+def test_a_calorie_shift_is_checked_against_the_shifted_target(seed, delta):
+    menu, catalog, _ = seed
+    current = edits_eval.base_plan(menu)
+    shift = parsed({"type": "calorie_shift", "kcal_delta": delta, "days": ["mon"]})
+
+    applied = edits_eval.apply_edits(shift, menu, catalog, current)
+
+    assert applied["outcome"] == "applied" and applied["violations"] == []
+    # The unedited week misses Monday's shifted target, so a shift the solver ignored is caught.
+    base_meals = [
+        edits_eval.Meal(edits_eval.WEEKDAYS[d.weekday()], meal, itm)
+        for (d, meal), itm in current.items()
+    ]
+    targets = edits_eval.edited_kcal_targets(shift, edits_eval.plan_request().dates())
+    kinds = [(v.kind.value, v.day) for v in edits_eval.check_week(base_meals, catalog, targets)]
+    assert kinds == [("over_kcal" if delta < 0 else "under_kcal", "Mon")]
+
+
+def test_any_meal_outside_the_edit_that_changes_is_counted(seed, monkeypatch):
+    """Even one the preview calls unavailable: on the eval's unchanged menu, none can be."""
+    menu, catalog, _ = seed
+    current = edits_eval.base_plan(menu)
+    real_preview = edits_eval.preview_edits
+    monday_breakfast = (edits_eval.WEEK_START, 1)
+    other = next(i for i in sorted(menu.items) if i != current[monday_breakfast])
+
+    def unpinned_preview(request, menu, current, rules, affected, **kw):
+        preview = real_preview(request, menu, current, rules, affected, **kw)
+        entries = tuple(
+            (
+                f"[{edits_eval.WEEK_START.isoformat()},{other},1]"
+                if e.startswith(f"[{edits_eval.WEEK_START.isoformat()},") and e.endswith(",1]")
+                else e
+            )
+            for e in preview.entries
+        )
+        slot = next(s for s in request.slots() if (s.day, s.meal) == monday_breakfast)
+        return dataclasses.replace(preview, entries=entries, replaced_unavailable=(slot,))
+
+    monkeypatch.setattr(edits_eval, "preview_edits", unpinned_preview)
+    thursday_veg = parsed({"type": "require_tag", "tag": "vegetarian", "days": ["thu"]})
+
+    assert edits_eval.apply_edits(thursday_veg, menu, catalog, current)["pinned_changed"] == 1
 
 
 def test_recorded_llm_answers_replay_without_a_model(seed, tmp_path):

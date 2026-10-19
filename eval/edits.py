@@ -35,7 +35,7 @@ from planner.edits.llm_parser import LLMEditParser
 from planner.edits.replan import IMPOSSIBLE, preview_edits
 from planner.edits.resolve import Unresolvable, affected_scope, to_rule
 from planner.edits.result import ParseResult
-from planner.edits.schema import ParsedRequest, edit_keys
+from planner.edits.schema import CalorieShift, ParsedRequest, edit_keys
 from planner.menu import Menu, load_menu
 from planner.registry import rules_for
 from planner.request import PlanRequest
@@ -43,7 +43,15 @@ from planner.solver import plan_week
 
 from eval.catalog import Catalog, load_catalog
 from eval.profiles import Profile
-from eval.validate import WEEK_START, WEEKDAYS, Meal, validate_week
+from eval.validate import (
+    WEEK_START,
+    WEEKDAYS,
+    Meal,
+    Violation,
+    ViolationKind,
+    kcal_band,
+    validate_week,
+)
 
 REPO = Path(__file__).resolve().parent.parent
 DATASET = REPO / "eval" / "data" / "edit_requests.json"
@@ -90,13 +98,49 @@ def base_plan(menu: Menu) -> dict:
     return {(m.day, m.meal): m.itm_id for m in result.meals}
 
 
+def edited_kcal_targets(edits, window) -> dict[str, int]:
+    """
+    Each day's calorie target after the edits' calorie shifts, by M0 weekday name. Worked
+    out here from the parsed edits, not by the rule under test, so a shift the solver ignored
+    or applied wrongly shows up as a calorie violation.
+    """
+    targets = {WEEKDAYS[d.weekday()]: PROFILE.kcal_target for d in window}
+    for e in edits:
+        if isinstance(e, CalorieShift):
+            days = affected_scope(e, window).days
+            for d in window:
+                if days is None or d in days:
+                    targets[WEEKDAYS[d.weekday()]] += e.kcal_delta
+    return targets
+
+
+def check_week(meals, catalog: Catalog, kcal_targets: dict[str, int]) -> list[Violation]:
+    """
+    The M0 validator, with each day's calories checked against its edited target instead of
+    the profile's: a calorie shift is an edit the user asked for, not a broken rule.
+    """
+    kcal_kinds = (ViolationKind.OVER_KCAL, ViolationKind.UNDER_KCAL)
+    violations = [v for v in validate_week(meals, PROFILE, catalog) if v.kind not in kcal_kinds]
+    for day, target in kcal_targets.items():
+        low, high = kcal_band(target)
+        day_meals = [m for m in meals if m.day == day and m.itm_id in catalog.items]
+        kcal = sum(catalog.items[m.itm_id].calories for m in day_meals)
+        detail = f"{kcal} kcal, allowed {low}-{high}"
+        if kcal > high:
+            violations.append(Violation(ViolationKind.OVER_KCAL, day, detail=detail))
+        elif kcal < low:
+            violations.append(Violation(ViolationKind.UNDER_KCAL, day, detail=detail))
+    return violations
+
+
 def apply_edits(edits, menu: Menu, catalog: Catalog, current: dict) -> dict:
     """
     Apply parsed edits to the base week and check the result.
     Returns:
         dict: "outcome" (applied, closest, impossible or unresolved), the M0 validator's
-        "violations" (kinds), "pinned_changed" (meals outside the edit that changed for no
-        reason) and "seconds" (re-plan time, no LLM).
+        "violations" (kinds, with calories checked against the edited targets),
+        "pinned_changed" (meals outside the edit that changed) and "seconds" (re-plan time,
+        no LLM).
     """
     request = plan_request()
     window = request.dates()
@@ -120,17 +164,18 @@ def apply_edits(edits, menu: Menu, catalog: Catalog, current: dict) -> dict:
         day = date.fromisoformat(day_str)
         after[(day, int(meal))] = int(itm_id)
         meals.append(Meal(WEEKDAYS[day.weekday()], int(meal), int(itm_id)))
-    unavailable = {(s.day, s.meal) for s in preview.replaced_unavailable}
+    # The menu is the one the base week was planned from, so every planned item is still
+    # available: no meal outside the edit has a reason to change.
     pinned_changed = sum(
         1
         for slot in request.slots()
         if not any(scope.covers(slot) for scope in affected)
-        and (slot.day, slot.meal) not in unavailable
         and after.get((slot.day, slot.meal)) != current.get((slot.day, slot.meal))
     )
+    violations = check_week(meals, catalog, edited_kcal_targets(edits, window))
     return {
         "outcome": "closest" if preview.status == "closest" else "applied",
-        "violations": [v.kind.value for v in validate_week(meals, PROFILE, catalog)],
+        "violations": [v.kind.value for v in violations],
         "pinned_changed": pinned_changed,
         "seconds": preview.seconds,
     }
