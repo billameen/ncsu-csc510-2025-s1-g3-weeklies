@@ -56,5 +56,12 @@ changes every user's week. Run `python -m eval.run --seed 510`, check that M1 st
 to H4 (H3, p95 planning time, must stay at or below 5 s), and commit `eval/results/` in the
 same pull request. CI fails the PR if H1 drops by 5 points or more against `main`.
 
+**Plan edits only ever tighten.** A new plain-English edit type (see
+[Teach the parser a new request](app/docs/teach-the-parser.md)) must add a restriction, never
+remove an allergy, raise the budget or relax a rule. Change the parser's prompt only by adding
+a new version in `app/planner/prompts/`, then re-record the model's answers with
+`python -m eval.edits --live --readme` and commit the recording and results. CI fails if any
+edit in the evaluation breaks a rule.
+
 **Keep v1 working.** `PLANNER=llm` runs the v1 LLM planner, which the evaluation uses as
 baseline B2. Do not remove it or change its behavior.
