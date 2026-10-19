@@ -45,3 +45,15 @@ def test_everything_closed_is_explained_with_the_meal_time():
         "No breakfast can be planned on any day: of 1 menu items, "
         "1 come from restaurants closed at 10:00."
     )
+
+
+def test_no_restaurant_taking_orders_is_one_sentence_without_meal_times():
+    result = plan_week(
+        request(days=7),
+        menu([item(1)], [restaurant(1, status_open=False)]),
+        rules=[OneItemPerMeal(), RestaurantOpen()],
+    )
+    assert result.explanation == (
+        "No breakfast, lunch or dinner can be planned on any day: of 1 menu items, "
+        "1 come from restaurants that are not taking orders."
+    )

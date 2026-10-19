@@ -23,4 +23,6 @@ class RestaurantOpen(ItemFilter):
         return restaurant is not None and restaurant.is_open_at(slot.weekday, slot.time)
 
     def describe_block(self, slot, ctx):
+        if not any(r.status_open for r in ctx.menu.restaurants.values()):
+            return "come from restaurants that are not taking orders"
         return f"come from restaurants closed at {slot.time // 100}:{slot.time % 100:02d}"
