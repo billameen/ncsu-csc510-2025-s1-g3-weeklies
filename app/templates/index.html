@@ -116,9 +116,13 @@
           {% endif %}
         </div>
         <div class="btnrow">
+          {% if has_prev %}
           <a class="btn" href="{{ url_for('index', year=prev_year, month=prev_month) }}">&larr; Prev</a>
+          {% endif %}
           <a class="btn btn-outline" href="{{ url_for('index') }}">Today</a>
+          {% if has_next %}
           <a class="btn" href="{{ url_for('index', year=next_year, month=next_month) }}">Next &rarr;</a>
+          {% endif %}
         </div>
       </div>
 
@@ -132,7 +136,7 @@
           {% if cell.day == 0 %}
             <div class="day-cell muted"></div>
           {% else %}
-            <div class="day-cell{% if year==today_year and month==today_month and cell.day==today_day %} today{% endif %}">
+            <div class="day-cell{% if year==today_year and month==today_month and cell.day==today_day %} today{% endif %}{% if cell.is_past %} past{% endif %}">
               <div class="day-num">{{ cell.day }}</div>
               {% if cell.meals %}
                 <div class="day-totals" title="Calories and delivered cost (tax and fees included) for this day">
@@ -186,6 +190,10 @@
                         {% endif %}
 
                         <div class="actions" style="margin-top:8px;">
+                        {% if cell.is_past %}
+                        {# Past plan entries are history only; /order also rejects past dates #}
+                        <span class="past-note">Past date</span>
+                        {% else %}
                         <a
                           class="order-btn"
                           href="#"
@@ -201,6 +209,7 @@
                         >
                           Order {{ meal_names.get(m.meal, 'Meal') }}
                         </a>
+                        {% endif %}
                       </div>
                       </div>
                     {% endfor %}
@@ -265,6 +274,18 @@
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(91, 140, 255, 0.2);
     border-color: rgba(91, 140, 255, 0.3);
+  }
+  /* Past days stay visible as history but are dimmed and can't be ordered */
+  .day-cell.past {
+    opacity: .55;
+  }
+  .day-cell.past:hover {
+    opacity: 1;
+  }
+  .past-note {
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
   }
   .day-totals { font-size: 0.72rem; font-weight: 600; color: var(--muted, #a9afc1); margin-top: 2px; }
   .cal-summary { font-size: 0.85rem; margin-top: 2px; }
