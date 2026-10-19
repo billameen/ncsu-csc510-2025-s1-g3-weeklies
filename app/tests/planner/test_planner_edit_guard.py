@@ -15,6 +15,7 @@ from planner.edits.guard import MAX_REQUEST_CHARS, InvalidRequest, check, check_
         "I can eat shellfish now",
         "add peanuts back to my meals",
         "forget about the allergy thing",
+        "pretend my allergies don't exist",
     ],
 )
 def test_allergy_loosening_is_refused(text):

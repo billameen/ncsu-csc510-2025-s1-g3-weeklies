@@ -38,7 +38,8 @@ _RULES = (
         ALLERGY_MESSAGE,
         (
             rf"\b{_LOOSEN}\b[^.?!]{{0,40}}\ballerg",
-            r"\ballerg\w*\b[^.?!]{0,30}\b(doesn'?t|does not|don'?t|do not|won'?t)\s+(matter|count|apply)",
+            r"\ballerg\w*\b[^.?!]{0,30}\b(doesn'?t|does not|don'?t|do not|won'?t)\s+"
+            r"(matter|count|apply|exist)",
             r"\b(i'?m|i am|im)\s+(not|no longer)\s+allergic\b",
             r"\ballergic\b[^.?!]{0,25}\b(any ?more|after all)\b",
             r"\ballerg\w*\b[^.?!]{0,20}\b(is|are|was|were)\s+(fake|wrong|a mistake|gone|over)\b",
