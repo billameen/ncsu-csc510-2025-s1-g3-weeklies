@@ -356,6 +356,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     report = run(args.seed, catalog, profiles, m0_planners(ReplayLLM(RECORDING)))
 
     markdown = render_markdown(report)
+    # The plan-edit results (python -m eval.edits, M3) are part of the M0 report when present.
+    edits_md = args.out / "m3.md"
+    if edits_md.exists():
+        markdown += "\n" + edits_md.read_text()
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "m0.json").write_text(json.dumps(report, indent=2) + "\n")
     (args.out / "m0.md").write_text(markdown)
