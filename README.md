@@ -134,7 +134,8 @@ Developed as part of **CSC 510: Software Engineering, NC State University**.
 ## 🤝 Contributing
 
 Please review our [Code of Conduct](CODE_OF_CONDUCT.md) before submitting pull requests. Branch off
-`development` and open PRs back into `development`.
+`development` and open PRs back into `development`. See [CONTRIBUTING.md](CONTRIBUTING.md), including
+how to extend the meal planner safely.
 
 ---
 
