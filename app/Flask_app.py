@@ -26,7 +26,7 @@ from planner.targets import (
     parse_daily_calorie_target,
     parse_weekly_budget,
 )
-from planner.menu import load_menu
+from planner.menu import load_menu, meal_cost_cents
 from planner.request import InvalidPlanRequest, PlanRequest
 from planner.solver import plan_week
 
@@ -257,7 +257,9 @@ def build_calendar_cells(gen_map, year, month, items_by_id):
         month (int): The calendar month (1–12).
         items_by_id (dict): Mapping itm_id -> item detail dict from DB.
     Returns:
-        list: A flat list of calendar cell dicts with day number and a 'meals' list.
+        list: A flat list of calendar cell dicts with day number and a 'meals' list. Days of
+            the month also carry 'kcal' (calories planned that day) and 'cost_cents' (what the
+            day's meals cost delivered, tax and fees included, as the planner counts it).
     """
     def meal_sort_key(e):
         # Breakfast(1) first, then Lunch(2), then Dinner(3)
@@ -287,7 +289,12 @@ def build_calendar_cells(gen_map, year, month, items_by_id):
                     "color": palette.get(itm['itm_id'], "#7aa2f7"),
                 })
 
-            cells.append({"day": d, "meals": meals})
+            cells.append({
+                "day": d,
+                "meals": meals,
+                "kcal": sum(m["item"].get("calories") or 0 for m in meals),
+                "cost_cents": sum(meal_cost_cents(int(m["item"].get("price") or 0)) for m in meals),
+            })
 
     return cells
 
@@ -338,6 +345,9 @@ def index(year, month):
 
     # Build cells for the month
     cells = build_calendar_cells(gen_map, year, month, items_by_id)
+    month_cost_cents = sum(c.get("cost_cents", 0) for c in cells)
+    planned_days = [c for c in cells if c.get("meals")]
+    month_avg_kcal = round(sum(c["kcal"] for c in planned_days) / len(planned_days)) if planned_days else 0
 
     # Build "today_menu" (Breakfast, Lunch, Dinner if present)
     today_iso = f"{today.year:04d}-{today.month:02d}-{today.day:02d}"
@@ -365,6 +375,8 @@ def index(year, month):
         next_month=next_m.month,
         next_year=next_m.year,
         calendar_cells=cells,
+        month_cost_cents=month_cost_cents,
+        month_avg_kcal=month_avg_kcal,
         today_year=today.year,
         today_month=today.month,
         today_day=today.day,
