@@ -61,6 +61,12 @@ jobs:
             echo "No eval/results/m0.json on main yet; the regression check is skipped."
           fi
 
+      # M3 plan edits (issue #8): replays recorded LLM answers, no key. Fails the job if any
+      # edit breaks a rule or changes a meal outside the edit. Runs first so the M0 report
+      # below includes its table.
+      - name: Run the plan-edit eval
+        run: python -m eval.edits --out "$RESULTS"
+
       - name: Run the eval
         run: |
           set -e
