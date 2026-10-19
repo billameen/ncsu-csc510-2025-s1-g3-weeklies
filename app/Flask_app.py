@@ -813,8 +813,9 @@ def wallet_topup():
         ])
 
         if success:
-            # Refresh session and redirect
-            session['Wallet'] = session['Wallet'] + amount_cents
+            # Refresh the session's display balance from the database (it may be stale)
+            row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
+            session['Wallet'] = row[0] if row else 0
             return redirect(url_for('profile', wallet_updated='topup'))
         else:
             return redirect(url_for('profile', wallet_error='db_failed'))
@@ -855,24 +856,35 @@ def wallet_gift():
         sender_balance = sender[0] or 0
         recipient_id = recipient[0]
 
+        if recipient_id == sender_id:
+            return redirect(url_for('profile', wallet_error='self_gift'))
+        # Fast path only: another request can spend the money between this read and the
+        # debit below, so the debit itself is guarded too (M2 bug 4).
         if sender_balance < amount_cents:
             return redirect(url_for('profile', wallet_error='insufficient_funds'))
 
-        # 2. Prepare the atomic transaction (two steps: debit and credit)
+        # 2. Prepare the atomic transaction (two steps: debit and credit). The debit only
+        # applies if the balance still covers the amount at the moment it runs; if it
+        # changes no rows, require_rows cancels the credit as well.
         queries_and_params = [
             # Debit sender
-            ('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ?', (amount_cents, sender_id)),
+            require_rows('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (amount_cents, sender_id, amount_cents)),
             # Credit recipient
-            ('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, recipient_id))
+            require_rows('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, recipient_id))
         ]
 
         # 3. Execute the atomic transaction
-        if _execute_transaction(conn, queries_and_params):
-            # Refresh sender's session wallet value
-            session['Wallet'] = session['Wallet'] - amount_cents
+        succeeded = _execute_transaction(conn, queries_and_params)
+
+        # Refresh sender's session wallet value from the database (it may be stale)
+        row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (sender_id,))
+        session['Wallet'] = row[0] if row else 0
+
+        if succeeded:
             return redirect(url_for('profile', wallet_updated='gift'))
-        else:
-            return redirect(url_for('profile', wallet_error='db_failed'))
+        if session['Wallet'] < amount_cents:
+            return redirect(url_for('profile', wallet_error='insufficient_funds'))
+        return redirect(url_for('profile', wallet_error='db_failed'))
     finally:
         close_connection(conn)
 
