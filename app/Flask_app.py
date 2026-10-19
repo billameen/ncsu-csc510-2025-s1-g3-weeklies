@@ -79,19 +79,43 @@ def _dollars_to_cents(dollars) -> int:
     except MoneyError:
         return 0
 
+class _NoRowsChanged(Exception):
+    """Raised inside a transaction when a ``require_rows`` statement changed nothing."""
+
+
+def require_rows(query: str, params: tuple) -> tuple:
+    """
+    Mark a statement for ``_execute_transaction`` as one that must change at least one row.
+    A guarded debit such as ``UPDATE ... WHERE wallet >= ?`` that matches no rows is not
+    a SQL error, so without this marker the rest of the transaction would still commit.
+    Args:
+        query (str): SQL statement.
+        params (tuple): Parameters for the statement.
+    Returns:
+        tuple: ``(query, params, True)`` for use in ``_execute_transaction``.
+    """
+    return (query, params, True)
+
+
 def _execute_transaction(conn, queries_and_params: list) -> bool:
     """
     Execute multiple queries in a single, atomic transaction.
     Args:
         conn (sqlite3.Connection): Active database connection.
-        queries_and_params (list): List of (query: str, params: tuple) pairs.
+        queries_and_params (list): List of (query, params) pairs, or
+            ``require_rows(query, params)`` entries that abort the whole
+            transaction if they change no rows.
     Returns:
         bool: True on success, False on failure (with automatic rollback).
     """
     try:
         cur = conn.cursor()
-        for query, params in queries_and_params:
+        for entry in queries_and_params:
+            query, params = entry[0], entry[1]
+            must_change_rows = len(entry) > 2 and entry[2]
             cur.execute(query, params)
+            if must_change_rows and cur.rowcount < 1:
+                raise _NoRowsChanged(query)
         conn.commit()
         return True
     except Exception as e:
@@ -1018,13 +1042,10 @@ def order():
             "meal": meal
         }
 
-        # Handle amount being debited from user's wallet
+        # Handle amount being debited from user's wallet. The balance is checked by the
+        # guarded debit below against the database, never against session['Wallet'],
+        # which is only a display cache and can be stale (M2 bug 3).
         total_cents = _dollars_to_cents(total)
-        user_wallet_cents = session.get('Wallet', 0)
-
-        # Quick check based on session to prevent unnecessary transaction attempt
-        if user_wallet_cents < total_cents:
-            return jsonify({"ok": False, "error": "insufficient_funds"}), 402
 
         # Insert the single order row with status "Ordered" AND debit the wallet atomically
         conn = create_connection(db_file)
@@ -1032,8 +1053,9 @@ def order():
         try:
             # 1. Prepare queries for atomic transaction: Debit wallet AND Insert order
             queries_and_params = [
-                # Debit the wallet, using the WHERE clause as an optimistic check against race conditions
-                ('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (total_cents, usr_id, total_cents)),
+                # Debit the wallet only if it covers the total. require_rows makes a debit that
+                # matches no rows cancel the whole transaction, including the order (M2 bug 2).
+                require_rows('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (total_cents, usr_id, total_cents)),
                 # Insert the new order
                 ('INSERT INTO "Order" (rtr_id, usr_id, details, status) VALUES (?, ?, ?, ?)', (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value))
             ]
@@ -1044,15 +1066,17 @@ def order():
                 row = fetch_one(conn, 'SELECT ord_id FROM "Order" WHERE usr_id = ? ORDER BY ord_id DESC LIMIT 1', (usr_id,))
                 new_ord_id = row[0] if row else None
 
-                # Update session wallet to reflect the debit
-                session['Wallet'] = user_wallet_cents - total_cents
-                
+                # Refresh the session's display balance from the database
+                wallet_row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
+                session['Wallet'] = wallet_row[0] if wallet_row else 0
+
             else:
                 # Transaction failed. Most likely due to the `wallet >= ?` check failing (insufficient funds).
                 # Re-fetch wallet balance to confirm the insufficient funds error.
                 updated_wallet_row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
                 updated_wallet = updated_wallet_row[0] if updated_wallet_row else 0
-                
+                session['Wallet'] = updated_wallet
+
                 if updated_wallet < total_cents:
                     return jsonify({"ok": False, "error": "insufficient_funds"}), 402
                 
