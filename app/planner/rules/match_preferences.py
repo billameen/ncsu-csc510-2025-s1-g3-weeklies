@@ -23,6 +23,7 @@ class MatchPreferences(SoftConstraint):
     default_weight = 400
 
     def apply(self, ctx):
+        """Penalize every pick whose item matches none of the preferences."""
         patterns = [
             re.compile(rf"\b{re.escape(p.strip())}\b", re.IGNORECASE)
             for p in ctx.request.preferences

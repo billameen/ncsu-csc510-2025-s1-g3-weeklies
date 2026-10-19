@@ -22,6 +22,7 @@ class DailyCalories(Constraint):
     order = 50
 
     def apply(self, ctx):
+        """low <= calories picked on each day <= high."""
         low, high = calorie_band(ctx.request.daily_calorie_target)
         for slots in ctx.slots_by_day().values():
             total = ctx.calories(slots)

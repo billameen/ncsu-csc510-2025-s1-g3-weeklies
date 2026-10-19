@@ -43,7 +43,7 @@ DEFAULT_TIME_LIMIT_S = 4.0
 # in work done, not on the clock). Stopping on work instead of wall-clock time makes the plan
 # for a given request the same on every run and every machine; the wall-clock limit above is
 # only a backstop for a machine more than twice as slow. On the M0 users 2.0 gives the same
-# H1, H2 and H4 as running to the 4 s limit, with p95 planning time 2.7 s instead of 4.1 s.
+# H1, H2 and H4 as running to the 4 s limit, with p95 planning time under 3 s instead of 4.1 s.
 DEFAULT_WORK_LIMIT = 2.0
 # One search worker keeps the search, and so the plan, the same on every run. Plans are small
 # enough that more workers mostly add CPU contention on a shared web server.
@@ -75,6 +75,7 @@ class PlannedMeal:
 
     @property
     def day(self) -> date:
+        """The date of the meal."""
         return self.slot.day
 
     @property
@@ -84,6 +85,7 @@ class PlannedMeal:
 
     @property
     def itm_id(self) -> int:
+        """The MenuItem id picked."""
         return self.item.itm_id
 
     @property

@@ -17,6 +17,7 @@ class WeeklyBudget(Constraint):
     order = 60
 
     def apply(self, ctx):
+        """Total delivered cost of all picks <= weekly_budget_cents."""
         ctx.model.Add(ctx.cost_cents() <= ctx.request.weekly_budget_cents)
 
     def explain(self, ctx):

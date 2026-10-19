@@ -114,6 +114,7 @@ class ItemFilter(Constraint):
         return self.blocked_reason
 
     def apply(self, ctx: "PlanContext") -> None:
+        """Forbid every (slot, item) pair that `allows` rejects."""
         for slot in ctx.slots:
             for item in ctx.candidates(slot):
                 if not self.allows(item, slot, ctx):

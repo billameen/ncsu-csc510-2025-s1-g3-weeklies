@@ -26,6 +26,7 @@ class MaxMealsPerRestaurant(Constraint):
         self.limit = limit
 
     def apply(self, ctx):
+        """Picks from each restaurant, over the whole plan, <= limit."""
         picks_by_restaurant: dict[int, list] = {}
         for slot in ctx.slots:
             for item, var in ctx.picks(slot):
@@ -34,6 +35,7 @@ class MaxMealsPerRestaurant(Constraint):
             ctx.model.Add(sum(picks) <= self.limit)
 
     def explain(self, ctx):
+        """Blame the limit only if the plan works once the limit is lifted."""
         from planner.solver import cheapest_without
 
         # This rule is the reason only if the plan works once it is lifted.

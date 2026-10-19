@@ -48,7 +48,7 @@ class PlanContext:
             for itm_id in menu.items
         }
         self._blocked: dict[tuple[int, int], Constraint] = {}
-        self._penalties: list[tuple[Constraint, cp_model.LinearExprT]] = []
+        self._penalties: list[tuple[Constraint, cp_model.LinearExpr]] = []
 
     # --- reading the model ---------------------------------------------------------------
 
@@ -75,11 +75,11 @@ class PlanContext:
             days.setdefault(slot.day, []).append(slot)
         return {day: tuple(slots) for day, slots in days.items()}
 
-    def calories(self, slots: Iterable[Slot]) -> cp_model.LinearExprT:
+    def calories(self, slots: Iterable[Slot]) -> cp_model.LinearExpr:
         """Total calories picked over slots."""
         return sum(item.calories * var for slot in slots for item, var in self.picks(slot))
 
-    def cost_cents(self, slots: Iterable[Slot] | None = None) -> cp_model.LinearExprT:
+    def cost_cents(self, slots: Iterable[Slot] | None = None) -> cp_model.LinearExpr:
         """Total cost picked over slots (default: all), tax and fees included."""
         slots = self.slots if slots is None else slots
         return sum(item.cost_cents * var for slot in slots for item, var in self.picks(slot))
@@ -93,13 +93,13 @@ class PlanContext:
             self._blocked[key] = rule
             self.model.Add(self._pick[key] == 0)
 
-    def add_penalty(self, rule: Constraint, expr: cp_model.LinearExprT) -> None:
+    def add_penalty(self, rule: Constraint, expr: cp_model.LinearExpr) -> None:
         """Add rule.weight * expr to the cost the solver minimizes. Soft rules only."""
         if rule.kind is not Kind.SOFT:
             raise TypeError(f"{rule.name} is a hard rule; only soft rules add penalties")
         self._penalties.append((rule, expr))
 
-    def objective(self) -> cp_model.LinearExprT:
+    def objective(self) -> cp_model.LinearExpr:
         """The weighted sum of every penalty added so far (0 if none)."""
         return sum(rule.weight * expr for rule, expr in self._penalties)
 

@@ -18,8 +18,10 @@ class NoAllergens(ItemFilter):
     order = 12
 
     def allows(self, item, slot, ctx):
+        """True if the item has none of the request's allergens."""
         return not allergens_in(item.allergens, ctx.request.allergens)
 
     def describe_block(self, slot, ctx):
+        """Names the allergens, e.g. "contain your allergens (eggs, dairy)"."""
         names = dict.fromkeys(normalize_allergen(a) for a in ctx.request.allergens)
         return f"contain your allergens ({', '.join(names)})"

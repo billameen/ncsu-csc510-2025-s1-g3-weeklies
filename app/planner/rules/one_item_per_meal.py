@@ -21,10 +21,12 @@ class OneItemPerMeal(Constraint):
     order = 20
 
     def apply(self, ctx):
+        """Exactly one pick per slot among the slot's candidates."""
         for slot in ctx.slots:
             ctx.model.AddExactlyOne(var for _, var in ctx.picks(slot))
 
     def explain(self, ctx):
+        """Meals with no candidate left, and how many items each filter blocked."""
         if not ctx.menu.items:
             return "There are no menu items to plan with yet."
         empty = [slot for slot in ctx.slots if not ctx.candidates(slot)]

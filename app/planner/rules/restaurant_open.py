@@ -19,10 +19,12 @@ class RestaurantOpen(ItemFilter):
     order = 11
 
     def allows(self, item, slot, ctx):
+        """True if the item's restaurant takes orders at the slot's time."""
         restaurant = ctx.menu.restaurants.get(item.rtr_id)
         return restaurant is not None and restaurant.is_open_at(slot.weekday, slot.time)
 
     def describe_block(self, slot, ctx):
+        """Names the meal time, or says no restaurant is taking orders at all."""
         if not any(r.status_open for r in ctx.menu.restaurants.values()):
             return "come from restaurants that are not taking orders"
         return f"come from restaurants closed at {slot.time // 100}:{slot.time % 100:02d}"

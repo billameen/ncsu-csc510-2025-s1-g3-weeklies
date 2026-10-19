@@ -26,6 +26,7 @@ class PreferVariety(SoftConstraint):
     ESCALATION_STEPS = 3  # the k-th repeat costs min(k, 3) x weight
 
     def apply(self, ctx):
+        """Penalize each item's picks beyond the first, escalating per repeat."""
         uses: dict[int, list] = {}
         for slot in ctx.slots:
             for item, var in ctx.picks(slot):

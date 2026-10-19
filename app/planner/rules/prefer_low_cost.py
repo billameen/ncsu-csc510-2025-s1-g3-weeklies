@@ -17,4 +17,5 @@ class PreferLowCost(SoftConstraint):
     default_weight = 1
 
     def apply(self, ctx):
+        """Penalize the total delivered cost, in cents."""
         ctx.add_penalty(self, ctx.cost_cents())

@@ -14,4 +14,5 @@ class InStock(ItemFilter):
     order = 10
 
     def allows(self, item, slot, ctx):
+        """True if the item is in stock."""
         return item.in_stock
