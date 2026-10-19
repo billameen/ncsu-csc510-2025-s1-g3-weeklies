@@ -32,6 +32,15 @@ _LOOSEN = (
     r"bypass|cancel|get rid of|take off|stop)"
 )
 
+# "daily budget", "budget per day", "budget to $30 a day": the per-day words must be part of
+# the budget phrase, so "set my budget to $900 and dinners under $10 a day" is still refused.
+_PER_DAY = (
+    r"\b(daily|day'?s|per-day)\s+budget\b|"
+    r"\bbudget\b[^.?!]{0,25}?\b(per day|a day|each day|every day|per-day|daily)\b"
+)
+
+# Each pattern refuses the request when it matches, unless it is a (pattern, unless) pair
+# and `unless` matches too.
 _RULES = (
     (
         "allergy",
@@ -53,8 +62,11 @@ _RULES = (
         BUDGET_MESSAGE,
         (
             r"\b(raise|increase|bump|up|double|triple|extend|lift|ignore|exceed|go over|blow|"
-            r"remove|forget|drop|skip|scrap|change|set|max out)\b[^.?!]{0,30}\bbudget\b",
-            r"\bbudget\b[^.?!]{0,20}\b(to|=|of)\s*\$?\s*\d",
+            r"remove|forget|drop|skip|scrap|max out)\b[^.?!]{0,30}\bbudget\b",
+            # Setting the budget to an amount could raise it; a daily budget is a new limit on
+            # top of the weekly one (day_limit), so only that may be set from here.
+            (r"\b(change|set)\b[^.?!]{0,30}\bbudget\b", _PER_DAY),
+            (r"\bbudget\b[^.?!]{0,20}\b(to|=|of)\s*\$?\s*\d", _PER_DAY),
             r"\bover (my |the )?budget\b",
             r"\bno (more )?budget\b",
             r"\bspend (more|whatever|as much|unlimited)\b",
@@ -80,8 +92,15 @@ _RULES = (
         ),
     ),
 )
+
+
+def _compile(pattern):
+    pattern, unless = pattern if isinstance(pattern, tuple) else (pattern, None)
+    return re.compile(pattern, re.I), unless and re.compile(unless, re.I)
+
+
 _COMPILED = tuple(
-    (category, message, tuple(re.compile(p, re.IGNORECASE) for p in patterns))
+    (category, message, tuple(_compile(p) for p in patterns))
     for category, message, patterns in _RULES
 )
 
@@ -120,6 +139,6 @@ def check(text: str) -> Refusal | None:
     """The refusal for a request that tries to loosen a rule or instruct the assistant."""
     flat = " ".join(text.split())
     for category, message, patterns in _COMPILED:
-        if any(p.search(flat) for p in patterns):
+        if any(p.search(flat) and not (unless and unless.search(flat)) for p, unless in patterns):
             return Refusal(category, message)
     return None

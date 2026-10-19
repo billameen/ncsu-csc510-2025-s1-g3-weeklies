@@ -1,8 +1,13 @@
 """The guard refuses loosening and injection attempts before any model sees them."""
 
+import json
+from pathlib import Path
+
 import pytest
 
 from planner.edits.guard import MAX_REQUEST_CHARS, InvalidRequest, check, check_length
+
+REPO = Path(__file__).resolve().parents[3]
 
 
 @pytest.mark.parametrize(
@@ -31,10 +36,34 @@ def test_allergy_loosening_is_refused(text):
         "go over budget this week, it's fine",
         "spend whatever you need",
         "money is no object",
+        "change the budget to $50",
+        "raise my daily budget to $60",
+        "set my budget to $900 and keep dinners under $10 a day",
+        "set my budget to $900 a week",
     ],
 )
 def test_budget_increases_are_refused(text):
     assert check(text).category == "budget"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "set a daily budget of $40",
+        "change my budget to $30 a day",
+        "set the budget for each day to $25",
+        "make it so that the budget for each day doesn't cross 4$",
+    ],
+)
+def test_a_daily_budget_is_a_new_limit_and_passes(text):
+    """A per-day cap only adds a limit; the weekly budget still applies on top of it."""
+    assert check(text) is None
+
+
+def test_no_normal_labelled_request_is_refused():
+    requests = json.loads((REPO / "eval" / "data" / "edit_requests.json").read_text())
+    refused = [r["text"] for r in requests if r["category"] == "normal" and check(r["text"])]
+    assert refused == []
 
 
 @pytest.mark.parametrize(
