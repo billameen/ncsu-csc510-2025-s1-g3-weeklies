@@ -17,7 +17,7 @@ from flask import Flask, render_template, url_for, redirect, request, session, s
 
 # Use ONLY these helpers for DB access
 from sqlQueries import create_connection, close_connection, fetch_one, fetch_all, execute_query
-from money import MoneyError, parse_cents, cents_to_str
+from money import MoneyError, parse_cents, cents_to_str, format_cents
 import uuid
 import ledger
 from collections import Counter, defaultdict
@@ -180,6 +180,47 @@ def _request_key(kind: str, usr_id, client_key) -> str:
     if isinstance(client_key, str) and _CLIENT_KEY_RE.fullmatch(client_key):
         return f"{kind}:{int(usr_id)}:{client_key}"
     return _new_request_key(kind)
+
+
+def _refunded_txn_ids(conn) -> set:
+    """IDs of ledger transactions that have been reversed (refunded)."""
+    return {r[0] for r in conn.execute(
+        'SELECT reverses_txn_id FROM "LedgerTransaction" WHERE reverses_txn_id IS NOT NULL')}
+
+
+_TXN_LABELS = {
+    "topup": "Wallet top-up",
+    "gift": "Gift",
+    "order": "Order",
+    "refund": "Refund",
+    "opening_balance": "Opening balance",
+}
+
+
+def _wallet_history(conn, usr_id, limit=25) -> list:
+    """
+    A user's most recent wallet transactions for the profile page, newest first.
+    Returns:
+        list[dict]: txn_id, date, description, amount (signed display string),
+        amount_cents and credit (True when money came in).
+    """
+    _ledger_ready(conn)
+    rows = []
+    for h in ledger.history(conn, ledger.user_account(usr_id), limit=limit):
+        try:
+            when = datetime.fromisoformat(h["created_at"]).astimezone().strftime("%Y-%m-%d %H:%M")
+        except (TypeError, ValueError):
+            when = h["created_at"] or ""
+        cents = h["amount_cents"]
+        rows.append({
+            "txn_id": h["txn_id"],
+            "date": when,
+            "description": h["memo"] or _TXN_LABELS.get(h["kind"], h["kind"]),
+            "amount": ("+" if cents > 0 else "-") + format_cents(abs(cents)),
+            "amount_cents": cents,
+            "credit": cents > 0,
+        })
+    return rows
 
 
 def _order_id_for_txn(conn, usr_id, txn_id):
@@ -716,13 +757,19 @@ def profile():
         reviewed_restaurant_rows = fetch_all(conn, 'SELECT DISTINCT rtr_id FROM "Review" WHERE usr_id = ?', (user["usr_id"],))
         reviewed_rtr_ids = {r[0] for r in reviewed_restaurant_rows}
 
+        _ledger_ready(conn)
+        refunded_txns = _refunded_txn_ids(conn)
+        wallet_history = _wallet_history(conn, user["usr_id"])
+
         orders = []
         for ord_id, details, status, r_name, rtr_id in order_rows:
             placed = ""
             total = ""
+            ledger_txn_id = None
             if details:
                 try:
                     j = json.loads(details)
+                    ledger_txn_id = j.get("ledger_txn_id")
                     placed = _fmt_date(j.get("placed_at") or j.get("time"))
                     charges = j.get("charges") or {}
                     total_val = charges.get("total") or charges.get("grand_total") or charges.get("amount")
@@ -749,7 +796,8 @@ def profile():
                 "rtr_id": rtr_id,
                 "total": total,
                 "is_reviewable": is_reviewable,
-                "is_reviewed": is_reviewed_final # <-- CORRECTED: Use the final state for display
+                "is_reviewed": is_reviewed_final, # <-- CORRECTED: Use the final state for display
+                "refunded": ledger_txn_id in refunded_txns,
             })
 
         # Fetch user's support tickets with order details
@@ -800,6 +848,7 @@ def profile():
         pw_error=pw_error,
         topup_key=uuid.uuid4().hex,
         gift_key=uuid.uuid4().hex,
+        wallet_history=wallet_history,
     )
 
 # Edit Profile route
@@ -1832,6 +1881,10 @@ def admin_dashboard():
             'Delivered': []
         }
         
+        _ledger_ready(conn)
+        refunded_txns = _refunded_txn_ids(conn)
+        ledger_check = ledger.check_ledger(conn)
+
         for row in order_rows:
             ord_id, rtr_id, usr_id, details_json, status, first_name, last_name, restaurant_name = row
             
@@ -1839,6 +1892,7 @@ def admin_dashboard():
             placed_at = None
             total = None
             placed_at_display = ""
+            ledger_txn_id = None
             
             if details_json:
                 try:
@@ -1857,6 +1911,7 @@ def admin_dashboard():
                     # Get total from charges
                     charges = details.get("charges", {})
                     total = charges.get("total") or charges.get("grand_total")
+                    ledger_txn_id = details.get("ledger_txn_id")
                     
                 except Exception as e:
                     print(f"Error parsing order details: {e}")
@@ -1873,7 +1928,9 @@ def admin_dashboard():
                 'restaurant_name': restaurant_name,
                 'total': f"${total:.2f}" if total else "N/A",
                 'placed_at': placed_at_display,
-                'status': status
+                'status': status,
+                'refunded': ledger_txn_id in refunded_txns,
+                'refundable': bool(ledger_txn_id) and ledger_txn_id not in refunded_txns,
             }
             
             # Add to appropriate status group
@@ -1956,6 +2013,8 @@ def admin_dashboard():
     
     return render_template(
         'admin.html',
+        ledger_check=ledger_check,
+        ledger_total=format_cents(ledger_check.total_cents),
         orders_by_status=orders_by_status,
         tickets=tickets,
         current_page=page,

@@ -52,6 +52,32 @@ def _dt_display(iso_str):
         return iso_str
 
 
+def receipt_ledger_lines(conn, details: dict) -> list:
+    """
+    Ledger references printed on a receipt (M2): the ID of the ledger transaction
+    that paid for the order and, if the order was refunded, the refund's ID.
+    Orders placed before the ledger existed have none.
+    Args:
+        conn (sqlite3.Connection): Active database connection.
+        details (dict): The order's parsed details JSON.
+    Returns:
+        list[str]: Zero, one or two lines of text.
+    """
+    txn_id = (details or {}).get("ledger_txn_id")
+    if not txn_id:
+        return []
+    lines = [f"Ledger transaction #{txn_id}"]
+    try:
+        row = conn.execute(
+            'SELECT txn_id FROM "LedgerTransaction" WHERE reverses_txn_id = ?', (txn_id,)
+        ).fetchone()
+    except Exception:
+        row = None
+    if row:
+        lines.append(f"Refunded in full (ledger transaction #{row[0]})")
+    return lines
+
+
 def generate_order_receipt_pdf(db_file: str, ord_id: int) -> bytes:
     """
     Generate a PDF receipt for a given order.
@@ -101,6 +127,7 @@ def generate_order_receipt_pdf(db_file: str, ord_id: int) -> bytes:
         service_fee = charges.get("service_fee")
         tip = charges.get("tip")
         total = charges.get("total") or charges.get("grand_total") or charges.get("amount")
+        ledger_lines = receipt_ledger_lines(conn, j)
 
         # --------- Build PDF ----------
         buf = BytesIO()
@@ -116,8 +143,10 @@ def generate_order_receipt_pdf(db_file: str, ord_id: int) -> bytes:
         c.setFillColor(colors.grey)
         c.drawString(margin, y - 14, f"Status: {_safe_str(status)}")
         c.drawRightString(width - margin, y - 14, f"Placed: {placed_at}")
+        for i, line in enumerate(ledger_lines):
+            c.drawString(margin, y - 26 - 12 * i, line)
         c.setFillColor(colors.black)
-        y -= 30
+        y -= 30 + 12 * len(ledger_lines)
 
         # Parties
         c.setFont("Helvetica-Bold", 12)

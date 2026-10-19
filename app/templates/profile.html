@@ -283,6 +283,9 @@
                       {% elif s == 'ordered' %}
                       <span class="status-bubble status-ordered">Ordered</span>
                       {% else %} {{ order.status }} {% endif %}
+                      {% if order.refunded %}
+                      <span class="status-bubble status-cancelled">Refunded</span>
+                      {% endif %}
                     </td>
                     <td>
                       <a
@@ -326,6 +329,42 @@
             </div>
             {% else %}
             <p>No orders found.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Wallet History (M2 ledger) -->
+        <div class="page-title" style="margin-top: 20px">
+          <h1>Wallet History</h1>
+        </div>
+
+        <div class="card max-w-lg" style="max-width: var(--container)" id="walletHistory">
+          <div class="card-body">
+            {% if wallet_history %}
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Description</th>
+                    <th scope="col" style="text-align: right">Amount</th>
+                    <th scope="col">Transaction</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for t in wallet_history %}
+                  <tr>
+                    <td>{{ t.date }}</td>
+                    <td>{{ t.description }}</td>
+                    <td style="text-align: right; font-weight: 600; color: {{ 'var(--success)' if t.credit else 'var(--danger)' }}">{{ t.amount }}</td>
+                    <td class="text-muted">#{{ t.txn_id }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <p>No wallet transactions yet.</p>
             {% endif %}
           </div>
         </div>
