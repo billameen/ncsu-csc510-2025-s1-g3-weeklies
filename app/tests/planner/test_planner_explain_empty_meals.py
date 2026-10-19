@@ -63,6 +63,18 @@ def test_an_empty_meal_on_some_days_names_those_days_and_uses_describe_block():
     )
 
 
+def test_meals_blocked_the_same_way_on_the_same_days_share_a_sentence():
+    result = plan_week(
+        request(days=2, meals=(1, 2)),
+        menu([item(1), item(3)]),
+        rules=[NoOddIds(), NoBreakfastBefore(), OneItemPerMeal()],
+    )
+    # NoOddIds is applied first and blocks both items, so breakfast and lunch read the same.
+    assert result.explanation == (
+        "No breakfast or lunch can be planned on any day: of 2 menu items, 2 have odd ids."
+    )
+
+
 def test_an_empty_menu_says_so():
     result = plan_week(request(), menu([]), rules=[OneItemPerMeal()])
     assert result.explanation == "There are no menu items to plan with yet."

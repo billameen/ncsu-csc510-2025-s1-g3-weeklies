@@ -30,23 +30,26 @@ class OneItemPerMeal(Constraint):
         empty = [slot for slot in ctx.slots if not ctx.candidates(slot)]
         if not empty:
             return None
-        # Meals with the same blockers on several days are reported once, listing the days.
-        groups: dict[tuple, list] = {}
+        # One sentence per set of blockers: a meal blocked the same way on several days is
+        # listed once with its days, and meals blocked the same way on the same days share
+        # a sentence ("No breakfast or lunch can be planned on Mon ...").
+        days_by_meal: dict[tuple, list] = {}
         for slot in empty:
             counts = Counter(ctx.blocked_by(slot, item) for item in ctx.menu.items.values())
             reasons = tuple(
                 f"{n} {_reason(rule, slot, ctx)}"
                 for rule, n in sorted(counts.items(), key=lambda kv: kv[0].order)
             )
-            groups.setdefault((slot.meal_name, reasons), []).append(slot)
-        sentences = []
-        for (meal_name, reasons), slots in groups.items():
-            days = _days(slots, ctx)
-            sentences.append(
-                f"No {meal_name} can be planned {days}: of {len(ctx.menu.items)} menu items, "
-                f"{_join(reasons)}."
-            )
-        return " ".join(sentences)
+            days_by_meal.setdefault((slot.meal, reasons), []).append(slot)
+        meals_by_days: dict[tuple, list] = {}
+        for (meal, reasons), slots in days_by_meal.items():
+            key = (_days(slots, ctx), reasons)
+            meals_by_days.setdefault(key, []).append(slots[0].meal_name)
+        return " ".join(
+            f"No {_join(meals, 'or')} can be planned {days}: of {len(ctx.menu.items)} menu "
+            f"items, {_join(reasons)}."
+            for (days, reasons), meals in meals_by_days.items()
+        )
 
 
 def _reason(rule, slot, ctx) -> str:
@@ -62,8 +65,8 @@ def _days(slots, ctx) -> str:
     return "on " + ", ".join(f"{s.weekday} {s.day:%b} {s.day.day}" for s in slots)
 
 
-def _join(parts) -> str:
+def _join(parts, conjunction="and") -> str:
     parts = list(parts)
     if len(parts) == 1:
         return parts[0]
-    return ", ".join(parts[:-1]) + " and " + parts[-1]
+    return f"{', '.join(parts[:-1])} {conjunction} {parts[-1]}"

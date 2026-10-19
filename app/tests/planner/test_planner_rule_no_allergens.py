@@ -43,10 +43,6 @@ def test_every_item_blocked_by_allergens_is_explained_with_their_names():
         [item(1, allergens=("Egg",)), item(2, allergens=("Dairy",))], ("Eggs", "Egg", "Milk")
     )
     assert result.explanation == (
-        "No breakfast can be planned on Mon Oct 19: of 2 menu items, "
-        "2 contain your allergens (eggs, dairy). "
-        "No lunch can be planned on Mon Oct 19: of 2 menu items, "
-        "2 contain your allergens (eggs, dairy). "
-        "No dinner can be planned on Mon Oct 19: of 2 menu items, "
+        "No breakfast, lunch or dinner can be planned on Mon Oct 19: of 2 menu items, "
         "2 contain your allergens (eggs, dairy)."
     )
