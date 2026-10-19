@@ -197,12 +197,9 @@ def test_order_receipt_admin_can_download_other_users_receipt(client, mock_db_an
 
 
 def test_order_receipt_generator_failure_returns_500_gracefully(client, mock_db_and_pdf):
-    # Extension Not Handled #1: if PDF compilation fails (e.g. malformed details or a library
-    # error), the route should catch the error and return a clean 500 response instead of
-    # crashing the request.
-    # Known defect: generate_order_receipt_pdf has no try/except wrapper, so the exception
-    # currently bubbles up unhandled. This test asserts the CORRECT behavior and will fail
-    # (with an unhandled RuntimeError) until the route wraps PDF generation in error handling.
+    # Extension #1: if PDF compilation fails (e.g. malformed details or a library error), the
+    # route catches the error, logs it, and returns a friendly 500 error page instead of
+    # crashing the request or exposing the exception text.
     mock_db_and_pdf["fetch_one"].return_value = (42,)
     mock_db_and_pdf["generate_order_receipt_pdf"].side_effect = RuntimeError("PDF Generation Engine Failure")
 
@@ -213,5 +210,8 @@ def test_order_receipt_generator_failure_returns_500_gracefully(client, mock_db_
 
     response = client.get("/orders/101/receipt.pdf")
     assert response.status_code == 500
-# This fails with an unhandled RuntimeError while the route has no try/except around the PDF
-# generator; it passes once generator failures are caught and turned into a proper 500 response.
+    body = response.get_data(as_text=True)
+    assert "Receipt Unavailable" in body
+    assert "PDF Generation Engine Failure" not in body
+    assert mock_db_and_pdf["close_connection"].called
+# This proves a PDF generator failure is caught and turned into a friendly 500 error page that does not leak the exception text, and the DB connection is still closed.

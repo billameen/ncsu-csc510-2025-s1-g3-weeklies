@@ -1397,7 +1397,15 @@ def order_receipt(ord_id: int):
             if not urow or urow[0] != row[0]:
                 abort(403)
 
-        pdf_bytes = generate_order_receipt_pdf(db_file, ord_id)  # returns bytes
+        # Only the generator is wrapped: the abort(404/403) calls above raise HTTPExceptions,
+        # which must not be swallowed and turned into a 500
+        try:
+            pdf_bytes = generate_order_receipt_pdf(db_file, ord_id)  # returns bytes
+        except Exception as e:
+            print(f"Receipt Generation Error (ord_id={ord_id}): {e!r}")
+            return render_template("error.html",
+                                   error="Receipt Unavailable",
+                                   message="We couldn't generate this receipt. Please try again later."), 500
     finally:
         close_connection(conn)
 
@@ -2227,8 +2235,9 @@ def insights_data():
         })
 
     except Exception as e:
-        print(f"Insights Error: {e}")
-        return jsonify({"error": str(e)}), 500
+        # Log the details server-side; don't expose internal error text to the client
+        print(f"Insights Error: {e!r}")
+        return jsonify({"error": "Internal server error"}), 500
     finally:
         close_connection(conn)
 
