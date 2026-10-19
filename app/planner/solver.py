@@ -16,8 +16,11 @@ such as the budget, which picking one meal at a time cannot guarantee.
     else:
         ...  # result.explanation says why no week could be planned
 
-Solving stops after ``time_limit_s`` (4 s by default). If a valid plan was found by then it
-is returned with ``optimal`` False; it is valid, just not proven to be the best one.
+Solving stops after ``time_limit_s`` (4 s by default) or after ``work_limit`` of the solver's
+deterministic time (2.0 by default), whichever comes first. If a valid plan was found by then
+it is returned with ``optimal`` False; it is valid, just not proven to be the best one.
+Because the work limit does not depend on the clock, the same request always gets the same
+plan.
 """
 
 import math
@@ -36,6 +39,12 @@ from planner.registry import rules_for
 from planner.request import PlanRequest, Slot
 
 DEFAULT_TIME_LIMIT_S = 4.0
+# Search effort cap in CP-SAT's deterministic time (roughly seconds on a laptop, but counted
+# in work done, not on the clock). Stopping on work instead of wall-clock time makes the plan
+# for a given request the same on every run and every machine; the wall-clock limit above is
+# only a backstop for a machine more than twice as slow. On the M0 users 2.0 gives the same
+# H1, H2 and H4 as running to the 4 s limit, with p95 planning time 2.7 s instead of 4.1 s.
+DEFAULT_WORK_LIMIT = 2.0
 # One search worker keeps the search, and so the plan, the same on every run. Plans are small
 # enough that more workers mostly add CPU contention on a shared web server.
 DEFAULT_WORKERS = 1
@@ -137,6 +146,7 @@ def plan_week(
     *,
     rules: Sequence[Constraint] | None = None,
     time_limit_s: float = DEFAULT_TIME_LIMIT_S,
+    work_limit: float = DEFAULT_WORK_LIMIT,
     workers: int = DEFAULT_WORKERS,
 ) -> PlanResult:
     """
@@ -147,6 +157,8 @@ def plan_week(
         rules: The rules to use, in any order. Default: rules_for(request), i.e. every
             registered rule that is on by default plus those the request's options enable.
         time_limit_s: When to stop searching and return the best plan found so far.
+        work_limit: The same in deterministic time, so the plan does not depend on how busy
+            the machine is. Whichever limit is hit first stops the search.
         workers: CP-SAT search workers. More can be faster but makes plans vary run to run.
     Returns:
         PlanResult: The plan, or the reasons there is none.
@@ -160,7 +172,7 @@ def plan_week(
         rule.apply(ctx)
     ctx.model.Minimize(ctx.objective())
 
-    solver = _solver(time_limit_s, workers)
+    solver = _solver(time_limit_s, workers, work_limit)
     status = solver.Solve(ctx.model)
 
     if status == cp_model.MODEL_INVALID:
@@ -246,9 +258,12 @@ def diagnose(ctx: PlanContext) -> tuple[str, ...]:
     return (f"No week meets all of these at once: {'; '.join(hard)}.",)
 
 
-def _solver(time_limit_s: float, workers: int) -> cp_model.CpSolver:
+def _solver(
+    time_limit_s: float, workers: int, work_limit: float = DEFAULT_WORK_LIMIT
+) -> cp_model.CpSolver:
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = time_limit_s
+    solver.parameters.max_deterministic_time = work_limit
     solver.parameters.num_workers = workers
     solver.parameters.random_seed = RANDOM_SEED
     return solver
