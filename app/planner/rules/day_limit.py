@@ -92,22 +92,34 @@ class DayLimit(Constraint):
         return PreferDayLimit(self)
 
     def unmet(self, plan):
-        """E.g. "Mon Oct 19 costs $24.10 (limit $4.00 a day)"."""
+        """E.g. "Mon Oct 19 costs $24.10", or "Every day costs $42.18", against the limit."""
         totals: dict = {}
         for slot, item in plan.items():
             if self.days is None or slot.day in self.days:
                 amount = item.cost_cents if self.metric == "cost" else item.calories
                 totals[slot.day] = totals.get(slot.day, 0) + amount
-        verb = "costs" if self.metric == "cost" else "has"
-        misses = [
-            f"{day:%a %b} {day.day} {verb} {self._amount(total)}"
+        missed = {
+            day: total
             for day, total in sorted(totals.items())
             if (total > self.value if self.op == "<=" else total < self.value)
-        ]
-        if not misses:
+        }
+        if not missed:
             return None
+        by_total: dict[int, list] = {}
+        for day, total in missed.items():
+            by_total.setdefault(total, []).append(day)
+        every = len(missed) == len(totals) > 1 and len(by_total) == 1
+        parts = []
+        for total, days in by_total.items():
+            one = every or len(days) == 1
+            if self.metric == "cost":
+                verb = "costs" if one else "cost"
+            else:
+                verb = "has" if one else "have"
+            who = "Every day" if every else ", ".join(f"{d:%a %b} {d.day}" for d in days)
+            parts.append(f"{who} {verb} {self._amount(total)}")
         bound = "at most" if self.op == "<=" else "at least"
-        return f"{'; '.join(misses)} (you asked for {bound} {self._amount(self.value)} a day)"
+        return f"{'; '.join(parts)} (you asked for {bound} {self._amount(self.value)} a day)"
 
     def __repr__(self) -> str:
         days = "every day" if self.days is None else sorted(d.isoformat() for d in self.days)

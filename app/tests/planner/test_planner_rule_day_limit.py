@@ -6,6 +6,7 @@ import pytest
 from menu_factory import MONDAY, item, menu, request
 
 from planner.registry import get
+from planner.scope import MealScope
 from planner.solver import Status, plan_week
 
 OneItemPerMeal, DailyCalories = get("one_item_per_meal"), get("daily_calories")
@@ -98,3 +99,29 @@ def test_bad_limits_are_rejected(args):
 def test_the_soft_version_needs_the_rule():
     with pytest.raises(ValueError):
         get("prefer_day_limit")()
+
+
+def test_unmet_groups_days_with_the_same_total():
+    tuesday, wednesday = MONDAY + timedelta(days=1), MONDAY + timedelta(days=2)
+    result = plan_week(
+        request(days=3),
+        MENU,
+        rules=[
+            OneItemPerMeal(),
+            PreferMeals("cheaper", MealScope(days={MONDAY, tuesday})),
+            PreferMeals("more_calories", MealScope(days={wednesday})),
+        ],
+    )
+    plan = {m.slot: m.item for m in result.meals}
+    cheap_day = f"${3 * CHEAP.cost_cents / 100:,.2f}"
+    assert DayLimit("cost", "<=", 400, days={MONDAY, tuesday}).unmet(plan) == (
+        f"Every day costs {cheap_day} (you asked for at most $4.00 a day)"
+    )
+    dear_day = f"${3 * DEAR.cost_cents / 100:,.2f}"
+    assert DayLimit("cost", "<=", 400).unmet(plan) == (
+        f"Mon Oct 19, Tue Oct 20 cost {cheap_day}; Wed Oct 21 costs {dear_day} "
+        "(you asked for at most $4.00 a day)"
+    )
+    assert DayLimit("calories", ">=", 2500, days={MONDAY}).unmet(plan) == (
+        "Mon Oct 19 has 1,800 kcal (you asked for at least 2,500 kcal a day)"
+    )
