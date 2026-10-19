@@ -95,15 +95,12 @@ def test_viewing_the_profile_lists_the_users_orders_with_formatted_dates_and_tot
 # This proves an authenticated GET /profile renders 200 with the user's order history, its restaurant name, and its ISO timestamp and total reformatted for display.
 
 
-def test_an_order_that_actually_reached_delivered_is_never_offered_a_review_button(client, temp_db_path):
-    """The route names the flag ``is_delivered`` but compares against
-    ``OrderStatus.ORDERED.get_lowercase()``:
-
-        is_delivered = (status or "").lower() == OrderStatus.ORDERED.get_lowercase()
-
-    so review eligibility keys on "Ordered", not "Delivered". Two separate
-    restaurants are used because eligibility is also suppressed once any
-    order from the same restaurant has claimed the review slot.
+def test_only_an_order_that_reached_delivered_is_offered_a_review_button(client, temp_db_path):
+    """The ``is_delivered`` flag used to compare against
+    ``OrderStatus.ORDERED``, so review eligibility keyed on "Ordered" rather
+    than "Delivered". Two separate restaurants are used because eligibility is
+    also suppressed once any order from the same restaurant has claimed the
+    review slot.
     """
     usr_id = _make_user(temp_db_path, "uc9-delivered@example.test")
     delivered_rtr = _make_restaurant(temp_db_path, "UC9 Delivered Diner")
@@ -116,11 +113,11 @@ def test_an_order_that_actually_reached_delivered_is_never_offered_a_review_butt
 
     assert response.status_code == 200
     reviewable = REVIEW_BUTTON.findall(response.get_data(as_text=True))
-    assert str(ordered_ord) in reviewable
-    assert str(delivered_ord) not in reviewable
+    assert str(delivered_ord) in reviewable
+    assert str(ordered_ord) not in reviewable
 
 
-# This proves the only order a user can review is one that has merely been placed, while an order whose status actually reached "Delivered" is permanently locked out of reviewing -- the eligibility check is inverted against its own variable name, a real defect.
+# This proves a delivered order is offered a Review button while an order that has merely been placed is not.
 
 
 def test_an_order_whose_total_is_exactly_zero_renders_a_blank_total_cell(client, temp_db_path):

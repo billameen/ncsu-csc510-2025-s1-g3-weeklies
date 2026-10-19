@@ -93,7 +93,7 @@ def test_order_post_fails_on_insufficient_funds(client, seed_minimal_data, login
 # --- Test 2: Review Submission Failure - Order Not Delivered ---
 def test_review_submit_fails_if_order_not_delivered(client, seed_minimal_data, login_session, temp_db_path):
     """
-    Test 2/9: Verifies review submission fails (403) if the associated order status is not 'Ordered'.
+    Test 2/9: Verifies review submission fails (403) if the associated order status is not 'Delivered'.
     """
     usr_id = seed_minimal_data["usr_id"]
     rtr_id = seed_minimal_data["rtr_id"]
@@ -137,7 +137,7 @@ def test_review_submit_fails_on_duplicate_review(client, seed_minimal_data, logi
         execute_query(conn, 'DELETE FROM "Review" WHERE usr_id = ? AND rtr_id = ?', (usr_id, rtr_id))
 
         # 1. Create a dummy 'delivered' order
-        execute_query(conn, 'INSERT INTO "Order" (rtr_id, usr_id, details, status) VALUES (?, ?, "{}", "Ordered")', (rtr_id, usr_id))
+        execute_query(conn, 'INSERT INTO "Order" (rtr_id, usr_id, details, status) VALUES (?, ?, "{}", "Delivered")', (rtr_id, usr_id))
         ord_id = fetch_one(conn, 'SELECT ord_id FROM "Order" ORDER BY ord_id DESC LIMIT 1')[0]
         
         # 2. Insert the initial review directly into the DB
@@ -178,7 +178,7 @@ def test_review_submit_success_stores_review(client, seed_minimal_data, login_se
         # Ensure a clean state by deleting any existing review for this user/restaurant pair
         execute_query(conn, 'DELETE FROM "Review" WHERE usr_id = ? AND rtr_id = ?', (usr_id, rtr_id))
 
-        execute_query(conn, 'INSERT INTO "Order" (rtr_id, usr_id, details, status) VALUES (?, ?, "{}", "Ordered")', (rtr_id, usr_id))
+        execute_query(conn, 'INSERT INTO "Order" (rtr_id, usr_id, details, status) VALUES (?, ?, "{}", "Delivered")', (rtr_id, usr_id))
         ord_id = fetch_one(conn, 'SELECT ord_id FROM "Order" ORDER BY ord_id DESC LIMIT 1')[0]
     finally:
         close_connection(conn)

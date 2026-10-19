@@ -561,7 +561,7 @@ def profile():
                     pass
 
             # New logic to determine reviewability (Delivered AND Restaurant not yet reviewed)
-            is_delivered = (status or "").lower() == OrderStatus.ORDERED.get_lowercase()
+            is_delivered = (status or "").lower() == OrderStatus.DELIVERED.get_lowercase()
             is_reviewed = rtr_id in reviewed_rtr_ids
             is_reviewable = is_delivered and not is_reviewed
 
@@ -862,22 +862,28 @@ def submit_review():
     if session.get('usr_id') is None:
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
 
+    # Validate the payload before touching the DB: missing/non-numeric fields are a 400, not a 500
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"ok": False, "error": "Invalid rating or restaurant ID"}), 400
+    try:
+        rtr_id = int(data.get('restaurant_id'))
+        rating = int(data.get('rating'))
+        ord_id = int(data.get('order_id')) # Required: the order must be delivered to allow a review
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "Invalid rating or restaurant ID"}), 400
+    title = str(data.get('title') or '').strip()
+    description = str(data.get('comment') or '').strip()
+
+    if not (1 <= rating <= 5) or rtr_id <= 0 or ord_id <= 0:
+        return jsonify({"ok": False, "error": "Invalid rating or restaurant ID"}), 400
+
+    usr_id = session['usr_id']
     conn = create_connection(db_file)
     try:
-        data = request.get_json()
-        usr_id = session['usr_id']
-        rtr_id = int(data.get('restaurant_id')) # New: use restaurant_id
-        rating = int(data.get('rating'))
-        title = (data.get('title') or '').strip()
-        description = (data.get('comment') or '').strip()
-        ord_id = int(data.get('order_id')) # Optional, for context/UI redirection
-
-        if not (1 <= rating <= 5) or rtr_id <= 0:
-            return jsonify({"ok": False, "error": "Invalid rating or restaurant ID"}), 400
-        
         # 1. Verify the order was actually delivered to allow review submission
         order_row = fetch_one(conn, 'SELECT status FROM "Order" WHERE ord_id = ? AND usr_id = ? AND rtr_id = ?', (ord_id, usr_id, rtr_id))
-        if not order_row or (order_row[0] or '').lower() != OrderStatus.ORDERED.get_lowercase():
+        if not order_row or (order_row[0] or '').lower() != OrderStatus.DELIVERED.get_lowercase():
              return jsonify({"ok": False, "error": "Order not delivered or unauthorized"}), 403
 
         # 2. Check for existing review (prevent duplicate reviews for the same restaurant by the same user)
