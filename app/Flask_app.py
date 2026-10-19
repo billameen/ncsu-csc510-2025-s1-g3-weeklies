@@ -20,6 +20,12 @@ from sqlQueries import create_connection, close_connection, fetch_one, fetch_all
 from collections import Counter, defaultdict
 from menu_generation import MenuGenerator
 from pricing import TAX_RATE, DELIVERY_FEE, SERVICE_FEE
+from planner.targets import (
+    TargetError,
+    format_budget,
+    parse_daily_calorie_target,
+    parse_weekly_budget,
+)
 
 # ----------MANAGE ORDER STATUS--------------
 class OrderStatus(Enum):
@@ -511,7 +517,7 @@ def profile():
 
     conn = create_connection(db_file)
     try:
-        row = fetch_one(conn, 'SELECT usr_id,first_name,last_name,email,phone,password_HS,wallet,preferences,allergies FROM "User" WHERE email = ?', (email,))
+        row = fetch_one(conn, 'SELECT usr_id,first_name,last_name,email,phone,password_HS,wallet,preferences,allergies,daily_calorie_target,weekly_budget_cents FROM "User" WHERE email = ?', (email,))
         if not row:
             return redirect(url_for('logout'))
 
@@ -525,6 +531,8 @@ def profile():
             "wallet":        (row[6] or 0) / 100.0,
             "preferences":   row[7] or "",
             "allergies":     row[8] or "",
+            "daily_calorie_target": row[9],
+            "weekly_budget": format_budget(row[10]),
         }
 
         session['usr_id'] = user["usr_id"]
@@ -634,11 +642,14 @@ def profile():
 @app.route('/profile/edit', methods=['GET', 'POST'])
 def edit_profile():
     """
-    Display and process the profile edit form (phone, preferences, allergies).
+    Display and process the profile edit form (phone, preferences, allergies, and the
+    planner's daily calorie target and weekly budget).
     Args:
         None
     Returns:
-        Response: Renders form (GET) or updates and redirects to profile (POST).
+        Response: Renders form (GET) or updates and redirects to profile (POST). A calorie
+        target or budget that fails validation re-renders the form with the error and
+        status 400, and nothing is saved.
     """
     if session.get('Username') is None:
         return redirect(url_for('login'))
@@ -650,7 +661,8 @@ def edit_profile():
     conn = create_connection(db_file)
     try:
         row = fetch_one(conn, '''
-            SELECT usr_id, first_name, last_name, email, phone, wallet, preferences, allergies
+            SELECT usr_id, first_name, last_name, email, phone, wallet, preferences, allergies,
+                   daily_calorie_target, weekly_budget_cents
             FROM "User" WHERE usr_id = ?
         ''', (usr_id,))
     finally:
@@ -668,6 +680,13 @@ def edit_profile():
         "wallet": (row[5] or 0) / 100.0,
         "preferences": row[6] or "",
         "allergies": row[7] or "",
+        "daily_calorie_target": row[8],
+        "weekly_budget_cents": row[9],
+    }
+    # What the target inputs show: the stored values, or on a failed submit what was typed.
+    targets = {
+        "daily_calorie_target": "" if row[8] is None else str(row[8]),
+        "weekly_budget": format_budget(row[9]),
     }
 
     # For now just render an edit form (you can build edit_profile.html)
@@ -678,13 +697,35 @@ def edit_profile():
         new_prefs = request.form.get('preferences') or user['preferences']
         new_allergies = request.form.get('allergies') or user['allergies']
 
+        # Planner targets: a field left out of the form keeps its value; a blank one clears it.
+        new_kcal = user['daily_calorie_target']
+        new_budget_cents = user['weekly_budget_cents']
+        errors = {}
+        if 'daily_calorie_target' in request.form:
+            targets['daily_calorie_target'] = request.form['daily_calorie_target']
+            try:
+                new_kcal = parse_daily_calorie_target(request.form['daily_calorie_target'])
+            except TargetError as e:
+                errors['daily_calorie_target'] = str(e)
+        if 'weekly_budget' in request.form:
+            targets['weekly_budget'] = request.form['weekly_budget']
+            try:
+                new_budget_cents = parse_weekly_budget(request.form['weekly_budget'])
+            except TargetError as e:
+                errors['weekly_budget'] = str(e)
+        if errors:
+            return render_template(
+                "edit_profile.html", user=user, targets=targets, errors=errors
+            ), 400
+
         conn = create_connection(db_file)
         try:
             execute_query(conn, '''
                 UPDATE "User"
-                SET phone = ?, preferences = ?, allergies = ?
+                SET phone = ?, preferences = ?, allergies = ?,
+                    daily_calorie_target = ?, weekly_budget_cents = ?
                 WHERE usr_id = ?
-            ''', (new_phone, new_prefs, new_allergies, usr_id))
+            ''', (new_phone, new_prefs, new_allergies, new_kcal, new_budget_cents, usr_id))
         finally:
             close_connection(conn)
 
@@ -695,7 +736,7 @@ def edit_profile():
 
         return redirect(url_for('profile'))
 
-    return render_template("edit_profile.html", user=user)
+    return render_template("edit_profile.html", user=user, targets=targets, errors={})
 
 @app.route('/profile/change-password', methods=['POST'])
 def change_password():
