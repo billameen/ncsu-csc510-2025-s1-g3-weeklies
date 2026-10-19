@@ -1650,6 +1650,25 @@ def get_edit_parser():
     return _edit_llm_parser
 
 
+def planned_days(gen_str, days):
+    """
+    The days, from the first, that have breakfast, lunch and dinner planned with meal numbers.
+    Edits apply only to these, so an edit never fills in a day that was not planned, and never
+    rewrites a day saved before meal numbers existed (its meals cannot be told apart).
+    """
+    meals_by_day = {}
+    for day_str, _, meal in re.findall(
+        r'\[\s*(\d{4}-\d{2}-\d{2})\s*,\s*([0-9]+)\s*(?:,\s*([123])\s*)?\]', gen_str or ""
+    ):
+        meals_by_day.setdefault(day_str, []).append(meal)
+    planned = []
+    for d in days:
+        if sorted(meals_by_day.get(d.isoformat(), [])) != ["1", "2", "3"]:
+            break
+        planned.append(d)
+    return planned
+
+
 def current_plan(gen_str, days):
     """{(date, meal): itm_id} for the given days of a serialized generated menu."""
     wanted = {d.isoformat(): d for d in days}
@@ -1720,17 +1739,20 @@ def plan_edit():
             body["history"] = _edit_history(conn, usr_id)
             return jsonify(body), code
 
+        profile = dict(daily_calorie_target=kcal_target, weekly_budget_cents=budget_cents,
+                       allergies=allergies, preferences=prefs, start=date.today() + timedelta(days=1))
         try:
-            plan_request = PlanRequest.from_profile(
-                daily_calorie_target=kcal_target, weekly_budget_cents=budget_cents,
-                allergies=allergies, preferences=prefs, start=date.today() + timedelta(days=1),
-            )
+            plan_request = PlanRequest.from_profile(**profile)
         except InvalidPlanRequest as e:
             return jsonify({"status": "error", "message": str(e), "fix_url": url_for("edit_profile")}), 400
+        # Edit the next 7 days, or as many of them as are fully planned.
+        window = planned_days(gen_str, plan_request.dates())
+        if not window:
+            return jsonify({"status": "error", "message": "Plan your week first with Auto-Plan Week, then edit it."}), 400
+        if len(window) < plan_request.days:
+            plan_request = PlanRequest.from_profile(**profile, days=len(window))
         window = plan_request.dates()
         current = current_plan(gen_str, window)
-        if not current:
-            return jsonify({"status": "error", "message": "Plan your week first with Auto-Plan Week, then edit it."}), 400
 
         parsed = get_edit_parser().parse(text, today=date.today())
         if parsed.action == "refuse":

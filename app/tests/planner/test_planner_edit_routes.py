@@ -163,6 +163,48 @@ def test_only_the_pending_edit_can_be_accepted_and_only_once(
     assert menu_of(temp_db_path, user) == accepted
 
 
+def set_menu(temp_db_path, usr_id, gen_str):
+    conn = create_connection(temp_db_path)
+    try:
+        execute_query(
+            conn, 'UPDATE "User" SET generated_menu = ? WHERE usr_id = ?', (gen_str, usr_id)
+        )
+    finally:
+        close_connection(conn)
+
+
+def test_days_that_are_not_planned_are_never_filled_in(client, temp_db_path, user, monkeypatch):
+    """A plan made two days ago covers only the first 5 days of the window."""
+    unplanned = {(date.today() + timedelta(days=n)).isoformat() for n in (6, 7)}
+    planned = Flask_app.replace_menu_days(
+        menu_of(temp_db_path, user), [date.fromisoformat(d) for d in unplanned], []
+    )
+    set_menu(temp_db_path, user, planned)
+    use_model(monkeypatch, Scripted(veg_edit()))
+
+    body = edit(client).get_json()
+    assert body["status"] == "preview", body
+    assert {c["day"] for c in body["changes"]} == {f"{TARGET_DAY:%a %b} {TARGET_DAY.day}"}
+    assert not any(c["unavailable"] for c in body["changes"])
+    assert len(body["kcal"]) == 5
+
+    assert client.post(f"/plan/edit/{body['edit_id']}/accept").status_code == 200
+    saved = Flask_app.parse_generated_menu(menu_of(temp_db_path, user))
+    assert not unplanned & set(saved)
+
+
+def test_a_day_saved_without_meal_numbers_is_left_alone(client, temp_db_path, user, monkeypatch):
+    legacy = "".join(f"[{TARGET_DAY.isoformat()},{i}]" for i in (7, 3, 2))
+    gen_str = Flask_app.replace_menu_days(menu_of(temp_db_path, user), [TARGET_DAY], [legacy])
+    set_menu(temp_db_path, user, gen_str)
+    use_model(monkeypatch, Scripted(veg_edit()))
+
+    body = edit(client).get_json()
+
+    assert body["status"] == "clarify" and "Which of those days" in body["message"], body
+    assert menu_of(temp_db_path, user) == gen_str
+
+
 def test_accept_is_refused_if_the_plan_changed_since_the_preview(
     client, temp_db_path, user, monkeypatch
 ):
