@@ -100,3 +100,10 @@ def test_edit_form_and_profile_page_show_the_current_targets(client, user):
 
     page = client.get("/profile").get_data(as_text=True)
     assert "2,000" in page and "$ 150.00" in page
+
+
+def test_a_superscript_digit_is_a_form_error_not_a_500(client, temp_db_path, user):
+    """Found in review: "2000²".isdigit() is True but int() rejects it."""
+    resp = _edit(client, daily_calorie_target="2000²")
+    assert resp.status_code == 400
+    assert _targets(temp_db_path, user) == (2000, 15000)

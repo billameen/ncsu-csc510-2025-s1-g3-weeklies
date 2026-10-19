@@ -22,7 +22,7 @@ def test_blank_calorie_target_means_not_set(raw):
     assert parse_daily_calorie_target(raw) is None
 
 
-@pytest.mark.parametrize("raw", ["abc", "2000.5", "-2000", "2k", "1e3"])
+@pytest.mark.parametrize("raw", ["abc", "2000.5", "-2000", "2k", "1e3", "2000²", "١٨٠٠"])
 def test_calorie_target_rejects_non_whole_numbers(raw):
     with pytest.raises(TargetError, match="whole number"):
         parse_daily_calorie_target(raw)

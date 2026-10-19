@@ -35,7 +35,8 @@ def parse_daily_calorie_target(raw: str | None) -> int | None:
     text = _clean(raw)
     if not text:
         return None
-    if not text.isdigit():
+    # str.isdigit() also accepts "²" (which int() rejects) and other scripts' digits.
+    if not (text.isascii() and text.isdigit()):
         raise TargetError("Daily calorie target must be a whole number, like 2000.")
     kcal = int(text)
     if not MIN_DAILY_KCAL <= kcal <= MAX_DAILY_KCAL:
