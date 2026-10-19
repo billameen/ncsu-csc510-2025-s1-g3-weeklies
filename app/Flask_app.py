@@ -165,7 +165,38 @@ def _new_request_key(kind: str) -> str:
     return f"{kind}:{uuid.uuid4().hex}"
 
 
-def _charge_and_save_order(usr_id, rtr_id, restaurant_name, details):
+_CLIENT_KEY_RE = re.compile(r"[A-Za-z0-9_-]{8,64}")
+
+
+def _request_key(kind: str, usr_id, client_key) -> str:
+    """
+    Idempotency key for a money request (M2). Every money form and the order
+    pages send a one-time key; sending the same request again with the same key
+    (a double-clicked "Pay", a refreshed form) is recognised by the ledger and
+    charges only once. The key is scoped to the user, so one user can never
+    collide with or replay another user's key. Requests without a valid key
+    get a fresh one (no double-click protection, but they still work).
+    """
+    if isinstance(client_key, str) and _CLIENT_KEY_RE.fullmatch(client_key):
+        return f"{kind}:{int(usr_id)}:{client_key}"
+    return _new_request_key(kind)
+
+
+def _order_id_for_txn(conn, usr_id, txn_id):
+    """Find the order a ledger transaction paid for (used when a request is replayed)."""
+    for ord_id, details in fetch_all(
+        conn, 'SELECT ord_id, details FROM "Order" WHERE usr_id = ? ORDER BY ord_id DESC LIMIT 200',
+        (usr_id,),
+    ):
+        try:
+            if json.loads(details or "{}").get("ledger_txn_id") == txn_id:
+                return ord_id
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+def _charge_and_save_order(usr_id, rtr_id, restaurant_name, details, client_key=None):
     """
     Pay for an order from the user's wallet and save it, all or nothing.
     The payment is one ledger transaction split into restaurant (food + tip),
@@ -177,8 +208,13 @@ def _charge_and_save_order(usr_id, rtr_id, restaurant_name, details):
         restaurant_name (str): Used in the transaction-history memo.
         details (dict): Order details including "charges" in dollars. The ledger
             transaction ID is added to it as "ledger_txn_id".
+        client_key (str, optional): The page's one-time idempotency key. Sending
+            the same order again with the same key returns the original order
+            instead of charging twice.
     Returns:
-        tuple: (ord_id, None) on success, or (None, "insufficient_funds" | "db_failed").
+        tuple: (ord_id, None) on success, or (None, error) where error is
+        "insufficient_funds", "duplicate_request" (key reused for a different
+        order) or "db_failed".
     """
     charges = details["charges"]
     subtotal = _dollars_to_cents(charges["subtotal"])
@@ -211,16 +247,20 @@ def _charge_and_save_order(usr_id, rtr_id, restaurant_name, details):
         ledger.open_legacy_wallet(conn, usr_id)
         try:
             result = ledger.post_transaction(
-                conn, "order", entries, _new_request_key("order"),
+                conn, "order", entries, _request_key("order", usr_id, client_key),
                 memo=f"Order at {restaurant_name}", after=save_order,
             )
         except ledger.InsufficientFunds:
             return None, "insufficient_funds"
+        except ledger.IdempotencyConflict:
+            return None, "duplicate_request"
         except ledger.LedgerError as e:
             print(f"Order payment failed: {e}")
             return None, "db_failed"
         finally:
             _refresh_session_wallet(conn, usr_id)
+        if not result.created:   # same request again: return the order it already paid for
+            return _order_id_for_txn(conn, usr_id, result.txn_id), None
         return result.extra, None
     finally:
         close_connection(conn)
@@ -757,7 +797,9 @@ def profile():
         orders=orders,
         tickets=tickets,
         pw_updated=pw_updated,
-        pw_error=pw_error
+        pw_error=pw_error,
+        topup_key=uuid.uuid4().hex,
+        gift_key=uuid.uuid4().hex,
     )
 
 # Edit Profile route
@@ -921,8 +963,11 @@ def wallet_topup():
             ledger.post_transaction(
                 conn, "topup",
                 [(ledger.user_account(usr_id), amount_cents), ("external:topup", -amount_cents)],
-                _new_request_key("topup"), memo="Wallet top-up",
+                _request_key("topup", usr_id, request.form.get("idempotency_key")),
+                memo="Wallet top-up",
             )
+        except ledger.IdempotencyConflict:
+            return redirect(url_for('profile', wallet_error='duplicate_request'))
         except ledger.LedgerError as e:
             print(f"Top-up failed: {e}")
             return redirect(url_for('profile', wallet_error='db_failed'))
@@ -973,12 +1018,14 @@ def wallet_gift():
                 conn, "gift",
                 [(ledger.user_account(sender_id), -amount_cents),
                  (ledger.user_account(recipient_id), amount_cents)],
-                _new_request_key("gift"),
+                _request_key("gift", sender_id, request.form.get("idempotency_key")),
                 memo=f"Gift from {session.get('Email')} to {recipient_email}",
             )
             outcome = {'wallet_updated': 'gift'}
         except ledger.InsufficientFunds:
             outcome = {'wallet_error': 'insufficient_funds'}
+        except ledger.IdempotencyConflict:
+            outcome = {'wallet_error': 'duplicate_request'}
         except ledger.LedgerError as e:
             print(f"Gift failed: {e}")
             outcome = {'wallet_error': 'db_failed'}
@@ -1160,9 +1207,12 @@ def order():
         # transaction. The balance is checked by the ledger, never against
         # session['Wallet'] (M2 bugs 2 and 3).
         restaurant_name = dbmap[itm_ids[0]]["restaurant_name"]
-        new_ord_id, error = _charge_and_save_order(usr_id, rtr_id, restaurant_name, details)
+        new_ord_id, error = _charge_and_save_order(
+            usr_id, rtr_id, restaurant_name, details, client_key=payload.get("idempotency_key"))
         if error == "insufficient_funds":
             return jsonify({"ok": False, "error": "insufficient_funds"}), 402
+        if error == "duplicate_request":
+            return jsonify({"ok": False, "error": "duplicate_request"}), 409
         if error:
             return jsonify({"ok": False, "error": error}), 500
         return jsonify({"ok": True, "ord_id": new_ord_id})
@@ -1247,7 +1297,8 @@ def order():
     }
 
     # This path used to save the order without charging the wallet at all.
-    new_ord_id, error = _charge_and_save_order(usr_id, rtr_id, restaurant_name, details)
+    new_ord_id, error = _charge_and_save_order(
+        usr_id, rtr_id, restaurant_name, details, client_key=request.args.get("idempotency_key"))
     if error:
         return redirect(url_for('profile', wallet_error=error))
 
@@ -1650,6 +1701,64 @@ def admin_update_status():
         return jsonify({"ok": False, "error": "Internal server error"}), 500
     finally:
         close_connection(conn)
+
+@app.route('/admin/orders/<int:ord_id>/refund', methods=['POST'])
+def admin_refund_order(ord_id):
+    """
+    Refund an order in full by reversing its ledger transaction (admin only).
+
+    Nothing is edited or deleted: a new "refund" transaction posts the exact
+    opposite of the order's entries, so the customer gets back everything they
+    paid and the restaurant, tax and fee accounts give it back. Each order can
+    be refunded once; repeating the request returns the same refund.
+
+    Returns:
+        JSON {"ok": true, "ord_id", "refund_txn_id", "refunded_cents", "already_refunded"}
+        or {"ok": false, "error"} with 401, 403, 404 (no such order) or
+        409 ("not_refundable": placed before the ledger existed).
+    """
+    if not session.get("Username"):
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    if not session.get("is_admin"):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    conn = create_connection(db_file)
+    try:
+        _ledger_ready(conn)
+        row = fetch_one(conn, 'SELECT usr_id, details FROM "Order" WHERE ord_id = ?', (ord_id,))
+        if not row:
+            return jsonify({"ok": False, "error": "order_not_found"}), 404
+        usr_id, details_json = row
+        try:
+            txn_id = json.loads(details_json or "{}").get("ledger_txn_id")
+        except (TypeError, ValueError):
+            txn_id = None
+        if not txn_id:
+            return jsonify({"ok": False, "error": "not_refundable"}), 409
+
+        try:
+            result = ledger.reverse_transaction(
+                conn, txn_id, f"refund:order:{ord_id}", memo=f"Refund for order #{ord_id}")
+        except ledger.AlreadyReversed:
+            return jsonify({"ok": False, "error": "already_refunded"}), 409
+        except ledger.LedgerError as e:
+            print(f"Refund failed: {e}")
+            return jsonify({"ok": False, "error": "refund_failed"}), 500
+
+        refunded = fetch_one(
+            conn, 'SELECT amount_cents FROM "LedgerEntry" WHERE txn_id = ? AND account = ?',
+            (result.txn_id, ledger.user_account(usr_id)),
+        )
+        return jsonify({
+            "ok": True,
+            "ord_id": ord_id,
+            "refund_txn_id": result.txn_id,
+            "refunded_cents": refunded[0] if refunded else 0,
+            "already_refunded": not result.created,
+        })
+    finally:
+        close_connection(conn)
+
 
 @app.route('/admin')
 def admin_dashboard():

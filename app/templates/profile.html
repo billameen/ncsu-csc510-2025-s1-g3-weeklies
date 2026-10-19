@@ -79,6 +79,8 @@
             <div class="flash danger">Recipient email not found.</div>
           {% elif wallet_error == 'self_gift' %}
             <div class="flash danger">Cannot gift funds to yourself.</div>
+          {% elif wallet_error == 'duplicate_request' %}
+            <div class="flash danger">That form was already submitted with different details. Please try again.</div>
           {% else %}
             <div class="flash danger">Wallet operation failed. Please try again.</div>
           {% endif %}
@@ -454,6 +456,7 @@
           <button type="button" class="btn btn-outline btn-sm" id="closeTopupModalBtn" aria-label="Close">Close</button>
         </div>
         <form id="topupForm" class="modal-body" method="POST" action="{{ url_for('wallet_topup') }}">
+          <input type="hidden" name="idempotency_key" value="{{ topup_key }}">
           <div class="form-row">
             <label for="topupAmount">Amount ($)</label>
             <input class="input" id="topupAmount" name="amount" type="number" step="0.01" min="1" required>
@@ -472,6 +475,7 @@
           <button type="button" class="btn btn-outline btn-sm" id="closeGiftModalBtn" aria-label="Close">Close</button>
         </div>
         <form id="giftForm" class="modal-body" method="POST" action="{{ url_for('wallet_gift') }}">
+          <input type="hidden" name="idempotency_key" value="{{ gift_key }}">
           <div class="form-row">
             <label for="giftEmail">Recipient Email</label>
             <input class="input" id="giftEmail" name="recipient_email" type="email" required>
@@ -1186,6 +1190,7 @@
               'self_gift': 'Cannot gift funds to yourself. Please specify a different recipient.',
               'recipient_not_found': 'The recipient email was not found in our system.',
               'insufficient_funds': 'Insufficient funds in your wallet to complete this transfer.',
+              'duplicate_request': 'That form was already submitted with different details. Please reload and try again.',
               'db_failed': 'A database error occurred during the transaction. Please try again.',
               // Include the generic case
               'db_failed_topup': 'A database error occurred during the top-up transaction. Please try again.',
