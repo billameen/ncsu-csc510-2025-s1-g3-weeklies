@@ -186,6 +186,14 @@
                 <div class="k">Password</div>
                 <div class="v">••••••••••••</div>
               </div>
+              <div class="meta-item">
+                <div class="k">Daily calories</div>
+                <div class="v">{{ "{:,}".format(user.daily_calorie_target) if user.daily_calorie_target else "Not set" }}</div>
+              </div>
+              <div class="meta-item">
+                <div class="k">Weekly budget</div>
+                <div class="v">{{ "$ " ~ user.weekly_budget if user.weekly_budget else "Not set" }}</div>
+              </div>
             </div>
 
             <!-- Allergies -->

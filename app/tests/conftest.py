@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS "User" (
   usr_id INTEGER PRIMARY KEY AUTOINCREMENT,
   first_name TEXT, last_name TEXT, email TEXT UNIQUE, phone TEXT,
   password_HS TEXT, wallet INTEGER, preferences TEXT, allergies TEXT, generated_menu TEXT,
-  is_admin INTEGER DEFAULT 0
+  is_admin INTEGER DEFAULT 0, daily_calorie_target INTEGER, weekly_budget_cents INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS "Restaurant" (

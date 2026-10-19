@@ -10,6 +10,9 @@ fails; only a regression against --baseline exits 1.
 
 Metrics are percentages from 0 to 100 (or counts and seconds), and None when no user falls in
 the group a metric is measured on.
+
+A planner returns its meals, None for "no valid week", or eval.planners.NoValidWeek for "no
+valid week" with the reason the user would be shown.
 """
 
 import argparse
@@ -28,13 +31,14 @@ import menu_generation
 from eval.baselines import RecordingError, RecordingLLM, ReplayLLM, random_safe, v1_llm
 from eval.catalog import Catalog, load_catalog
 from eval.feasibility import is_feasible
+from eval.planners import NoValidWeek, m1_solver
 from eval.profiles import Profile, generate_profiles
 from eval.validate import Meal, Violation, ViolationKind, validate_week
 
 REPO = Path(__file__).resolve().parent.parent
 RECORDING = REPO / "eval" / "fixtures" / "b2_v1_cassette.json"
 DEFAULT_OUT = REPO / "eval" / "results"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # 2: adds explained_pct per planner
 
 
 @dataclass(frozen=True)
@@ -58,7 +62,7 @@ HYPOTHESES = (
 @dataclass(frozen=True)
 class Planner:
     name: str
-    plan: Callable[[Profile, Catalog, int], tuple[Meal, ...] | None]
+    plan: Callable[[Profile, Catalog, int], tuple[Meal, ...] | NoValidWeek | None]
     # A ReplayLLM whose recorded LLM latency is added to the measured time (for H3).
     replay: ReplayLLM | None = None
 
@@ -70,6 +74,7 @@ class UserResult:
     meals: tuple[Meal, ...] | None  # None: the planner answered "no valid week"
     violations: tuple[Violation, ...]
     seconds: float  # time the planner took for this user
+    reason: str | None = None  # why there is no valid week, if the planner said
 
     @property
     def valid(self) -> bool:
@@ -102,6 +107,14 @@ def h3_p95_seconds(results: Sequence[UserResult]) -> float | None:
 def h4_no_plan_pct(results: Sequence[UserResult]) -> float | None:
     """H4: share of infeasible users who get an explicit "no valid week" answer."""
     return _pct([r.meals is None for r in results if not r.feasible])
+
+
+def explained_pct(results: Sequence[UserResult]) -> float | None:
+    """
+    Share of infeasible users who get "no valid week" together with a reason they can act
+    on (M1's target: 100%). A bare "no valid week", or an invalid week, counts as a miss.
+    """
+    return _pct([r.meals is None and bool(r.reason) for r in results if not r.feasible])
 
 
 def overall_valid_pct(results: Sequence[UserResult]) -> float | None:
@@ -159,8 +172,10 @@ def evaluate(
     for profile in profiles:
         recorded_before = planner.replay.recorded_seconds if planner.replay else 0.0
         start = time.perf_counter()
-        meals = planner.plan(profile, catalog, seed)
+        answer = planner.plan(profile, catalog, seed)
         seconds = time.perf_counter() - start
+        reason = answer.reason if isinstance(answer, NoValidWeek) else None
+        meals = None if isinstance(answer, NoValidWeek) else answer
         if planner.replay:
             seconds += planner.replay.recorded_seconds - recorded_before
         result = UserResult(
@@ -169,6 +184,7 @@ def evaluate(
             meals=None if meals is None else tuple(meals),
             violations=() if meals is None else tuple(validate_week(meals, profile, catalog)),
             seconds=seconds,
+            reason=reason,
         )
         if result.valid and not result.feasible:
             raise RuntimeError(
@@ -188,6 +204,7 @@ def summarize(results: Sequence[UserResult]) -> dict:
         "h3_p95_s": h3_p95_seconds(results),
         "h4_no_plan_pct": h4_no_plan_pct(results),
         "overall_valid_pct": overall_valid_pct(results),
+        "explained_pct": explained_pct(results),
         "users_with_violation": {
             kind.value: sum(any(v.kind == kind for v in r.violations) for r in results)
             for kind in ViolationKind
@@ -243,8 +260,10 @@ def render_markdown(report: dict) -> str:
     overall = [
         _format("overall_valid_pct", report["planners"][n]["overall_valid_pct"]) for n in names
     ]
+    explained = [_format("explained_pct", report["planners"][n]["explained_pct"]) for n in names]
     lines += [
         f"| All users with a valid week | no threshold | | {' | '.join(overall)} |",
+        f"| Infeasible users told why | M1 target 100% | B2 | {' | '.join(explained)} |",
         "",
         "H3 for a replayed LLM planner adds the recorded LLM latency to the replay time.",
         "",
@@ -270,10 +289,11 @@ def _format(metric: str, value: float | None) -> str:
 
 
 def m0_planners(replay: ReplayLLM) -> list[Planner]:
-    """The M0 baselines. B2 answers its prompts from the recording."""
+    """The M0 baselines, then M1 (the solver). B2 answers its prompts from the recording."""
     return [
         Planner("B1", random_safe),
         Planner("B2", partial(v1_llm, llm=replay), replay),
+        Planner("M1", m1_solver),
     ]
 
 

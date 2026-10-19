@@ -20,6 +20,20 @@ from sqlQueries import create_connection, close_connection, fetch_one, fetch_all
 from collections import Counter, defaultdict
 from menu_generation import MenuGenerator
 from pricing import TAX_RATE, DELIVERY_FEE, SERVICE_FEE
+from planner.targets import (
+    TargetError,
+    format_budget,
+    parse_daily_calorie_target,
+    parse_weekly_budget,
+)
+from planner.menu import load_menu, meal_cost_cents
+from planner.request import InvalidPlanRequest, PlanRequest
+from planner.solver import plan_week
+
+# Which planner /generate_plan uses: "solver" (CP-SAT, the default) or "llm" (v1, kept as the
+# M0 baseline). Read on every request, so it can be switched without a restart.
+PLANNER_ENV = "PLANNER"
+PLANNERS = ("solver", "llm")
 
 # ----------MANAGE ORDER STATUS--------------
 class OrderStatus(Enum):
@@ -243,7 +257,9 @@ def build_calendar_cells(gen_map, year, month, items_by_id):
         month (int): The calendar month (1–12).
         items_by_id (dict): Mapping itm_id -> item detail dict from DB.
     Returns:
-        list: A flat list of calendar cell dicts with day number and a 'meals' list.
+        list: A flat list of calendar cell dicts with day number and a 'meals' list. Days of
+            the month also carry 'kcal' (calories planned that day) and 'cost_cents' (what the
+            day's meals cost delivered, tax and fees included, as the planner counts it).
     """
     def meal_sort_key(e):
         # Breakfast(1) first, then Lunch(2), then Dinner(3)
@@ -273,7 +289,12 @@ def build_calendar_cells(gen_map, year, month, items_by_id):
                     "color": palette.get(itm['itm_id'], "#7aa2f7"),
                 })
 
-            cells.append({"day": d, "meals": meals})
+            cells.append({
+                "day": d,
+                "meals": meals,
+                "kcal": sum(m["item"].get("calories") or 0 for m in meals),
+                "cost_cents": sum(meal_cost_cents(int(m["item"].get("price") or 0)) for m in meals),
+            })
 
     return cells
 
@@ -324,6 +345,9 @@ def index(year, month):
 
     # Build cells for the month
     cells = build_calendar_cells(gen_map, year, month, items_by_id)
+    month_cost_cents = sum(c.get("cost_cents", 0) for c in cells)
+    planned_days = [c for c in cells if c.get("meals")]
+    month_avg_kcal = round(sum(c["kcal"] for c in planned_days) / len(planned_days)) if planned_days else 0
 
     # Build "today_menu" (Breakfast, Lunch, Dinner if present)
     today_iso = f"{today.year:04d}-{today.month:02d}-{today.day:02d}"
@@ -351,6 +375,8 @@ def index(year, month):
         next_month=next_m.month,
         next_year=next_m.year,
         calendar_cells=cells,
+        month_cost_cents=month_cost_cents,
+        month_avg_kcal=month_avg_kcal,
         today_year=today.year,
         today_month=today.month,
         today_day=today.day,
@@ -511,7 +537,7 @@ def profile():
 
     conn = create_connection(db_file)
     try:
-        row = fetch_one(conn, 'SELECT usr_id,first_name,last_name,email,phone,password_HS,wallet,preferences,allergies FROM "User" WHERE email = ?', (email,))
+        row = fetch_one(conn, 'SELECT usr_id,first_name,last_name,email,phone,password_HS,wallet,preferences,allergies,daily_calorie_target,weekly_budget_cents FROM "User" WHERE email = ?', (email,))
         if not row:
             return redirect(url_for('logout'))
 
@@ -525,6 +551,8 @@ def profile():
             "wallet":        (row[6] or 0) / 100.0,
             "preferences":   row[7] or "",
             "allergies":     row[8] or "",
+            "daily_calorie_target": row[9],
+            "weekly_budget": format_budget(row[10]),
         }
 
         session['usr_id'] = user["usr_id"]
@@ -634,11 +662,14 @@ def profile():
 @app.route('/profile/edit', methods=['GET', 'POST'])
 def edit_profile():
     """
-    Display and process the profile edit form (phone, preferences, allergies).
+    Display and process the profile edit form (phone, preferences, allergies, and the
+    planner's daily calorie target and weekly budget).
     Args:
         None
     Returns:
-        Response: Renders form (GET) or updates and redirects to profile (POST).
+        Response: Renders form (GET) or updates and redirects to profile (POST). A calorie
+        target or budget that fails validation re-renders the form with the error and
+        status 400, and nothing is saved.
     """
     if session.get('Username') is None:
         return redirect(url_for('login'))
@@ -650,7 +681,8 @@ def edit_profile():
     conn = create_connection(db_file)
     try:
         row = fetch_one(conn, '''
-            SELECT usr_id, first_name, last_name, email, phone, wallet, preferences, allergies
+            SELECT usr_id, first_name, last_name, email, phone, wallet, preferences, allergies,
+                   daily_calorie_target, weekly_budget_cents
             FROM "User" WHERE usr_id = ?
         ''', (usr_id,))
     finally:
@@ -668,6 +700,13 @@ def edit_profile():
         "wallet": (row[5] or 0) / 100.0,
         "preferences": row[6] or "",
         "allergies": row[7] or "",
+        "daily_calorie_target": row[8],
+        "weekly_budget_cents": row[9],
+    }
+    # What the target inputs show: the stored values, or on a failed submit what was typed.
+    targets = {
+        "daily_calorie_target": "" if row[8] is None else str(row[8]),
+        "weekly_budget": format_budget(row[9]),
     }
 
     # For now just render an edit form (you can build edit_profile.html)
@@ -678,13 +717,35 @@ def edit_profile():
         new_prefs = request.form.get('preferences') or user['preferences']
         new_allergies = request.form.get('allergies') or user['allergies']
 
+        # Planner targets: a field left out of the form keeps its value; a blank one clears it.
+        new_kcal = user['daily_calorie_target']
+        new_budget_cents = user['weekly_budget_cents']
+        errors = {}
+        if 'daily_calorie_target' in request.form:
+            targets['daily_calorie_target'] = request.form['daily_calorie_target']
+            try:
+                new_kcal = parse_daily_calorie_target(request.form['daily_calorie_target'])
+            except TargetError as e:
+                errors['daily_calorie_target'] = str(e)
+        if 'weekly_budget' in request.form:
+            targets['weekly_budget'] = request.form['weekly_budget']
+            try:
+                new_budget_cents = parse_weekly_budget(request.form['weekly_budget'])
+            except TargetError as e:
+                errors['weekly_budget'] = str(e)
+        if errors:
+            return render_template(
+                "edit_profile.html", user=user, targets=targets, errors=errors
+            ), 400
+
         conn = create_connection(db_file)
         try:
             execute_query(conn, '''
                 UPDATE "User"
-                SET phone = ?, preferences = ?, allergies = ?
+                SET phone = ?, preferences = ?, allergies = ?,
+                    daily_calorie_target = ?, weekly_budget_cents = ?
                 WHERE usr_id = ?
-            ''', (new_phone, new_prefs, new_allergies, usr_id))
+            ''', (new_phone, new_prefs, new_allergies, new_kcal, new_budget_cents, usr_id))
         finally:
             close_connection(conn)
 
@@ -695,7 +756,7 @@ def edit_profile():
 
         return redirect(url_for('profile'))
 
-    return render_template("edit_profile.html", user=user)
+    return render_template("edit_profile.html", user=user, targets=targets, errors={})
 
 @app.route('/profile/change-password', methods=['POST'])
 def change_password():
@@ -1433,11 +1494,106 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--port', type=int, default=5000, help='Port to run the Flask app on')
     return parser.parse_args()
 
+def replace_menu_days(gen_str, days, entries):
+    """
+    Replace whole days of a serialized generated menu.
+    Args:
+        gen_str (str): The current User.generated_menu, "[YYYY-MM-DD,ID,meal],...".
+        days (Iterable[date]): Days whose existing entries are dropped.
+        entries (Iterable[str]): New entries to append, in the same format.
+    Returns:
+        str: The menu with every entry on those days replaced by the new entries. Entries on
+        other days are kept exactly as they were.
+    """
+    drop = {d.isoformat() for d in days}
+    kept = [
+        e for e in re.findall(r'\[[^\]]*\]', gen_str or "")
+        if e[1:].strip()[:10] not in drop
+    ]
+    return ",".join(kept + list(entries))
+
+
 @app.route('/generate_plan', methods=['POST'])
 def generate_plan():
+    """
+    Plan the next 7 days (starting tomorrow) for the logged-in user and save them to their
+    calendar. Uses the planner named by the PLANNER environment variable: "solver" (default)
+    or "llm" (v1).
+    Returns:
+        Response: JSON. With the solver: 200 {"ok": true, "optimal", "total_cost_cents",
+        "kcal_per_day"} on success; 400 if the profile is missing its targets; 422 with
+        "error" (the explanation) and "reasons" when no week fits. 401 if not logged in.
+    """
     if session.get("Username") is None:
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
 
+    planner = os.environ.get(PLANNER_ENV, "solver").strip().lower()
+    if planner == "solver":
+        return _generate_plan_solver()
+    if planner == "llm":
+        return _generate_plan_llm()
+    return jsonify({
+        "ok": False,
+        "error": f"Unknown {PLANNER_ENV}={planner!r}; use one of {', '.join(PLANNERS)}.",
+    }), 500
+
+
+def _generate_plan_solver():
+    """/generate_plan with the CP-SAT solver: the whole week at once, within the user's targets."""
+    conn = create_connection(db_file)
+    try:
+        user = fetch_one(conn, '''
+            SELECT preferences, allergies, generated_menu, daily_calorie_target, weekly_budget_cents
+            FROM "User" WHERE email = ?
+        ''', (session.get("Email"),))
+        if not user:
+            return jsonify({"ok": False, "error": "User not found"}), 404
+        prefs, allergies, current_menu, kcal_target, budget_cents = user
+
+        try:
+            plan_request = PlanRequest.from_profile(
+                daily_calorie_target=kcal_target,
+                weekly_budget_cents=budget_cents,
+                allergies=allergies,
+                preferences=prefs,
+                start=date.today() + timedelta(days=1),
+            )
+        except InvalidPlanRequest as e:
+            return jsonify({"ok": False, "error": str(e), "fix_url": url_for("edit_profile")}), 400
+
+        try:
+            result = plan_week(plan_request, load_menu(db_file))
+        except Exception as e:  # a planner bug or bad data: answer in JSON, the page expects it
+            app.logger.exception("Planner failed")
+            return jsonify({
+                "ok": False,
+                "error": f"The planner could not plan your week because of an internal error ({type(e).__name__}). Please report it.",
+            }), 500
+        if not result.ok:
+            return jsonify({
+                "ok": False,
+                "status": result.status.value,
+                "error": result.explanation,
+                "reasons": list(result.reasons),
+            }), 422
+
+        # The week is planned as a whole (budget, calories), so it replaces those 7 days.
+        new_menu_str = replace_menu_days(current_menu, plan_request.dates(), result.menu_entries())
+        execute_query(conn, 'UPDATE "User" SET generated_menu = ? WHERE email = ?', (new_menu_str, session.get("Email")))
+        session["GeneratedMenu"] = new_menu_str
+        return jsonify({
+            "ok": True,
+            "planner": "solver",
+            "optimal": result.optimal,
+            "total_cost_cents": result.total_cost_cents,
+            "kcal_per_day": {d.isoformat(): kcal for d, kcal in result.kcal_by_day().items()},
+        })
+    finally:
+        close_connection(conn)
+
+
+def _generate_plan_llm():
+    """/generate_plan with the v1 LLM planner (PLANNER=llm), unchanged from v1."""
     # 1. Fetch User Metadata (Preferences & Allergies)
     conn = create_connection(db_file)
     try:

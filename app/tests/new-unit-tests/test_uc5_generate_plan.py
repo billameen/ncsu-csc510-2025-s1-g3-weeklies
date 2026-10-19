@@ -71,6 +71,7 @@ class _CrashingGenerator:
 
 def test_a_nan_allergen_cell_crashes_generate_plan_as_a_500_instead_of_an_unhandled_error(client, monkeypatch):
     monkeypatch.setattr(Flask_app, "MenuGenerator", _CrashingGenerator)
+    monkeypatch.setenv("PLANNER", "llm")  # these tests cover the v1 LLM planner
     _register_and_login(client, "nan-allergy@example.test", "Peanuts")
 
     response = client.post("/generate_plan")
@@ -86,6 +87,7 @@ def test_a_nan_allergen_cell_crashes_generate_plan_as_a_500_instead_of_an_unhand
 
 def test_filtering_with_no_recorded_allergies_never_touches_a_nan_allergens_cell(client, monkeypatch):
     monkeypatch.setattr(Flask_app, "MenuGenerator", _CrashingGenerator)
+    monkeypatch.setenv("PLANNER", "llm")  # these tests cover the v1 LLM planner
     _register_and_login(client, "no-allergy@example.test", "")  # allergies left blank
 
     response = client.post("/generate_plan")
