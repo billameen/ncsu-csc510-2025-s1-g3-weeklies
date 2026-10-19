@@ -41,12 +41,12 @@ class MaxMealsPerRestaurant(Constraint):
         # This rule is the reason only if the plan works once it is lifted.
         if cheapest_without(ctx, self) is None:
             return None
-        meals = len(ctx.slots)
-        restaurants = -(-meals // self.limit)  # ceil
+        # Only claim what was proven: a week exists without the limit, none with it. The
+        # cause may be the limit alone (too few restaurants) or the limit together with
+        # another rule (the cheap restaurant is capped and the budget is tight).
         return (
-            f"With at most {self.limit} meals from any one restaurant, the {meals} meals need "
-            f"at least {restaurants} different restaurants that fit your other requirements, "
-            f"and there are not enough. Allow more meals per restaurant."
+            f"No week meets your other requirements with at most {self.limit} meals from any "
+            f"one restaurant; allowing more meals per restaurant would make one possible."
         )
 
     def __repr__(self) -> str:

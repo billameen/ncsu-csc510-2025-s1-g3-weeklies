@@ -28,10 +28,27 @@ def test_too_strict_a_limit_is_explained():
     )
     assert result.status is Status.INFEASIBLE
     assert result.explanation == (
-        "With at most 2 meals from any one restaurant, the 21 meals need at least 11 "
-        "different restaurants that fit your other requirements, and there are not enough. "
-        "Allow more meals per restaurant."
+        "No week meets your other requirements with at most 2 meals from any one "
+        "restaurant; allowing more meals per restaurant would make one possible."
     )
+
+
+def test_with_a_tight_budget_it_does_not_claim_restaurants_are_missing():
+    """Found in review: 3 restaurants exist; the cheap one is capped and the budget is tight."""
+    from planner.menu import meal_cost_cents
+
+    items = [item(1, price_cents=500, rtr_id=1)] + [
+        item(i, price_cents=3000, rtr_id=i) for i in (2, 3)
+    ]
+    budget = 7 * meal_cost_cents(500) + 14 * meal_cost_cents(3000) - 1  # just short
+    result = plan_week(
+        request(days=7, budget_cents=budget),
+        menu(items),
+        rules=[OneItemPerMeal(), get("weekly_budget")(), MaxMealsPerRestaurant(limit=7)],
+    )
+    assert result.status is Status.INFEASIBLE
+    assert "not enough" not in result.explanation
+    assert "at most 7 meals from any one restaurant" in result.explanation
 
 
 def test_it_is_off_unless_the_request_turns_it_on():

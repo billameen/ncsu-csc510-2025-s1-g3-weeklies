@@ -82,17 +82,16 @@ once the rule is lifted, and `cheapest_without` answers exactly that:
 
         if cheapest_without(ctx, self) is None:   # still impossible without this rule
             return None                           # so another rule explains it
-        meals = len(ctx.slots)
-        restaurants = -(-meals // self.limit)     # ceil
+        # Claim only what was proven: a week exists without the limit, none with it.
         return (
-            f"With at most {self.limit} meals from any one restaurant, the {meals} meals need "
-            f"at least {restaurants} different restaurants that fit your other requirements, "
-            f"and there are not enough. Allow more meals per restaurant."
+            f"No week meets your other requirements with at most {self.limit} meals from any "
+            f"one restaurant; allowing more meals per restaurant would make one possible."
         )
 ```
 
 Write the sentence for the user: what is impossible, the numbers behind it, and what they
-could change. `cheapest_without(ctx, rule)` re-solves without `rule` and returns the lowest
+could change. Say no more than you proved: lifting this rule fixes the week, but that does not
+mean there are too few restaurants (the cheap one may be capped while the budget is tight). `cheapest_without(ctx, rule)` re-solves without `rule` and returns the lowest
 cost, or `None` if the other rules are impossible on their own. `weekly_budget` uses the same
 helper to say "The cheapest week that meets your other requirements costs $212.40".
 
@@ -131,7 +130,7 @@ def test_too_strict_a_limit_is_explained():
         request(days=7), SIX, rules=[OneItemPerMeal(), MaxMealsPerRestaurant(limit=2)]
     )
     assert result.status is Status.INFEASIBLE
-    assert "Allow more meals per restaurant" in result.explanation
+    assert "allowing more meals per restaurant" in result.explanation
 ```
 
 `menu_factory` (in `app/tests/planner/`) builds items, restaurants and requests with sensible
@@ -211,7 +210,7 @@ A rule file that raises while importing is reported the same way, naming the fil
 | `one_item_per_meal` | hard | on | Exactly one item per meal | "No breakfast can be planned on any day: of 269 menu items, ..." |
 | `daily_calories` | hard | on | Each day within 10% of the calorie target | "needs each day to total 2,250-2,750 kcal ... The closest is 2,100 kcal on Sat Oct 24" |
 | `weekly_budget` | hard | on | Whole week, tax and fees included, within budget | "The cheapest week ... costs $212.40 with tax and fees; your weekly budget is $150.00." |
-| `max_meals_per_restaurant` | hard | off | At most N meals from one restaurant (tutorial example) | "With at most 2 meals from any one restaurant ..." |
+| `max_meals_per_restaurant` | hard | off | At most N meals from one restaurant (tutorial example) | "No week meets your other requirements with at most 2 meals from any one restaurant ..." |
 | `match_preferences` | soft (400) | on | Prefer items whose name or description matches a preference word | |
 | `prefer_low_cost` | soft (1) | on | Prefer cheaper weeks; 1 per cent | |
 | `prefer_variety` | soft (600) | on | Prefer fewer repeats; the 1st, 2nd and later repeats of an item cost 1x, 2x and 3x the weight | |
