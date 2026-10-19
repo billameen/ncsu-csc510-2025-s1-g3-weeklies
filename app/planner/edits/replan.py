@@ -140,6 +140,52 @@ def preview_edits(
     )
 
 
+def check_proposal(
+    request: PlanRequest,
+    menu: Menu,
+    entries: Sequence[str],
+    edit_rules: Sequence = (),
+    *,
+    time_limit_s: float = DEFAULT_TIME_LIMIT_S,
+) -> str | None:
+    """
+    Check a proposal again before it is saved, against the menu and profile as they are now:
+    an item may have gone out of stock, or an allergy may have been added, since the preview.
+    Args:
+        request: The plan window and the user's current targets, allergens and preferences.
+        menu: The current menu.
+        entries: The proposal, in User.generated_menu's format.
+        edit_rules: The edit's rules. Only those that change a target (calorie_shift) are
+            used: a closest-option proposal does not meet the edit's item rules, by design.
+    Returns:
+        str | None: None if every proposed meal can still be planned exactly as proposed,
+        otherwise the reason it cannot.
+    """
+    pins = {}
+    for entry in entries:
+        day_str, itm_id, meal = entry.strip("[]").split(",")
+        pins[(date.fromisoformat(day_str), int(meal))] = int(itm_id)
+    if set(pins) != {(s.day, s.meal) for s in request.slots()}:
+        return "The proposal does not cover every meal of the plan."
+    for itm_id in pins.values():
+        item = menu.items.get(itm_id)
+        if item is None or not item.in_stock:
+            name = item.name if item else "A proposed meal"
+            return f"{name} is no longer available."
+    targets = [r for r in edit_rules if not isinstance(r, ScopedItemFilter)]
+    result = plan_week(
+        request,
+        menu,
+        rules=rules_for(request) + targets + [get("pin_meals")(pins)],
+        time_limit_s=time_limit_s,
+    )
+    if not result.ok:
+        return result.explanation or "The proposed plan breaks one of your rules."
+    if any(pins[(m.day, m.meal)] != m.itm_id for m in result.meals):
+        return "Some of the proposed meals can no longer be planned."
+    return None
+
+
 def _covers(rule, slot) -> bool:
     return isinstance(rule, ScopedItemFilter) and rule.scope.covers(slot)
 

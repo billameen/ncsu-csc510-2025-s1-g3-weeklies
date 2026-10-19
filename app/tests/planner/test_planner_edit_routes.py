@@ -205,6 +205,34 @@ def test_a_day_saved_without_meal_numbers_is_left_alone(client, temp_db_path, us
     assert menu_of(temp_db_path, user) == gen_str
 
 
+def test_accept_checks_the_proposal_again_and_refuses_a_stale_one(
+    client, temp_db_path, user, monkeypatch
+):
+    use_model(monkeypatch, Scripted(veg_edit()))
+    before = menu_of(temp_db_path, user)
+    body = edit(client).get_json()
+    chosen = {c["after"]["itm_id"] for c in body["changes"]}
+    conn = create_connection(temp_db_path)
+    try:
+        for itm_id in chosen:
+            execute_query(conn, "UPDATE MenuItem SET instock = 0 WHERE itm_id = ?", (itm_id,))
+    finally:
+        close_connection(conn)
+    try:
+        resp = client.post(f"/plan/edit/{body['edit_id']}/accept")
+    finally:
+        conn = create_connection(temp_db_path)
+        for itm_id in chosen:
+            execute_query(conn, "UPDATE MenuItem SET instock = 1 WHERE itm_id = ?", (itm_id,))
+        close_connection(conn)
+
+    assert resp.status_code == 409
+    assert "is no longer available" in resp.get_json()["message"]
+    assert menu_of(temp_db_path, user) == before
+    history = client.get("/plan/edits").get_json()["history"]
+    assert history[0]["status"] == "discarded"
+
+
 def test_accept_is_refused_if_the_plan_changed_since_the_preview(
     client, temp_db_path, user, monkeypatch
 ):

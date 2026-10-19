@@ -6,7 +6,7 @@ from menu_factory import MONDAY, item, menu, request
 
 from planner.registry import get
 from planner.tags import has_tag
-from planner.edits.replan import CLOSEST, IMPOSSIBLE, PREVIEW, preview_edits
+from planner.edits.replan import CLOSEST, IMPOSSIBLE, PREVIEW, check_proposal, preview_edits
 from planner.scope import MealScope
 
 TUESDAY = date(2026, 10, 20)
@@ -121,3 +121,56 @@ def test_the_closest_option_keeps_the_meal_it_cannot_fix():
     preview = preview_edits(request(days=2), MENU, current, rules, affected)
     assert preview.status == CLOSEST and (preview.met, preview.edited) == (2, 3)
     assert [(c.slot.meal, c.after.itm_id) for c in preview.changes] == [(2, 4), (3, 4)]
+
+
+def vegetarian_tuesday():
+    rules, affected = edit(RequireTag, "vegetarian", scope=MealScope(days={TUESDAY}))
+    return preview_edits(request(days=2), MENU, CURRENT, rules, affected), rules
+
+
+def test_a_fresh_proposal_passes_the_check_before_saving():
+    preview, rules = vegetarian_tuesday()
+    assert check_proposal(request(days=2), MENU, preview.entries, rules) is None
+
+
+def test_a_proposal_is_rejected_if_an_item_went_out_of_stock_since():
+    preview, rules = vegetarian_tuesday()
+    chosen = preview.changes[0].after
+    gone = menu([i for i in MENU.items.values() if i.itm_id != chosen.itm_id])
+    assert check_proposal(request(days=2), gone, preview.entries, rules) == (
+        "A proposed meal is no longer available."
+    )
+    sold_out = menu(
+        [
+            item(i.itm_id, i.price_cents, i.calories, name=i.name, in_stock=i != chosen)
+            for i in MENU.items.values()
+        ]
+    )
+    assert check_proposal(request(days=2), sold_out, preview.entries, rules) == (
+        f"{chosen.name} is no longer available."
+    )
+
+
+def test_a_proposal_is_rejected_if_the_profile_got_stricter_since():
+    preview, rules = vegetarian_tuesday()
+    cost = preview.cost_after_cents
+    assert check_proposal(request(days=2, budget_cents=cost - 1), MENU, preview.entries, rules)
+    allergic = menu(
+        [
+            item(
+                i.itm_id, i.price_cents, i.calories, ("Soy",) if i.itm_id == 1 else (), name=i.name
+            )
+            for i in MENU.items.values()
+        ]
+    )
+    assert check_proposal(
+        request(days=2, allergens=("Soy",)), allergic, preview.entries, rules
+    ), "Monday's pinned breakfast (item 1) now has an allergen"
+
+
+def test_a_calorie_shift_proposal_is_checked_against_the_shifted_target():
+    shift = get("calorie_shift")(600, days={TUESDAY})
+    preview = preview_edits(request(days=2), MENU, CURRENT, [shift], [MealScope(days={TUESDAY})])
+    assert preview.status == PREVIEW
+    assert check_proposal(request(days=2), MENU, preview.entries, [shift]) is None
+    assert check_proposal(request(days=2), MENU, preview.entries) is not None

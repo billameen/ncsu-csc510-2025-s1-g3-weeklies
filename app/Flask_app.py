@@ -32,8 +32,9 @@ from planner.request import InvalidPlanRequest, PlanRequest
 from planner.solver import plan_week
 from planner.edits.llm_parser import LLMEditParser
 from planner.edits.regex_parser import GuardedRegexParser
-from planner.edits.replan import IMPOSSIBLE, preview_edits
+from planner.edits.replan import IMPOSSIBLE, check_proposal, preview_edits
 from planner.edits.resolve import Unresolvable, affected_scope, to_rule
+from planner.edits.schema import CalorieShift
 
 # Which planner /generate_plan uses: "solver" (CP-SAT, the default) or "llm" (v1, kept as the
 # M0 baseline). Read on every request, so it can be switched without a restart.
@@ -1794,6 +1795,8 @@ def plan_edit():
             "base": _menu_fingerprint(gen_str),
             "days": [d.isoformat() for d in window],
             "entries": list(preview.entries),
+            # Calorie shifts change the targets the proposal is checked against on Accept.
+            "shifts": [e.model_dump() for e in parsed.edits if isinstance(e, CalorieShift)],
         }
         return response, code
     finally:
@@ -1813,15 +1816,35 @@ def plan_edit_accept(edit_id):
         return jsonify({"ok": False, "message": "This edit is no longer pending. Make the edit again."}), 409
     conn = create_connection(db_file)
     try:
-        user = fetch_one(conn, 'SELECT usr_id, generated_menu FROM "User" WHERE email = ?', (session.get("Email"),))
+        user = fetch_one(conn, '''SELECT usr_id, generated_menu, preferences, allergies,
+                                         daily_calorie_target, weekly_budget_cents
+                                  FROM "User" WHERE email = ?''', (session.get("Email"),))
         if not user:
             return jsonify({"ok": False, "message": "User not found"}), 404
-        usr_id, gen_str = user
-        if _menu_fingerprint(gen_str) != pending["base"]:
+        usr_id, gen_str, prefs, allergies, kcal_target, budget_cents = user
+
+        def stale(message):
             session.pop("plan_edit", None)
             execute_query(conn, 'UPDATE "PlanEdit" SET status = ? WHERE edit_id = ? AND usr_id = ?', ("discarded", edit_id, usr_id))
-            return jsonify({"ok": False, "message": "Your plan changed since this preview. Make the edit again."}), 409
+            return jsonify({"ok": False, "message": message}), 409
+
+        if _menu_fingerprint(gen_str) != pending["base"]:
+            return stale("Your plan changed since this preview. Make the edit again.")
         days = [date.fromisoformat(d) for d in pending["days"]]
+        # Check the proposal again against the menu and profile as they are now (stock,
+        # hours, allergies, budget, calories), so a stale preview is never saved.
+        try:
+            plan_request = PlanRequest.from_profile(
+                daily_calorie_target=kcal_target, weekly_budget_cents=budget_cents,
+                allergies=allergies, preferences=prefs, start=days[0], days=len(days),
+            )
+            menu = load_menu(db_file)
+            shifts = [to_rule(CalorieShift.model_validate(e), days, menu) for e in pending.get("shifts", [])]
+            problem = check_proposal(plan_request, menu, pending["entries"], shifts)
+        except (InvalidPlanRequest, ValueError) as e:
+            problem = str(e)
+        if problem:
+            return stale(f"Something changed since this preview: {problem} Make the edit again.")
         new_menu = replace_menu_days(gen_str, days, pending["entries"])
         execute_query(conn, 'UPDATE "User" SET generated_menu = ? WHERE usr_id = ?', (new_menu, usr_id))
         execute_query(conn, 'UPDATE "PlanEdit" SET status = ? WHERE edit_id = ? AND usr_id = ?', ("accepted", edit_id, usr_id))
