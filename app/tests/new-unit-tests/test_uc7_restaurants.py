@@ -22,11 +22,9 @@ lines ~1250-1330):
      a restaurant with zero reviews cannot crash the route (Python never
      divides), but the server itself enforces no guard — it just ships
      count=0 to the client and trusts the template's guard.
-  3. review_rows uses `JOIN "User" u ON r.usr_id = u.usr_id`, a plain
-     (inner) join. A review whose usr_id has no matching User row is
-     dropped from review_rows entirely, so it is silently excluded from
-     both the rating aggregate (total_rating, count) and the rendered
-     review list for that restaurant.
+  3. review_rows uses `LEFT JOIN "User" u ON r.usr_id = u.usr_id`. A review
+     whose usr_id has no matching User row is kept, counted in the rating
+     aggregate (total_rating, count), and shown as "Former customer".
 """
 
 from sqlQueries import close_connection, create_connection, execute_query
@@ -96,7 +94,7 @@ def test_a_restaurant_with_zero_reviews_never_divides_on_the_server_it_only_ship
 # This proves the zero-review case is real but does not crash the server: restaurants() never computes an average itself (no total_rating/count division appears in Flask_app.py), it just hands raw count=0 data to the template, whose client-side JS is the only thing guarding the divide.
 
 
-def test_a_review_from_a_deleted_users_id_silently_vanishes_from_the_rating_aggregate(
+def test_a_review_from_a_deleted_users_id_still_counts_and_shows_as_former_customer(
     client, seed_minimal_data, login_session, temp_db_path
 ):
     rtr_id = _insert_restaurant(temp_db_path, "Orphan Review Grill")
@@ -111,10 +109,11 @@ def test_a_review_from_a_deleted_users_id_silently_vanishes_from_the_rating_aggr
     assert response.status_code == 200
     page = response.get_data(as_text=True)
     assert "From a real user" in page
-    assert "From a deleted user" not in page
-    # Only the surviving review is counted -- the inner join dropped the other one.
-    assert '"total_rating": 4' in page or '"total_rating":4' in page
-    assert '"count": 1' in page or '"count":1' in page
+    assert "From a deleted user" in page
+    assert "Former customer" in page
+    # Both reviews are counted -- the LEFT JOIN keeps the orphaned one.
+    assert '"total_rating": 5' in page or '"total_rating":5' in page
+    assert '"count": 2' in page or '"count":2' in page
 
 
-# This proves the plain JOIN "User" on the Review query is an inner join: a review whose usr_id has no matching User row is dropped entirely, silently shrinking that restaurant's review count and rating total instead of surfacing as e.g. an "Unknown user" entry.
+# This proves a review whose author no longer exists still counts toward the restaurant's rating and review count, and is attributed to "Former customer" instead of vanishing.

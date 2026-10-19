@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 import pytest
 from sqlQueries import create_connection, close_connection, execute_query, fetch_one
+from urllib.parse import parse_qs, urlsplit
 
 # --- Helper to create a second user for gift/mixed-restaurant tests ---
 @pytest.fixture
@@ -413,9 +414,14 @@ def test_support_submit_fails_on_short_message(client, seed_minimal_data, login_
 
     # 3. Assert redirect to profile with error flag
     assert response.status_code == 302
-    redirect_url = response.headers['Location']
-    # The URL checks that the exact error string and parameters are present
-    assert f'/profile?ticket_error=message_too_short&ord_id={ord_id}&message={short_message.replace(" ", "%20")}' in redirect_url
+    parts = urlsplit(response.headers['Location'])
+    # Parse the query rather than matching raw text: url_for encodes spaces as '+'
+    assert parts.path == '/profile'
+    assert parse_qs(parts.query) == {
+        'ticket_error': ['message_too_short'],
+        'ord_id': [str(ord_id)],
+        'message': [short_message],
+    }
 
     # 4. Assert no ticket was created
     conn = create_connection(temp_db_path)

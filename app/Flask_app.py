@@ -40,6 +40,18 @@ db_file = os.path.join(os.path.dirname(__file__), 'CSC510_DB.db')
 
 # ---------------------- Helpers ----------------------
 
+def _first_present(d: dict, *keys):
+    """
+    Return the value of the first key in d whose value is not None.
+    Unlike chaining with `or`, falsy values such as 0 / 0.0 count as present.
+    Args:
+        d (dict): The mapping to search.
+        *keys: Keys to try, in order.
+    Returns:
+        The first non-None value, or None if no key has one.
+    """
+    return next((d[k] for k in keys if d.get(k) is not None), None)
+
 def _money(x: float) -> float:
     """
     Safely round a numeric value to two decimal places.
@@ -555,7 +567,7 @@ def profile():
                     j = json.loads(details)
                     placed = _fmt_date(j.get("placed_at") or j.get("time"))
                     charges = j.get("charges") or {}
-                    total_val = charges.get("total") or charges.get("grand_total") or charges.get("amount")
+                    total_val = _first_present(charges, "total", "grand_total", "amount")
                     total = _fmt_total(total_val) if total_val is not None else ""
                 except Exception:
                     pass
@@ -1204,7 +1216,7 @@ def orders():
         menu_items = fetch_all(conn, '''
             SELECT itm_id, rtr_id, name, price, calories, allergens, description
             FROM "MenuItem"
-            WHERE instock IS NULL OR instock = 1
+            WHERE instock = 1
         ''')
     finally:
         close_connection(conn)
@@ -1272,14 +1284,14 @@ def restaurants():
         menu_items = fetch_all(conn, '''
             SELECT itm_id, rtr_id, name, price, calories, allergens, description
             FROM "MenuItem"
-            WHERE instock IS NULL OR instock = 1
+            WHERE instock = 1
         ''')
         # Fetch all reviews, including the user's name for display
         review_rows = fetch_all(conn, '''
             SELECT 
                 r.rtr_id, r.rating, r.title, r.description, u.first_name, u.last_name
             FROM "Review" r
-            JOIN "User" u ON r.usr_id = u.usr_id
+            LEFT JOIN "User" u ON r.usr_id = u.usr_id
             ORDER BY r.rev_id DESC
         ''')
 
@@ -1291,7 +1303,8 @@ def restaurants():
                 "rating": rating,
                 "title": title,
                 "description": description,
-                "user_name": f"{first_name} {last_name}",
+                # LEFT JOIN keeps reviews whose author was deleted, so they still count toward the rating
+                "user_name": f"{first_name} {last_name}" if first_name is not None else "Former customer",
             })
     finally:
         close_connection(conn)
@@ -1678,7 +1691,7 @@ def admin_dashboard():
                     
                     # Get total from charges
                     charges = details.get("charges", {})
-                    total = charges.get("total") or charges.get("grand_total")
+                    total = _first_present(charges, "total", "grand_total")
                     
                 except Exception as e:
                     print(f"Error parsing order details: {e}")
@@ -1693,7 +1706,7 @@ def admin_dashboard():
                 'ord_id': ord_id,
                 'customer_name': f"{first_name} {last_name}",
                 'restaurant_name': restaurant_name,
-                'total': f"${total:.2f}" if total else "N/A",
+                'total': f"${total:.2f}" if total is not None else "N/A",
                 'placed_at': placed_at_display,
                 'status': status
             }
@@ -1956,7 +1969,8 @@ def support_submit():
     
     # Validate message length (minimum 10 characters)
     if len(message) < 10:
-        return redirect(url_for('profile') + f'?ticket_error=message_too_short&ord_id={ord_id}&message={message}')
+        # url_for URL-encodes each value, so '&', '#', '=' or '%' in the message can't corrupt the query string
+        return redirect(url_for('profile', ticket_error='message_too_short', ord_id=ord_id, message=message))
     
     # Validate order exists and belongs to current user
     conn = create_connection(db_file)
