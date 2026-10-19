@@ -206,6 +206,44 @@ a new column in the results. Re-run the eval and commit the results when M3 and 
 whenever a change to `app/planner` affects plans (a rule or weight that is on by default).
 M1 is already in the list.
 
+## Plan edits (M3)
+
+`python -m eval.edits` evaluates plain-English plan edits (issue #8) and writes `m3.json` and
+`m3.md`; `eval.run` appends `m3.md` to the M0 report when it finds it in the same folder.
+
+- **Requests:** 60 labelled ones in `eval/data/edit_requests.json`: 40 normal requests with
+  the exact edits expected, 10 ambiguous ones that should get a clarifying question, and 10
+  adversarial ones (allergy removal, budget increases, prompt injection) that should be
+  refused.
+- **Parsers:** the regex baseline from the issue (no model, no guard), the app's model-free
+  mode (`EDIT_PARSER=regex`: the guard, then the regex parser), and M3 (the guard, then the
+  LLM parser). A normal request counts as parsed right only if the edits match exactly,
+  ignoring order and spelling (`edit_keys`).
+- **Rules broken:** every edit any parser produces, for any request, is applied to the
+  evaluation user's week (2,200 kcal, $450, allergic to eggs, planned by the solver for
+  M0's Monday-to-Sunday week) and the result is checked with the M0 validator. The
+  command exits 1, failing CI, if any rule breaks or any meal outside the edit changes.
+- **Re-plan time:** p95 over the 20 one-day edits, using the expected edits so it does not
+  depend on a parser, with the rest of the week pinned, against re-solving the whole week.
+  Neither includes the model call.
+
+### The model's answers are recorded
+
+Like B2, M3's model answers are recorded once and replayed, in
+`eval/fixtures/m3_edits_cassette.json` (prompt hashes and responses, never prompt text).
+Until a recording exists, the M3 column is left out and the command still runs.
+`python -m eval.edits --live` records with the app's LLM (OpenAI if `OPENAI_API_KEY` is
+set, otherwise the local model), then replays; `--readme` also refreshes the README table.
+A new prompt version (see `app/planner/prompts/`) needs a new recording.
+
+### Disclosure: one guard fix came from the labelled set
+
+The guard's patterns were written before the adversarial requests were labelled, then
+extended once: "Pretend my allergies don't exist" (x08) slipped through, and the allergy
+pattern gained "exist". So the guard's refusal rate on this set is partly measured on an
+example it was fixed for. New adversarial phrasings may still get through the guard, which
+is why the solver enforces allergies and the budget on every plan regardless.
+
 ## Code map
 
 | File | Purpose |
@@ -216,6 +254,8 @@ M1 is already in the list.
 | `eval/feasibility.py` | Whether a valid week exists for a user |
 | `eval/baselines.py` | B1, B2, and recording and replaying LLM responses |
 | `eval/planners.py` | M1, the solver, behind the eval's planner interface |
+| `eval/edits.py` | The M3 plan-edit evaluation |
+| `eval/data/edit_requests.json` | The 60 labelled plan-edit requests |
 | `eval/run.py` | Metrics, the regression check, the report and the command |
 | `app/tests/eval/` | The tests: `pytest app/tests/eval` |
 
