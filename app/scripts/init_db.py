@@ -10,7 +10,10 @@ Usage (from app/):
     python scripts/init_db.py --force   # overwrite an existing DB
 
 To refresh the seed after changing the schema or demo data:
-    sqlite3 CSC510_DB.db .dump > db/seed.sql
+    sqlite3 CSC510_DB.db ".dump --newlines" > db/seed.sql
+
+--newlines matters: without it, sqlite3 3.50+ writes unistr() into the dump, which the older
+SQLite in CI's Python cannot load.
 """
 
 import os
@@ -29,7 +32,8 @@ def init_db(db_file=DB_FILE, seed_file=SEED_FILE, force=False):
             return False
         os.remove(db_file)
 
-    with open(seed_file, encoding="utf-8") as f:
+    # newline="" keeps the \r\n line breaks stored inside text values exactly as dumped.
+    with open(seed_file, encoding="utf-8", newline="") as f:
         seed_sql = f.read()
 
     # Inserting rows into AUTOINCREMENT tables already populates sqlite_sequence, so clear

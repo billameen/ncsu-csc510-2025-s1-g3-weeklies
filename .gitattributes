@@ -1,0 +1,2 @@
+# seed.sql stores \r\n line breaks inside text values; never convert its line endings.
+app/db/seed.sql -text
