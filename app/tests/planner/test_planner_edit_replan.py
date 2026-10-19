@@ -102,3 +102,22 @@ def test_a_pinned_item_that_is_gone_is_replaced_and_reported():
 def test_a_one_day_edit_is_fast():
     rules, affected = edit(RequireTag, "vegetarian", scope=MealScope(days={TUESDAY}))
     assert preview_edits(request(days=2), MENU, CURRENT, rules, affected).seconds < 2
+
+
+def test_meals_that_already_meet_the_edit_are_kept():
+    # Tuesday lunch is already vegetarian (Bean Chili); only breakfast and dinner should change.
+    current = {**CURRENT, (TUESDAY, 2): 6}
+    rules, affected = edit(RequireTag, "vegetarian", scope=MealScope(days={TUESDAY}))
+    preview = preview_edits(request(days=2), MENU, current, rules, affected)
+    assert [c.slot.meal for c in preview.changes] == [1, 3]
+
+
+def test_the_closest_option_keeps_the_meal_it_cannot_fix():
+    # Breakfast is the 1,100 kcal lasagna. Low-calorie means the 300 kcal salad, and only
+    # salad + salad + lasagna (1,700 kcal) fits the band, so breakfast stays as it is and
+    # lunch and dinner become salads.
+    current = {**CURRENT, (TUESDAY, 1): 7}
+    rules, affected = edit(RequireTag, "low-calorie", scope=MealScope(days={TUESDAY}))
+    preview = preview_edits(request(days=2), MENU, current, rules, affected)
+    assert preview.status == CLOSEST and (preview.met, preview.edited) == (2, 3)
+    assert [(c.slot.meal, c.after.itm_id) for c in preview.changes] == [(2, 4), (3, 4)]

@@ -2,7 +2,8 @@
 Re-plan only the meals an edit touches, and describe the change.
 
 Every meal outside the edit is pinned to what is already planned (pin_meals), the edit's
-rules are added to the plan's usual rules, and the solver re-plans what is left. The
+rules are added to the plan's usual rules, and the solver re-plans what is left, preferring
+to keep each edited meal as it is unless changing it serves the edit (prefer_current). The
 solver still enforces every rule (allergens, opening hours, calories, budget), so an edit
 can change which meals are picked but never break a rule.
 
@@ -90,7 +91,7 @@ def preview_edits(
         for s in slots
         if s not in edited and (s.day, s.meal) in current
     }
-    base = rules_for(request) + [get("pin_meals")(pins)]
+    base = rules_for(request) + [get("pin_meals")(pins), get("prefer_current")(current)]
 
     result = plan_week(request, menu, rules=base + list(edit_rules), time_limit_s=time_limit_s)
     status, explanation = PREVIEW, None
