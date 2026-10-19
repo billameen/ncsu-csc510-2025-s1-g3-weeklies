@@ -14,12 +14,33 @@ To refresh the seed after changing the schema or demo data:
 """
 
 import os
+import re
 import sqlite3
 import sys
 
 APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DB_FILE = os.path.join(APP_DIR, "CSC510_DB.db")
 SEED_FILE = os.path.join(APP_DIR, "db", "seed.sql")
+
+# Newer sqlite3 CLIs (3.50+) write text containing control characters, such as the
+# newlines in Restaurant.hours, as unistr('...\u000a...') in .dump output. Older SQLite
+# builds (including the one bundled with many Python installs) lack unistr(), so the
+# seed fails with "no such function: unistr". _unistr reimplements it in Python.
+_UNISTR_ESCAPE = re.compile(
+    r"\\(?:\\|u([0-9a-fA-F]{4})|U([0-9a-fA-F]{8})|\+([0-9a-fA-F]{6})|([0-9a-fA-F]{4}))"
+)
+
+
+def _unistr(text):
+    """Python version of SQLite's unistr(): decode backslash escapes to characters."""
+    if text is None:
+        return None
+
+    def decode(match):
+        code = next((g for g in match.groups() if g), None)
+        return "\\" if code is None else chr(int(code, 16))
+
+    return _UNISTR_ESCAPE.sub(decode, text)
 
 
 def init_db(db_file=DB_FILE, seed_file=SEED_FILE, force=False):
@@ -38,6 +59,7 @@ def init_db(db_file=DB_FILE, seed_file=SEED_FILE, force=False):
     seed_sql = seed_sql.replace(seq_insert, f"DELETE FROM sqlite_sequence;\n{seq_insert}", 1)
 
     conn = sqlite3.connect(db_file)
+    conn.create_function("unistr", 1, _unistr, deterministic=True)
     try:
         conn.executescript(seed_sql)
     finally:
