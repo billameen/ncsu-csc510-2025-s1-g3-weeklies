@@ -1561,7 +1561,14 @@ def _generate_plan_solver():
         except InvalidPlanRequest as e:
             return jsonify({"ok": False, "error": str(e), "fix_url": url_for("edit_profile")}), 400
 
-        result = plan_week(plan_request, load_menu(db_file))
+        try:
+            result = plan_week(plan_request, load_menu(db_file))
+        except Exception as e:  # a planner bug or bad data: answer in JSON, the page expects it
+            app.logger.exception("Planner failed")
+            return jsonify({
+                "ok": False,
+                "error": f"The planner could not plan your week because of an internal error ({type(e).__name__}). Please report it.",
+            }), 500
         if not result.ok:
             return jsonify({
                 "ok": False,

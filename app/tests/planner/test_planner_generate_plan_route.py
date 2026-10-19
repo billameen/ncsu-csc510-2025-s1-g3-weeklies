@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash
 
 import Flask_app
 from Flask_app import replace_menu_days
+from planner.solver import PlannerError
 from sqlQueries import close_connection, create_connection, execute_query, fetch_one
 
 PASSWORD = "secret123"
@@ -182,3 +183,26 @@ def test_replace_menu_days_keeps_other_days_exactly():
     new = replace_menu_days(old, [date(2026, 10, 20)], ["[2026-10-20,9,1]", "[2026-10-20,8,3]"])
     assert new == "[2026-10-19,5,1],[2026-10-21, 7],[2026-10-20,9,1],[2026-10-20,8,3]"
     assert replace_menu_days(None, [], ["[2026-10-20,9,1]"]) == "[2026-10-20,9,1]"
+
+
+@pytest.mark.parametrize(
+    "error",
+    [PlannerError("invalid model"), KeyError("unknown rule"), FileNotFoundError("no db")],
+)
+def test_a_planner_failure_is_a_json_500_not_an_html_page(
+    client, temp_db_path, solver_menu, user, monkeypatch, error
+):
+    """Found in review: the page calls res.json(), so an HTML 500 showed "Network error"."""
+
+    def broken(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr(Flask_app, "plan_week", broken)
+
+    resp = client.post("/generate_plan")
+
+    assert resp.status_code == 500 and resp.is_json
+    body = resp.get_json()
+    assert body["ok"] is False
+    assert type(error).__name__ in body["error"]
+    assert _menu(temp_db_path, user) == "[2000-01-01,1,1]"  # nothing saved
