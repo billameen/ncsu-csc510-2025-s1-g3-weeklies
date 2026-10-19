@@ -54,6 +54,10 @@ python migrations/add_plan_targets.py
 
 `db/seed.sql` and the test schema in `tests/conftest.py` already include these columns.
 
+**Run `add_admin_column.py` first.** Login reads `User` by column position and expects `is_admin`
+at index 10. This migration refuses to run until `is_admin` exists, because adding its columns
+first would put `daily_calorie_target` at index 10 and make users with a calorie target admins.
+
 ## Running Migrations
 
 Migrations are idempotent - they can be run multiple times safely. If a migration has already been applied, it will skip the changes.
@@ -69,9 +73,8 @@ python migrations/add_plan_targets.py
 
 If running all migrations from scratch:
 1. `add_ticket_table.py` - Can run independently
-2. `add_admin_column.py` - Can run independently
-
-All migrations can be run in any order as they modify different tables/columns.
+2. `add_admin_column.py` - Must run before `add_plan_targets.py`
+3. `add_plan_targets.py` - Refuses to run until `add_admin_column.py` has
 
 ## Verifying Migrations
 

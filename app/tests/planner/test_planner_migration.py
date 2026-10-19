@@ -4,7 +4,7 @@ import sqlite3
 
 import pytest
 
-from migrations.add_plan_targets import migrate
+from migrations.add_plan_targets import MigrationOrderError, migrate
 
 OLD_USER_TABLE = """
 CREATE TABLE "User" (
@@ -54,3 +54,35 @@ def test_migration_refuses_a_missing_database_instead_of_creating_one(tmp_path):
     with pytest.raises(FileNotFoundError):
         migrate(str(missing))
     assert not missing.exists()
+
+
+def test_migration_refuses_to_run_before_the_admin_column_exists(tmp_path):
+    """Login reads is_admin as User column 10; our columns must not take that position."""
+    path = tmp_path / "pre_admin.db"
+    conn = sqlite3.connect(path)
+    conn.executescript(
+        'CREATE TABLE "User" (usr_id INTEGER PRIMARY KEY, a, b, c, d, e, f, g, h, generated_menu);'
+    )
+    conn.close()
+
+    with pytest.raises(MigrationOrderError, match="add_admin_column.py first"):
+        migrate(str(path))
+    assert "daily_calorie_target" not in _columns(path)
+
+
+def test_after_both_migrations_in_order_login_does_not_grant_admin(client, temp_db_path):
+    """With is_admin at index 10, a user who sets a calorie target is still not an admin."""
+    from werkzeug.security import generate_password_hash
+
+    conn = sqlite3.connect(temp_db_path)
+    conn.execute(
+        """INSERT INTO "User"(first_name,last_name,email,phone,password_HS,wallet,
+                              is_admin,daily_calorie_target,weekly_budget_cents)
+           VALUES ('Not','Admin','not-admin@example.test','1',?,0,0,2000,15000)""",
+        (generate_password_hash("pw"),),
+    )
+    conn.commit()
+    conn.close()
+    client.post("/login", data={"email": "not-admin@example.test", "password": "pw"})
+    with client.session_transaction() as sess:
+        assert sess["is_admin"] is False

@@ -9,6 +9,10 @@ Existing users get NULL for both, which means "not set yet": /generate_plan asks
 the targets on their profile before the solver plans a week. Idempotent: columns that already
 exist are skipped.
 
+Run add_admin_column.py first. Login reads User by position and expects is_admin at index 10;
+adding these columns before is_admin would put daily_calorie_target there and make anyone with
+a calorie target an admin. So this migration refuses to run until is_admin exists.
+
 Run (from app/):
     python migrations/add_plan_targets.py
 """
@@ -28,6 +32,10 @@ def get_db_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "CSC510_DB.db"))
 
 
+class MigrationOrderError(RuntimeError):
+    """A migration this one must follow has not been applied yet."""
+
+
 def add_plan_target_columns(conn):
     """
     Add the planner target columns that are missing from User.
@@ -35,8 +43,15 @@ def add_plan_target_columns(conn):
         conn (sqlite3.Connection): Open connection; the caller commits.
     Returns:
         list[str]: Names of the columns added (empty if all already existed).
+    Raises:
+        MigrationOrderError: User has no is_admin column yet (run add_admin_column.py first).
     """
     existing = {row[1] for row in conn.execute('PRAGMA table_info("User")')}
+    if "is_admin" not in existing:
+        raise MigrationOrderError(
+            "User has no is_admin column. Run migrations/add_admin_column.py first: login reads "
+            "is_admin by position, and adding these columns before it would grant admin rights."
+        )
     added = []
     for name, sql_type in COLUMNS:
         if name not in existing:
@@ -72,7 +87,7 @@ def migrate(db_file=None):
 if __name__ == "__main__":
     try:
         added = migrate()
-    except (FileNotFoundError, sqlite3.Error) as e:
+    except (FileNotFoundError, MigrationOrderError, sqlite3.Error) as e:
         print(f"✗ {e}")
         sys.exit(1)
     if added:
