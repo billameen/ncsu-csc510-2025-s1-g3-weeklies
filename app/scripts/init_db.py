@@ -5,6 +5,9 @@ The .db file is not tracked in git; db/seed.sql (a `sqlite3 .dump` of the schema
 demo data) is the source of truth. Run this after cloning, or with --force to reset
 your local DB back to the seed data.
 
+The seed's User.wallet balances are then moved into the wallet ledger by
+migrations/add_wallet_ledger.py, so a new DB starts with a balanced ledger.
+
 Usage (from app/):
     python scripts/init_db.py           # create the DB if it does not exist
     python scripts/init_db.py --force   # overwrite an existing DB
@@ -19,6 +22,8 @@ import sqlite3
 import sys
 
 APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if APP_DIR not in sys.path:
+    sys.path.insert(0, APP_DIR)
 DB_FILE = os.path.join(APP_DIR, "CSC510_DB.db")
 SEED_FILE = os.path.join(APP_DIR, "db", "seed.sql")
 
@@ -62,6 +67,12 @@ def init_db(db_file=DB_FILE, seed_file=SEED_FILE, force=False):
     conn.create_function("unistr", 1, _unistr, deterministic=True)
     try:
         conn.executescript(seed_sql)
+        # Move the seed's User.wallet balances into the wallet ledger (M2).
+        from migrations.add_wallet_ledger import migrate
+
+        report = migrate(conn)
+        if not report.ok:
+            raise RuntimeError(f"wallet ledger migration failed: {report}")
     finally:
         conn.close()
     return True
