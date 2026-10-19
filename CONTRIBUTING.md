@@ -34,8 +34,9 @@ issue first: those changes affect every plan.
 turns valid weeks into "no valid week" for real users.
 
 **Rules only read what they are given.** Use `ctx.request` and `ctx.menu`; never query the
-database, the clock, the network or a random number generator inside a rule. The same request
-must always get the same plan, and tests rely on it.
+database, the clock, the network or a random number generator inside a rule. Given the same
+request, a rule must add the same constraints every time, so the planner's plans stay
+repeatable, and tests rely on it.
 
 **Explain only what you can prove.** `explain(ctx)` is shown to the user as the reason their
 week is impossible. Return a sentence only when your rule is the cause (for example, the plan

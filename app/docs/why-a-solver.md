@@ -31,7 +31,7 @@ their budget is below the cheapest valid week). Full results are in `eval/result
 |---|---|---|---|
 | Feasible users who get a valid week (H1) | at least 90% | 0% | **100%** |
 | Distinct items per week, median (H2) | at least 14 | 19 | **20** |
-| Time to plan a week, 95th percentile (H3) | at most 5 s | 216 s | **2.9 s** |
+| Time to plan a week, 95th percentile (H3) | at most 5 s | 216 s | **2.8 s** |
 | Infeasible users told "no valid week" (H4) | at least 90% | 0% | **100%** |
 | Infeasible users told why | 100% | 0% (generic error) | **100%** |
 
@@ -58,7 +58,8 @@ Users whose week broke each rule:
 - **Planning takes seconds.** v1 made 21 or more LLM calls per week; the solver needs no
   model, no API key and no GPU.
 - **The same request gets the same week.** The solver's effort is capped in work done, not
-  clock time, so a plan does not change with server load.
+  clock time, so a plan does not depend on timing, unless the server is so overloaded that
+  the 4 second limit is reached first. Then the week can differ, but it still meets every rule.
 
 ## How it works
 

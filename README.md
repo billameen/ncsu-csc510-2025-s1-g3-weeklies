@@ -54,7 +54,7 @@ seed 510 ([full results](eval/results/m0.md), [method](app/docs/evaluation.md)):
 |---|---|---|---|
 | H1 Feasible users who get a valid week | ≥ 90% | 0% | **100%** |
 | H2 Distinct items per week (median) | ≥ 14 | 19 | **20** |
-| H3 Time to plan a week (p95) | ≤ 5 s | 216 s | **2.9 s** |
+| H3 Time to plan a week (p95) | ≤ 5 s | 216 s | **2.8 s** |
 | H4 Infeasible users told "no valid week" | ≥ 90% | 0% | **100%** |
 | Infeasible users told why | 100% | 0% | **100%** |
 
