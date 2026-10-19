@@ -105,3 +105,31 @@ def test_edit_keys_ignore_order_and_spelling():
         }
     )
     assert edit_keys(a.edits) == edit_keys(b.edits)
+
+
+def test_calorie_shifts_cannot_stack_on_one_day():
+    """Five +1000 shifts would add 5,000 kcal; each day gets at most one shift."""
+    stacked = [{"type": "calorie_shift", "kcal_delta": 1000, "days": "mon"}] * 2
+    with pytest.raises(ValidationError, match="one calorie_shift per day"):
+        parse({"action": "edit", "edits": stacked})
+    with pytest.raises(ValidationError, match="one calorie_shift per day"):
+        parse(
+            {
+                "action": "edit",
+                "edits": [
+                    {"type": "calorie_shift", "kcal_delta": 500, "days": "weekend"},
+                    {"type": "calorie_shift", "kcal_delta": 500, "days": "sun"},
+                ],
+            }
+        )
+    separate = parse(
+        {
+            "action": "edit",
+            "edits": [
+                {"type": "calorie_shift", "kcal_delta": 300, "days": "mon"},
+                {"type": "calorie_shift", "kcal_delta": -300, "days": "tue"},
+            ],
+        }
+    )
+    assert len(separate.edits) == 2
+

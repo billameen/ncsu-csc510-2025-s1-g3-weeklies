@@ -221,6 +221,13 @@ class ParsedRequest(BaseModel):
             raise ValueError("action 'clarify' needs a question")
         if self.action != "edit":
             self.edits = []
+        shifted = set()
+        for e in self.edits:
+            if isinstance(e, CalorieShift):
+                if shifted & e.day_codes():
+                    # Two shifts on one day would add up past the 1,000 kcal limit.
+                    raise ValueError("at most one calorie_shift per day")
+                shifted |= e.day_codes()
         return self
 
 
