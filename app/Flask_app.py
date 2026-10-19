@@ -1377,12 +1377,18 @@ def db_view():
     Args:
         None
     Returns:
-        Response: HTML page showing rows/columns for a selected table (requires login).
+        Response: HTML page showing rows/columns for a selected table (requires admin).
     """
     if session.get('Username') is None:
         return redirect(url_for('login'))
 
-    allowed_tables = {'User', 'Restaurant', 'MenuItem', 'Order', 'Review'}
+    if not session.get('is_admin'):
+        return render_template("error.html",
+                             error="Access Denied",
+                             message="You do not have permission to view the database."), 403
+
+    allowed_tables = {'User', 'Restaurant', 'MenuItem', 'Order', 'Review', 'Ticket'}
+    hidden_columns = {'password_HS'}
     table = request.args.get('t', 'User')
     if table not in allowed_tables:
         table = 'User'
@@ -1409,6 +1415,11 @@ def db_view():
         rows = fetch_all(conn, f'SELECT * FROM "{table}" LIMIT ? OFFSET ?', (per_page, offset))
     finally:
         close_connection(conn)
+
+    # Never expose credential columns, even to admins
+    keep = [i for i, c in enumerate(columns) if c not in hidden_columns]
+    columns = [columns[i] for i in keep]
+    rows = [tuple(row[i] for i in keep) for row in (rows or [])]
 
     start = 0 if total == 0 else offset + 1
     end = min(offset + per_page, total)
