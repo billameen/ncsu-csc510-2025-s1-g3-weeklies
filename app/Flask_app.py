@@ -902,14 +902,14 @@ def submit_review():
         close_connection(conn)
 
 # Order route (Calendar "Order" button target)
-@app.route('/order', methods=['GET', 'POST'])
+@app.route('/order', methods=['POST'])
 def order():
     """
-    Place an order via JSON (POST) or handle legacy single-item GET flow.
+    Place an order via JSON POST, debiting the user's wallet atomically.
     Args:
         None
     Returns:
-        Response: JSON with {'ok', 'ord_id'} on POST; redirects/HTML for legacy GET.
+        Response: JSON with {'ok', 'ord_id'} on success, or {'ok': False, 'error'} on failure.
     """
     # Must be logged in
     if session.get("Username") is None:
@@ -931,12 +931,21 @@ def order():
     # ---- POST JSON: place a single order containing ALL items in the restaurant group ----
     if request.method == 'POST' and request.is_json:
         payload = request.get_json(silent=True) or {}
-        rtr_id = int(payload.get("restaurant_id") or 0)
+        try:
+            rtr_id = int(payload.get("restaurant_id") or 0)
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "invalid_input"}), 400
         items_in = payload.get("items") or []     # [{itm_id, qty, notes}]
         delivery_type = (payload.get("delivery_type") or "delivery").lower()
         if delivery_type not in ("delivery", "pickup"):
             delivery_type = "delivery"
-        tip_dollars = _money(payload.get("tip") or 0)
+        try:
+            tip_dollars = _money(float(payload.get("tip") or 0))
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "invalid_tip"}), 400
+        # Reject negative tips (would credit the wallet) and NaN/inf (would price the order at $0)
+        if not math.isfinite(tip_dollars) or tip_dollars < 0:
+            return jsonify({"ok": False, "error": "invalid_tip"}), 400
         eta_minutes = int(payload.get("eta_minutes") or 40)
         iso_date = (payload.get("date") or datetime.now().date().isoformat())
         try:
@@ -947,10 +956,14 @@ def order():
         if rtr_id <= 0 or not items_in:
             return jsonify({"ok": False, "error": "invalid_input"}), 400
 
-        # Look up all items strictly from DB to get authoritative prices/names
-        itm_ids = [int(it.get("itm_id") or 0) for it in items_in if int(it.get("itm_id") or 0) > 0]
-        if not itm_ids:
-            return jsonify({"ok": False, "error": "no_items"}), 400
+        # Look up all items strictly from DB to get authoritative prices/names.
+        # Any malformed or non-positive id rejects the whole request rather than being dropped.
+        try:
+            itm_ids = [int(it.get("itm_id")) for it in items_in]
+        except (AttributeError, TypeError, ValueError):
+            return jsonify({"ok": False, "error": "invalid_item"}), 400
+        if any(i <= 0 for i in itm_ids):
+            return jsonify({"ok": False, "error": "invalid_item"}), 400
 
         conn = create_connection(db_file)
         try:
@@ -979,9 +992,11 @@ def order():
         # Build items array for details; compute charges
         detail_items = []
         subtotal = 0.0
-        for it in items_in:
-            iid = int(it.get("itm_id"))
-            qty = int(it.get("qty") or 1)
+        for it, iid in zip(items_in, itm_ids):
+            try:
+                qty = int(it.get("qty") or 1)
+            except (TypeError, ValueError):
+                return jsonify({"ok": False, "error": "invalid_input"}), 400
             if qty <= 0: qty = 1
             meta = dbmap[iid]
             unit_price = _cents_to_dollars(meta["price_cents"])
@@ -1023,6 +1038,8 @@ def order():
 
         # Handle amount being debited from user's wallet
         total_cents = _dollars_to_cents(total)
+        if total_cents <= 0:
+            return jsonify({"ok": False, "error": "invalid_total"}), 400
         user_wallet_cents = session.get('Wallet', 0)
 
         # Quick check based on session to prevent unnecessary transaction attempt
@@ -1074,109 +1091,7 @@ def order():
         
         return jsonify({"ok": True, "ord_id": new_ord_id})
 
-        # Insert the single order row with status "Ordered"
-        conn = create_connection(db_file)
-        try:
-            execute_query(conn, '''
-                INSERT INTO "Order" (rtr_id, usr_id, details, status)
-                VALUES (?, ?, ?, ?)
-            ''', (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value))
-            row = fetch_one(conn, 'SELECT last_insert_rowid()')
-            new_ord_id = row[0] if row else None
-        finally:
-            close_connection(conn)
-
-        return jsonify({"ok": True, "ord_id": new_ord_id})
-
-    # ---- (optional) legacy GET single-item path, kept for compatibility ----
-    # If you don't need this anymore, you can remove the whole GET section.
-    # Expect query: itm_id, qty, notes, delivery, tip, eta, date, meal
-    itm_id = int(request.args.get("itm_id") or 0)
-    if itm_id <= 0:
-        return redirect(url_for("orders"))
-
-    try:
-        qty = max(1, int(request.args.get("qty", "1")))
-    except ValueError:
-        qty = 1
-    delivery_type = (request.args.get("delivery") or "delivery").lower()
-    if delivery_type not in ("delivery", "pickup"):
-        delivery_type = "delivery"
-    try:
-        tip_dollars = _money(float(request.args.get("tip", "0")))
-    except Exception:
-        tip_dollars = 0.0
-    try:
-        eta_minutes = int(request.args.get("eta", "40"))
-    except Exception:
-        eta_minutes = 40
-    iso_date = (request.args.get("date") or datetime.now().date().isoformat())
-    try:
-        meal = int(request.args.get("meal", "3"))
-    except Exception:
-        meal = 3
-    notes = (request.args.get("notes") or "").strip()
-
-    # Look up item & restaurant strictly
-    conn = create_connection(db_file)
-    try:
-        mi = fetch_one(conn, '''
-            SELECT m.itm_id, m.rtr_id, m.name, m.price, r.name
-            FROM "MenuItem" m
-            JOIN "Restaurant" r ON r.rtr_id = m.rtr_id
-            WHERE m.itm_id = ?
-        ''', (itm_id,))
-    finally:
-        close_connection(conn)
-    if not mi:
-        return redirect(url_for("orders"))
-
-    item_id, rtr_id, item_name, price_cents, restaurant_name = mi
-    unit_price = _cents_to_dollars(price_cents)
-    line_total = _money(unit_price * qty)
-
-    tax = _money(line_total * TAX_RATE)
-    delivery_fee = DELIVERY_FEE if delivery_type == "delivery" else 0.00
-    service_fee = SERVICE_FEE
-    total = _money(line_total + tax + delivery_fee + service_fee + tip_dollars)
-
-    details = {
-        "placed_at": datetime.now().astimezone().isoformat(),
-        "restaurant_id": int(rtr_id),
-        "items": [{
-            "itm_id": int(item_id),
-            "name": item_name,
-            "qty": int(qty),
-            "unit_price": unit_price,
-            "line_total": line_total,
-            **({"notes": notes} if notes else {})
-        }],
-        "charges": {
-            "subtotal": line_total,
-            "tax": tax,
-            "delivery_fee": delivery_fee,
-            "service_fee": service_fee,
-            "tip": tip_dollars,
-            "total": total
-        },
-        "delivery_type": delivery_type,
-        "eta_minutes": int(eta_minutes),
-        "date": iso_date,
-        "meal": meal
-    }
-
-    conn = create_connection(db_file)
-    try:
-        execute_query(conn, '''
-            INSERT INTO "Order" (rtr_id, usr_id, details, status)
-            VALUES (?, ?, ?, ?)
-        ''', (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value))
-        row = fetch_one(conn, 'SELECT last_insert_rowid()')
-        new_ord_id = row[0] if row else None
-    finally:
-        close_connection(conn)
-
-    return redirect(url_for("profile") + (f"?ordered={new_ord_id}" if new_ord_id else ""))
+    return jsonify({"ok": False, "error": "invalid_input"}), 400
 
 # Orders route
 @app.route('/orders')
