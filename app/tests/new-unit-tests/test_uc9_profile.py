@@ -123,13 +123,10 @@ def test_an_order_that_actually_reached_delivered_is_never_offered_a_review_butt
 # This proves the only order a user can review is one that has merely been placed, while an order whose status actually reached "Delivered" is permanently locked out of reviewing -- the eligibility check is inverted against its own variable name, a real defect.
 
 
-def test_an_order_whose_total_is_exactly_zero_renders_a_blank_total_cell(client, temp_db_path):
-    """``_fmt_total`` is only reached when a truthy total survives:
-
-        total_val = charges.get("total") or charges.get("grand_total") or charges.get("amount")
-
-    A total of 0.0 is falsy, so the chain falls through to ``None`` and the
-    template is handed an empty string instead of "$0.00".
+def test_an_order_whose_total_is_exactly_zero_shows_zero_dollars(client, temp_db_path):
+    """Regression (M2): the old ``charges.get("total") or ...`` chain treated a
+    real total of 0.0 as missing and showed a blank cell. Totals are now read in
+    integer cents (``charges.order_charges_cents``), so $0.00 shows as $0.00.
     """
     usr_id = _make_user(temp_db_path, "uc9-zero@example.test")
     rtr_id = _make_restaurant(temp_db_path, "UC9 Zero Diner")
@@ -142,10 +139,7 @@ def test_an_order_whose_total_is_exactly_zero_renders_a_blank_total_cell(client,
     assert response.status_code == 200
     page = response.get_data(as_text=True)
     assert "$12.34" in page
-    assert "$0.00" not in page
-
-
-# This proves a comped or fully-discounted $0.00 order shows an empty total instead of "$0.00", because the falsy-zero `or` chain treats a real total of zero as a missing value -- a real defect.
+    assert "<td>$0.00</td>" in page
 
 
 def test_an_unparseable_details_blob_is_swallowed_and_the_page_still_renders(client, temp_db_path):
