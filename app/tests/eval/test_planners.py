@@ -66,3 +66,14 @@ def test_menu_from_catalog_keeps_prices_calories_allergens_and_hours(catalog):
         source.allergens,
     )
     assert item.in_stock and menu.restaurants[1].hours == catalog.restaurants[1].hours
+
+
+def test_a_timeout_is_no_valid_week_without_a_reason(catalog, monkeypatch):
+    """A timeout explains nothing, so it must not count toward explained_pct."""
+    import eval.planners
+    from planner.solver import PlanResult, Status
+
+    monkeypatch.setattr(
+        eval.planners, "plan_week", lambda *a, **k: PlanResult(Status.TIMED_OUT, reasons=("slow",))
+    )
+    assert m1_solver(Profile(1, 2000, 600, (), hard=False), catalog, 510) is None

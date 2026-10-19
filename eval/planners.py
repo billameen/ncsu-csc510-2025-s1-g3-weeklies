@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from planner.menu import Menu, MenuItem, Restaurant
 from planner.request import PlanRequest
-from planner.solver import DEFAULT_WORK_LIMIT, plan_week
+from planner.solver import DEFAULT_WORK_LIMIT, Status, plan_week
 
 from eval.catalog import Catalog
 from eval.profiles import Profile
@@ -38,6 +38,10 @@ def m1_solver(
         allergens=profile.allergens,
     )
     result = plan_week(request, menu_from_catalog(catalog), work_limit=work_limit)
+    if result.status is Status.TIMED_OUT:
+        # "No valid week", but without a reason the user can act on, so it must not count
+        # toward explained_pct.
+        return None
     if not result.ok:
         return NoValidWeek(result.explanation or "")
     return tuple(Meal(WEEKDAYS[m.day.weekday()], m.meal, m.itm_id) for m in result.meals)
