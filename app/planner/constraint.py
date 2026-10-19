@@ -105,6 +105,14 @@ class ItemFilter(Constraint):
     def allows(self, item: "MenuItem", slot: "Slot", ctx: "PlanContext") -> bool:
         """True if the item may be picked for the slot."""
 
+    def describe_block(self, slot: "Slot", ctx: "PlanContext") -> str:
+        """
+        Completes "<n> items ..." when explaining an empty meal. Defaults to
+        ``blocked_reason``; override it to mention the slot or the request (e.g. which time
+        the restaurants are closed at, or which allergens).
+        """
+        return self.blocked_reason
+
     def apply(self, ctx: "PlanContext") -> None:
         for slot in ctx.slots:
             for item in ctx.candidates(slot):

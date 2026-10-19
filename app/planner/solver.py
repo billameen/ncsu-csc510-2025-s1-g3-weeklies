@@ -28,7 +28,7 @@ from enum import StrEnum
 
 from ortools.sat.python import cp_model
 
-from planner.constraint import Constraint
+from planner.constraint import Constraint, Kind
 from planner.context import PlanContext
 from planner.menu import Menu, MenuItem
 from planner.registry import rules_for
@@ -180,9 +180,7 @@ def plan_week(
         )
     if status == cp_model.INFEASIBLE:
         return PlanResult(
-            Status.INFEASIBLE,
-            reasons=("No week meets all of your requirements.",),
-            seconds=time.monotonic() - started,
+            Status.INFEASIBLE, reasons=diagnose(ctx), seconds=time.monotonic() - started
         )
     return PlanResult(
         Status.TIMED_OUT,
@@ -192,6 +190,24 @@ def plan_week(
         ),
         seconds=time.monotonic() - started,
     )
+
+
+def diagnose(ctx: PlanContext) -> tuple[str, ...]:
+    """
+    Why the model in ctx has no solution: every hard rule's explain(ctx) that is not None,
+    in rule order. If no rule can say, a fallback sentence lists the hard rules in play, so
+    the user always gets something more specific than an error.
+    """
+    reasons = []
+    for rule in ctx.rules:
+        if rule.kind is Kind.HARD:
+            reason = rule.explain(ctx)
+            if reason:
+                reasons.append(reason)
+    if reasons:
+        return tuple(reasons)
+    hard = [rule.summary.rstrip(".").lower() for rule in ctx.rules if rule.kind is Kind.HARD]
+    return (f"No week meets all of these at once: {'; '.join(hard)}.",)
 
 
 def _solver(time_limit_s: float, workers: int) -> cp_model.CpSolver:
