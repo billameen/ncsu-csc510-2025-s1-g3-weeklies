@@ -146,6 +146,23 @@ def test_discard_leaves_the_plan_untouched(client, temp_db_path, user, monkeypat
     assert client.post(f"/plan/edit/{edit_id}/accept").status_code == 409
 
 
+def test_only_the_pending_edit_can_be_accepted_and_only_once(
+    client, temp_db_path, user, monkeypatch
+):
+    use_model(monkeypatch, Scripted(veg_edit()))
+    before = menu_of(temp_db_path, user)
+    edit_id = edit(client).get_json()["edit_id"]
+
+    # Another edit id (an older edit, or another user's) is never applied.
+    assert client.post(f"/plan/edit/{edit_id + 1}/accept").status_code == 409
+    assert menu_of(temp_db_path, user) == before
+
+    assert client.post(f"/plan/edit/{edit_id}/accept").status_code == 200
+    accepted = menu_of(temp_db_path, user)
+    assert client.post(f"/plan/edit/{edit_id}/accept").status_code == 409
+    assert menu_of(temp_db_path, user) == accepted
+
+
 def test_accept_is_refused_if_the_plan_changed_since_the_preview(
     client, temp_db_path, user, monkeypatch
 ):
