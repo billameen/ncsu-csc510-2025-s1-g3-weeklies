@@ -14,8 +14,9 @@ the M3 pipeline (guard + LLM parser), whose model answers come from a recording 
 no key.
 
 Every edit a parser produces, whatever the request's category, is applied to a fixed week
-planned by the solver and the result is checked with the M0 validator. Any broken rule, or
-any change to a meal outside the edit, makes the command exit 1, which fails CI.
+planned by the solver and the result is checked with the M0 validator. A broken rule, a
+changed meal outside the edit, or an edit missed in a plan the solver called a full match
+makes the command exit 1, which fails CI.
 
 Writes m3.json and m3.md to --out (default eval/results). eval.run appends m3.md to the M0
 report when it finds it there.
@@ -139,8 +140,8 @@ def apply_edits(edits, menu: Menu, catalog: Catalog, current: dict) -> dict:
     Returns:
         dict: "outcome" (applied, closest, impossible or unresolved), the M0 validator's
         "violations" (kinds, with calories checked against the edited targets),
-        "pinned_changed" (meals outside the edit that changed) and "seconds" (re-plan time,
-        no LLM).
+        "pinned_changed" (meals outside the edit that changed), "not_met" (edits a plan the
+        solver called a full match does not meet) and "seconds" (re-plan time, no LLM).
     """
     request = plan_request()
     window = request.dates()
@@ -148,13 +149,20 @@ def apply_edits(edits, menu: Menu, catalog: Catalog, current: dict) -> dict:
         rules = [to_rule(e, window, menu) for e in edits]
         affected = [affected_scope(e, window) for e in edits]
     except Unresolvable:
-        return {"outcome": "unresolved", "violations": [], "pinned_changed": 0, "seconds": 0.0}
+        return {
+            "outcome": "unresolved",
+            "violations": [],
+            "pinned_changed": 0,
+            "not_met": 0,
+            "seconds": 0.0,
+        }
     preview = preview_edits(request, menu, current, rules, affected)
     if preview.status == IMPOSSIBLE:
         return {
             "outcome": "impossible",
             "violations": [],
             "pinned_changed": 0,
+            "not_met": 0,
             "seconds": preview.seconds,
         }
     meals = []
@@ -173,10 +181,13 @@ def apply_edits(edits, menu: Menu, catalog: Catalog, current: dict) -> dict:
         and after.get((slot.day, slot.meal)) != current.get((slot.day, slot.meal))
     )
     violations = check_week(meals, catalog, edited_kcal_targets(edits, window))
+    closest = preview.status == "closest"
     return {
-        "outcome": "closest" if preview.status == "closest" else "applied",
+        "outcome": "closest" if closest else "applied",
         "violations": [v.kind.value for v in violations],
         "pinned_changed": pinned_changed,
+        # A plan the solver calls a full match must meet every edit; a closest option may not.
+        "not_met": 0 if closest else len(preview.unmet),
         "seconds": preview.seconds,
     }
 
@@ -204,7 +215,13 @@ def evaluate_parser(
         applied = (
             apply_edits(result.edits, menu, catalog, current)
             if result.action == "edit"
-            else {"outcome": result.action, "violations": [], "pinned_changed": 0, "seconds": 0.0}
+            else {
+                "outcome": result.action,
+                "violations": [],
+                "pinned_changed": 0,
+                "not_met": 0,
+                "seconds": 0.0,
+            }
         )
         rows.append(
             {
@@ -231,6 +248,7 @@ def summarize(rows: Sequence[dict]) -> dict:
         "clarify_pct": pct("ambiguous"),
         "violations": sum(len(r["violations"]) for r in rows),
         "pinned_changed": sum(r["pinned_changed"] for r in rows),
+        "not_met": sum(r.get("not_met", 0) for r in rows),
         "edits_applied": sum(r["outcome"] in ("applied", "closest") for r in rows),
     }
 
@@ -360,11 +378,15 @@ def render_markdown(report: dict) -> str:
             cells.append(f"{shown} {'PASS' if ok else 'FAIL'}")
         target = f"{'≥' if op == '>=' else '≤'} {value}{'%' if metric.endswith('_pct') else ''}"
         lines.append(f"| {label} | {target} | {' | '.join(cells)} |")
-    lines.append(
-        "| Meals outside the edit that changed | 0 | "
-        + " | ".join(str(report["parsers"][c]["pinned_changed"]) for c in cols)
-        + " |"
-    )
+    for key, label in (
+        ("pinned_changed", "Meals outside the edit that changed"),
+        ("not_met", "Edits missed in a plan called a match"),
+    ):
+        lines.append(
+            f"| {label} | 0 | "
+            + " | ".join(str(report["parsers"][c].get(key, 0)) for c in cols)
+            + " |"
+        )
     replan = report["replan"]
     lines += [
         "",
@@ -404,6 +426,8 @@ def failures(report: dict) -> list[str]:
             problems.append(f"{name}: {metrics['violations']} rule violation(s) after edits")
         if metrics["pinned_changed"]:
             problems.append(f"{name}: {metrics['pinned_changed']} meal(s) outside an edit changed")
+        if metrics.get("not_met"):
+            problems.append(f"{name}: {metrics['not_met']} edit(s) missed in a plan called a match")
     return problems
 
 

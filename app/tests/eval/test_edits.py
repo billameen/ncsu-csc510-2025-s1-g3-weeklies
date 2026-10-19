@@ -75,7 +75,7 @@ def test_a_perfect_parser_scores_100_with_no_violations(seed):
         100,
         100,
     )
-    assert metrics["violations"] == 0 and metrics["pinned_changed"] == 0
+    assert metrics["violations"] == metrics["pinned_changed"] == metrics["not_met"] == 0
     assert metrics["edits_applied"] == 3
 
 
@@ -174,13 +174,14 @@ def test_a_stale_recording_stops_the_eval(tmp_path):
 def test_the_report_flags_violations_and_changed_pins():
     report = {
         "parsers": {
-            "llm": {"violations": 2, "pinned_changed": 1},
-            "regex": {"violations": 0, "pinned_changed": 0},
+            "llm": {"violations": 2, "pinned_changed": 1, "not_met": 3},
+            "regex": {"violations": 0, "pinned_changed": 0, "not_met": 0},
         }
     }
     assert edits_eval.failures(report) == [
         "llm: 2 rule violation(s) after edits",
         "llm: 1 meal(s) outside an edit changed",
+        "llm: 3 edit(s) missed in a plan called a match",
     ]
 
 
