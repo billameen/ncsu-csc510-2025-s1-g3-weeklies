@@ -76,3 +76,24 @@ def parse(text: str) -> ParseResult:
     except ValueError:
         return ParseResult("error", message=UNPARSED_MESSAGE, source="regex")
     return ParseResult("edit", tuple(parsed.edits), source="regex")
+
+
+class GuardedRegexParser:
+    """
+    The regex parser behind the same length check and guard as the LLM parser, for running
+    the app without a model (EDIT_PARSER=regex). The bare `parse` above is the evaluation
+    baseline and has no guard.
+    """
+
+    def parse(self, text: str, *, today=None) -> ParseResult:
+        """Same interface as LLMEditParser.parse; `today` is unused."""
+        from planner.edits import guard
+
+        try:
+            text = guard.check_length(text)
+        except guard.InvalidRequest as e:
+            return ParseResult("error", message=str(e), source="input")
+        refusal = guard.check(text)
+        if refusal:
+            return ParseResult("refuse", message=refusal.message, source="guard")
+        return parse(text)

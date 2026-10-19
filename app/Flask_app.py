@@ -30,6 +30,10 @@ from planner.targets import (
 from planner.menu import load_menu, meal_cost_cents
 from planner.request import InvalidPlanRequest, PlanRequest
 from planner.solver import plan_week
+from planner.edits.llm_parser import LLMEditParser
+from planner.edits.regex_parser import GuardedRegexParser
+from planner.edits.replan import IMPOSSIBLE, preview_edits
+from planner.edits.resolve import Unresolvable, affected_scope, to_rule
 
 # Which planner /generate_plan uses: "solver" (CP-SAT, the default) or "llm" (v1, kept as the
 # M0 baseline). Read on every request, so it can be switched without a restart.
@@ -1618,6 +1622,216 @@ def _generate_plan_llm():
         return jsonify({"ok": False, "error": str(e)}), 500
     finally:
         close_connection(conn)
+
+# ---------------------- Plain-English plan edits (M3) ----------------------
+
+# Which parser /plan/edit uses: "llm" (default; OpenAI or the local model, via llm_toolkit)
+# or "regex" (no model; the guarded regex baseline). Read on every request.
+EDIT_PARSER_ENV = "EDIT_PARSER"
+EDIT_HISTORY_SIZE = 5
+_edit_llm_parser = None
+
+
+def get_edit_parser():
+    """The parser /plan/edit uses, chosen by EDIT_PARSER. The LLM is loaded once, on first use."""
+    global _edit_llm_parser
+    if os.environ.get(EDIT_PARSER_ENV, "llm").strip().lower() == "regex":
+        return GuardedRegexParser()
+    if _edit_llm_parser is None:
+        import llm_toolkit
+        _edit_llm_parser = LLMEditParser(llm_toolkit.LLM(tokens=300))
+    return _edit_llm_parser
+
+
+def current_plan(gen_str, days):
+    """{(date, meal): itm_id} for the given days of a serialized generated menu."""
+    wanted = {d.isoformat(): d for d in days}
+    plan = {}
+    for day_str, entries in parse_generated_menu(gen_str).items():
+        if day_str in wanted:
+            for e in entries:
+                plan.setdefault((wanted[day_str], e['meal']), e['itm_id'])
+    return plan
+
+
+def _menu_fingerprint(gen_str):
+    import hashlib
+    return hashlib.sha256((gen_str or "").encode()).hexdigest()
+
+
+def _log_edit(conn, usr_id, text, status, detail=""):
+    cur = execute_query(conn, 'INSERT INTO "PlanEdit"(usr_id, request, status, detail) VALUES (?, ?, ?, ?)',
+                        (usr_id, (text or "")[:300], status, (detail or "")[:500]))
+    return cur.lastrowid if cur else None
+
+
+def _edit_history(conn, usr_id):
+    rows = fetch_all(conn, '''SELECT edit_id, request, status, detail, created_at FROM "PlanEdit"
+                              WHERE usr_id = ? ORDER BY edit_id DESC LIMIT ?''', (usr_id, EDIT_HISTORY_SIZE))
+    return [{"edit_id": r[0], "request": r[1], "status": r[2], "detail": r[3] or "", "created_at": r[4]} for r in rows]
+
+
+def _slot_label(slot):
+    return f"{slot.weekday} {slot.day:%b} {slot.day.day}"
+
+
+def _item_json(item):
+    if item is None:
+        return None
+    return {"itm_id": item.itm_id, "name": item.name, "price": _cents_to_dollars(item.price_cents), "calories": item.calories}
+
+
+@app.route('/plan/edit', methods=['POST'])
+def plan_edit():
+    """
+    Turn a plain-English request ("make Thursday vegetarian under $10") into a proposed plan
+    for the next 7 days. Nothing is saved: the proposal waits in the session for Accept.
+    Body: JSON {"text": "..."} (or form field "text").
+    Returns:
+        Response: JSON with "status": "preview" or "closest" (with "changes", costs, kcal per
+        day and "edit_id" to accept or discard), "clarify" (a question), "refused",
+        "impossible" (an explanation) or "error"; always with the last 5 edits in "history".
+    """
+    if session.get("Username") is None:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    data = request.get_json(silent=True) or {}
+    text = data.get("text", request.form.get("text", ""))
+
+    conn = create_connection(db_file)
+    try:
+        user = fetch_one(conn, '''SELECT usr_id, preferences, allergies, generated_menu,
+                                         daily_calorie_target, weekly_budget_cents
+                                  FROM "User" WHERE email = ?''', (session.get("Email"),))
+        if not user:
+            return jsonify({"status": "error", "message": "User not found"}), 404
+        usr_id, prefs, allergies, gen_str, kcal_target, budget_cents = user
+
+        def reply(status, message="", code=200, **extra):
+            log_status = "proposed" if status in ("preview", "closest") else status
+            edit_id = _log_edit(conn, usr_id, text, log_status, message)
+            body = {"status": status, "message": message, "edit_id": edit_id, **extra}
+            body["history"] = _edit_history(conn, usr_id)
+            return jsonify(body), code
+
+        try:
+            plan_request = PlanRequest.from_profile(
+                daily_calorie_target=kcal_target, weekly_budget_cents=budget_cents,
+                allergies=allergies, preferences=prefs, start=date.today() + timedelta(days=1),
+            )
+        except InvalidPlanRequest as e:
+            return jsonify({"status": "error", "message": str(e), "fix_url": url_for("edit_profile")}), 400
+        window = plan_request.dates()
+        current = current_plan(gen_str, window)
+        if not current:
+            return jsonify({"status": "error", "message": "Plan your week first with Auto-Plan Week, then edit it."}), 400
+
+        parsed = get_edit_parser().parse(text, today=date.today())
+        if parsed.action == "refuse":
+            return reply("refused", parsed.message)
+        if parsed.action == "clarify":
+            return reply("clarify", parsed.message)
+        if parsed.action == "error":
+            return reply("error", parsed.message, 400 if parsed.source == "input" else 200)
+
+        menu = load_menu(db_file)
+        try:
+            rules = [to_rule(e, window, menu) for e in parsed.edits]
+            affected = [affected_scope(e, window) for e in parsed.edits]
+        except Unresolvable as e:
+            return reply("clarify", str(e))
+        try:
+            preview = preview_edits(plan_request, menu, current, rules, affected)
+        except Exception as e:  # a planner bug: answer in JSON, the page expects it
+            app.logger.exception("Plan edit failed")
+            return reply("error", f"The planner could not apply that edit ({type(e).__name__}).", 500)
+        if preview.status == IMPOSSIBLE:
+            return reply("impossible", preview.explanation or "That edit can't be planned.")
+
+        response, code = reply(
+            preview.status,
+            preview.explanation or "",
+            edits=[repr(r) for r in rules],
+            changes=[{"day": _slot_label(c.slot), "meal": c.slot.meal_name.title(),
+                      "before": _item_json(c.before), "after": _item_json(c.after),
+                      "unavailable": c.slot in preview.replaced_unavailable} for c in preview.changes],
+            cost_before=_cents_to_dollars(preview.cost_before_cents),
+            cost_after=_cents_to_dollars(preview.cost_after_cents),
+            kcal=[{"day": f"{d:%a %b} {d.day}", "before": preview.kcal_before.get(d, 0),
+                   "after": preview.kcal_after.get(d, 0)} for d in window],
+            met=preview.met, edited=preview.edited,
+        )
+        session["plan_edit"] = {
+            "edit_id": response.get_json()["edit_id"],
+            "base": _menu_fingerprint(gen_str),
+            "days": [d.isoformat() for d in window],
+            "entries": list(preview.entries),
+        }
+        return response, code
+    finally:
+        close_connection(conn)
+
+
+@app.route('/plan/edit/<int:edit_id>/accept', methods=['POST'])
+def plan_edit_accept(edit_id):
+    """
+    Save a proposed edit. Refused if it is not the pending proposal, or if the plan changed
+    since it was proposed (e.g. re-planned in another tab).
+    """
+    if session.get("Username") is None:
+        return jsonify({"ok": False, "message": "Unauthorized"}), 401
+    pending = session.get("plan_edit")
+    if not pending or pending.get("edit_id") != edit_id:
+        return jsonify({"ok": False, "message": "This edit is no longer pending. Make the edit again."}), 409
+    conn = create_connection(db_file)
+    try:
+        user = fetch_one(conn, 'SELECT usr_id, generated_menu FROM "User" WHERE email = ?', (session.get("Email"),))
+        if not user:
+            return jsonify({"ok": False, "message": "User not found"}), 404
+        usr_id, gen_str = user
+        if _menu_fingerprint(gen_str) != pending["base"]:
+            session.pop("plan_edit", None)
+            execute_query(conn, 'UPDATE "PlanEdit" SET status = ? WHERE edit_id = ? AND usr_id = ?', ("discarded", edit_id, usr_id))
+            return jsonify({"ok": False, "message": "Your plan changed since this preview. Make the edit again."}), 409
+        days = [date.fromisoformat(d) for d in pending["days"]]
+        new_menu = replace_menu_days(gen_str, days, pending["entries"])
+        execute_query(conn, 'UPDATE "User" SET generated_menu = ? WHERE usr_id = ?', (new_menu, usr_id))
+        execute_query(conn, 'UPDATE "PlanEdit" SET status = ? WHERE edit_id = ? AND usr_id = ?', ("accepted", edit_id, usr_id))
+        session["GeneratedMenu"] = new_menu
+        session.pop("plan_edit", None)
+        return jsonify({"ok": True, "history": _edit_history(conn, usr_id)})
+    finally:
+        close_connection(conn)
+
+
+@app.route('/plan/edit/<int:edit_id>/discard', methods=['POST'])
+def plan_edit_discard(edit_id):
+    """Drop a proposed edit. The plan is left exactly as it was."""
+    if session.get("Username") is None:
+        return jsonify({"ok": False, "message": "Unauthorized"}), 401
+    pending = session.get("plan_edit")
+    if pending and pending.get("edit_id") == edit_id:
+        session.pop("plan_edit", None)
+    conn = create_connection(db_file)
+    try:
+        usr_id = session.get("usr_id")
+        execute_query(conn, "UPDATE \"PlanEdit\" SET status = 'discarded' "
+                            "WHERE edit_id = ? AND usr_id = ? AND status = 'proposed'", (edit_id, usr_id))
+        return jsonify({"ok": True, "history": _edit_history(conn, usr_id) if usr_id else []})
+    finally:
+        close_connection(conn)
+
+
+@app.route('/plan/edits')
+def plan_edit_history():
+    """The logged-in user's last 5 plan edits, newest first."""
+    if session.get("Username") is None:
+        return jsonify({"history": []}), 401
+    conn = create_connection(db_file)
+    try:
+        return jsonify({"history": _edit_history(conn, session.get("usr_id"))})
+    finally:
+        close_connection(conn)
+
 
 @app.route('/admin/update_status', methods=['POST'])
 def admin_update_status():
