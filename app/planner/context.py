@@ -53,6 +53,8 @@ class PlanContext:
         self.kcal_targets: dict[date, int] = {
             day: request.daily_calorie_target for day in request.dates()
         }
+        # Slots pin_meals had to leave free because their pinned item is no longer allowed.
+        self.unpinned: list[Slot] = []
         self._penalties: list[tuple[Constraint, cp_model.LinearExpr]] = []
 
     # --- reading the model ---------------------------------------------------------------
