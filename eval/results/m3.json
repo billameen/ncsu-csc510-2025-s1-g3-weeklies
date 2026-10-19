@@ -41,7 +41,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.33807039700013775
+          "seconds": 0.29071734999979526
         },
         {
           "id": "n02",
@@ -51,7 +51,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.7040421560000141
+          "seconds": 0.5875452870000117
         },
         {
           "id": "n03",
@@ -61,7 +61,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.13705667900012486
+          "seconds": 0.08792317100005675
         },
         {
           "id": "n04",
@@ -71,7 +71,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.27855623000004925
+          "seconds": 0.18817647100013346
         },
         {
           "id": "n05",
@@ -81,7 +81,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.30884233899996616
+          "seconds": 0.2720320680000441
         },
         {
           "id": "n06",
@@ -91,7 +91,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.27435005200004525
+          "seconds": 0.18058661299983214
         },
         {
           "id": "n07",
@@ -101,7 +101,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.279701077000027
+          "seconds": 0.19541351299994858
         },
         {
           "id": "n08",
@@ -111,7 +111,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.08389130099976683
+          "seconds": 0.05666373600024599
         },
         {
           "id": "n09",
@@ -121,7 +121,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.0645584650001183
+          "seconds": 0.04762467299997297
         },
         {
           "id": "n10",
@@ -141,7 +141,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.11217864399986865
+          "seconds": 0.09546660999967571
         },
         {
           "id": "n12",
@@ -151,7 +151,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.10483705200022087
+          "seconds": 0.08922773299991604
         },
         {
           "id": "n13",
@@ -161,7 +161,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.14297020200001498
+          "seconds": 0.13837318500009133
         },
         {
           "id": "n14",
@@ -171,7 +171,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.28064500100026635
+          "seconds": 0.289881250000235
         },
         {
           "id": "n15",
@@ -181,7 +181,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.1799723549997907
+          "seconds": 0.18856640800004243
         },
         {
           "id": "n16",
@@ -191,7 +191,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.6782406900001661
+          "seconds": 0.39515339199988375
         },
         {
           "id": "n17",
@@ -201,7 +201,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.1434685740000532
+          "seconds": 0.11659782300012012
         },
         {
           "id": "n18",
@@ -211,7 +211,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.19134982600007788
+          "seconds": 0.1816908109999531
         },
         {
           "id": "n19",
@@ -221,7 +221,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.22144221200005632
+          "seconds": 0.281457692999993
         },
         {
           "id": "n20",
@@ -231,7 +231,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.1672504969997135
+          "seconds": 0.12978196900030525
         },
         {
           "id": "n21",
@@ -241,7 +241,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.1505338940000911
+          "seconds": 0.0994635830002153
         },
         {
           "id": "n22",
@@ -251,7 +251,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.0877725739997004
+          "seconds": 0.08520472899999731
         },
         {
           "id": "n23",
@@ -261,7 +261,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.05474766900033501
+          "seconds": 0.05199304799998572
         },
         {
           "id": "n24",
@@ -281,7 +281,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.31436854899993705
+          "seconds": 0.31291121599997496
         },
         {
           "id": "n26",
@@ -291,7 +291,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.10507909899979495
+          "seconds": 0.0974113719998968
         },
         {
           "id": "n27",
@@ -301,7 +301,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.09671822200016322
+          "seconds": 0.09611796100034553
         },
         {
           "id": "n28",
@@ -311,7 +311,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.09549854900024002
+          "seconds": 0.07582606000005399
         },
         {
           "id": "n29",
@@ -321,7 +321,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.10791069600008996
+          "seconds": 0.11964291000003868
         },
         {
           "id": "n30",
@@ -331,7 +331,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.49536797699965973
+          "seconds": 0.4305514040001981
         },
         {
           "id": "n31",
@@ -341,7 +341,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.05249859600007767
+          "seconds": 0.05461269700026605
         },
         {
           "id": "n32",
@@ -351,7 +351,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.05484583699990253
+          "seconds": 0.05453168099984396
         },
         {
           "id": "n33",
@@ -361,7 +361,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.05919951099986065
+          "seconds": 0.05861729399975957
         },
         {
           "id": "n34",
@@ -371,7 +371,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.10826530000031198
+          "seconds": 0.10112879600001179
         },
         {
           "id": "n35",
@@ -381,7 +381,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.08359944199992242
+          "seconds": 0.07472197900005995
         },
         {
           "id": "n36",
@@ -391,7 +391,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.11996608199979164
+          "seconds": 0.13187499500008926
         },
         {
           "id": "n37",
@@ -411,7 +411,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.20253347700008817
+          "seconds": 0.1767144919999737
         },
         {
           "id": "n39",
@@ -421,7 +421,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.29396438699995997
+          "seconds": 0.34873008600015964
         },
         {
           "id": "n40",
@@ -431,7 +431,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.42574084899979425
+          "seconds": 0.41110532699985924
         },
         {
           "id": "a01",
@@ -651,7 +651,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.2707784179997361
+          "seconds": 0.30881470099984654
         },
         {
           "id": "n02",
@@ -661,7 +661,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.5265591709999171
+          "seconds": 0.5881116340001427
         },
         {
           "id": "n03",
@@ -671,7 +671,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.09475348599971767
+          "seconds": 0.10674811699982456
         },
         {
           "id": "n04",
@@ -681,7 +681,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.20645515599971986
+          "seconds": 0.21105513899965445
         },
         {
           "id": "n05",
@@ -691,7 +691,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.36356816899979094
+          "seconds": 0.35104417799993826
         },
         {
           "id": "n06",
@@ -701,7 +701,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.2427989179996075
+          "seconds": 0.19944263800016415
         },
         {
           "id": "n07",
@@ -711,7 +711,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.20989927299979172
+          "seconds": 0.247427303999757
         },
         {
           "id": "n08",
@@ -721,7 +721,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.061175853999884566
+          "seconds": 0.07210417999976926
         },
         {
           "id": "n09",
@@ -731,7 +731,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.08286136299966529
+          "seconds": 0.06139554500032318
         },
         {
           "id": "n10",
@@ -751,7 +751,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.10125324799992086
+          "seconds": 0.10027604300012172
         },
         {
           "id": "n12",
@@ -761,7 +761,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.09299928800010093
+          "seconds": 0.09723542100027771
         },
         {
           "id": "n13",
@@ -771,7 +771,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.1471112910003285
+          "seconds": 0.1422854939996796
         },
         {
           "id": "n14",
@@ -781,7 +781,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.19219529199972385
+          "seconds": 0.18805690299996058
         },
         {
           "id": "n15",
@@ -791,7 +791,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.1672369590000926
+          "seconds": 0.17321509900011733
         },
         {
           "id": "n16",
@@ -801,7 +801,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.5213774730000296
+          "seconds": 0.4247391680000874
         },
         {
           "id": "n17",
@@ -811,7 +811,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.1192746899996564
+          "seconds": 0.11033824200012532
         },
         {
           "id": "n18",
@@ -821,7 +821,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.1871365470001365
+          "seconds": 0.32018709600015427
         },
         {
           "id": "n19",
@@ -831,7 +831,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.3092085739999675
+          "seconds": 0.1737597950000236
         },
         {
           "id": "n20",
@@ -841,7 +841,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.13007400400010738
+          "seconds": 0.10471294499984651
         },
         {
           "id": "n21",
@@ -851,7 +851,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.1314813280000635
+          "seconds": 0.09600013599992963
         },
         {
           "id": "n22",
@@ -861,7 +861,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.09263156599990907
+          "seconds": 0.10827873100015495
         },
         {
           "id": "n23",
@@ -871,7 +871,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.05724568400000862
+          "seconds": 0.05354819600006522
         },
         {
           "id": "n24",
@@ -891,7 +891,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.34647802299969044
+          "seconds": 0.32254466399990633
         },
         {
           "id": "n26",
@@ -901,7 +901,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.10613209100029053
+          "seconds": 0.09798462900016602
         },
         {
           "id": "n27",
@@ -911,7 +911,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.08643882900014432
+          "seconds": 0.08688855699983833
         },
         {
           "id": "n28",
@@ -921,7 +921,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.0494332889998077
+          "seconds": 0.04697013399982097
         },
         {
           "id": "n29",
@@ -931,7 +931,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.1027252869998847
+          "seconds": 0.0990228189998561
         },
         {
           "id": "n30",
@@ -941,7 +941,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.4117201940002815
+          "seconds": 0.5061371019996841
         },
         {
           "id": "n31",
@@ -951,7 +951,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.05065051300016421
+          "seconds": 0.05010906200004683
         },
         {
           "id": "n32",
@@ -961,7 +961,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.05163929799982725
+          "seconds": 0.058130086999881314
         },
         {
           "id": "n33",
@@ -971,7 +971,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.05223202100023627
+          "seconds": 0.05223662900016279
         },
         {
           "id": "n34",
@@ -981,7 +981,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.09141636399999697
+          "seconds": 0.11448833399981595
         },
         {
           "id": "n35",
@@ -991,7 +991,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.05971302400030254
+          "seconds": 0.061544730000150594
         },
         {
           "id": "n36",
@@ -1001,7 +1001,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.10241559699989011
+          "seconds": 0.10349566200011395
         },
         {
           "id": "n37",
@@ -1021,7 +1021,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.1447932379996928
+          "seconds": 0.15876334499989753
         },
         {
           "id": "n39",
@@ -1031,7 +1031,7 @@
           "outcome": "closest",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.24884531199995763
+          "seconds": 0.26618804999998247
         },
         {
           "id": "n40",
@@ -1041,7 +1041,7 @@
           "outcome": "applied",
           "violations": [],
           "pinned_changed": 0,
-          "seconds": 0.33850973100015835
+          "seconds": 0.3023874059999798
         },
         {
           "id": "a01",
@@ -1248,7 +1248,7 @@
   },
   "replan": {
     "one_day_edits": 20,
-    "p95_pinned_s": 0.3130236340002739,
-    "p95_full_week_s": 3.0492239700001846
+    "p95_pinned_s": 0.29199617500034947,
+    "p95_full_week_s": 2.758379605999835
   }
 }

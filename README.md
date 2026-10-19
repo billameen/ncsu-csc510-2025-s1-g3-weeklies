@@ -81,7 +81,7 @@ meals and still enforces every rule, and nothing is saved until the user accepts
 | Rules broken after an edit | ≤ 0 | 0 PASS | 0 PASS |
 | Meals outside the edit that changed | 0 | 0 | 0 |
 
-Re-plan time for the 20 one-day edits, excluding the LLM call: p95 **0.31 s** with the rest of the week pinned (target ≤ 2 s), against 3.05 s re-solving the whole week.
+Re-plan time for the 20 one-day edits, excluding the LLM call: p95 **0.29 s** with the rest of the week pinned (target ≤ 2 s), against 2.76 s re-solving the whole week.
 
 The LLM column is missing because no recording exists yet. Record one with `python -m eval.edits --live`.
 <!-- m3-results:end -->
