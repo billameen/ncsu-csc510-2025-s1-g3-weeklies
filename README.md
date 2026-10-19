@@ -84,7 +84,7 @@ the user accepts a diff ([how it works](app/docs/llm-proposes-solver-decides.md)
 | Meals outside the edit that changed | 0 | 0 | 0 |
 | Edits missed in a plan called a match | 0 | 0 | 0 |
 
-Re-plan time for the 25 one-day edits, excluding the LLM call: p95 **0.28 s** with the rest of the week pinned (target ≤ 2 s), against 2.63 s re-solving the whole week.
+Re-plan time for the 25 one-day edits, excluding the LLM call: p95 **0.25 s** with the rest of the week pinned (target ≤ 2 s), against 2.56 s re-solving the whole week.
 
 The LLM column is missing because no recording exists yet. Record one with `python -m eval.edits --live`.
 <!-- m3-results:end -->

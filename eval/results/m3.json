@@ -32,7 +32,7 @@
       "violations": 0,
       "pinned_changed": 0,
       "not_met": 0,
-      "edits_applied": 55,
+      "edits_applied": 48,
       "requests": [
         {
           "id": "n01",
@@ -43,7 +43,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.3107967539999663
+          "seconds": 0.25180849400021543
         },
         {
           "id": "n02",
@@ -54,7 +54,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.6557361210002455
+          "seconds": 0.5607976229998712
         },
         {
           "id": "n03",
@@ -65,7 +65,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10308234200010702
+          "seconds": 0.09303658399994674
         },
         {
           "id": "n04",
@@ -76,7 +76,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.20410945399999036
+          "seconds": 0.1936027080000713
         },
         {
           "id": "n05",
@@ -87,7 +87,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.32530087800023466
+          "seconds": 0.2922715109998535
         },
         {
           "id": "n06",
@@ -98,7 +98,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.26883753200036153
+          "seconds": 0.24925506500039774
         },
         {
           "id": "n07",
@@ -109,7 +109,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.24355021800010945
+          "seconds": 0.19660078900005828
         },
         {
           "id": "n08",
@@ -120,7 +120,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.0637817179999729
+          "seconds": 0.055985687999964284
         },
         {
           "id": "n09",
@@ -131,7 +131,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.0663213990001168
+          "seconds": 0.052160812000238366
         },
         {
           "id": "n10",
@@ -153,7 +153,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10195936500031166
+          "seconds": 0.09485998500031201
         },
         {
           "id": "n12",
@@ -164,7 +164,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09238985299998603
+          "seconds": 0.0929315299999871
         },
         {
           "id": "n13",
@@ -175,18 +175,18 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.12821054200003346
+          "seconds": 0.12341138600004342
         },
         {
           "id": "n14",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.24564407599973492
+          "seconds": 0.2340154739999889
         },
         {
           "id": "n15",
@@ -197,7 +197,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.9773133620001317
+          "seconds": 0.9759721579998768
         },
         {
           "id": "n16",
@@ -208,7 +208,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.43746025600012217
+          "seconds": 0.425336511000296
         },
         {
           "id": "n17",
@@ -219,29 +219,29 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.1153925150001669
+          "seconds": 0.10357254099972124
         },
         {
           "id": "n18",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.17049963500039667
+          "seconds": 0.18249774900004923
         },
         {
           "id": "n19",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.16298368699972343
+          "seconds": 0.18973779199995988
         },
         {
           "id": "n20",
@@ -252,7 +252,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10026063399982377
+          "seconds": 0.10235496099994634
         },
         {
           "id": "n21",
@@ -263,7 +263,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09256350599980578
+          "seconds": 0.09497116200009259
         },
         {
           "id": "n22",
@@ -274,7 +274,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.0826703800003088
+          "seconds": 0.08835005799983264
         },
         {
           "id": "n23",
@@ -285,7 +285,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.04983256100013023
+          "seconds": 0.04969059799987008
         },
         {
           "id": "n24",
@@ -307,7 +307,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.33878034000008483
+          "seconds": 0.30167565800002194
         },
         {
           "id": "n26",
@@ -318,7 +318,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10452547900013087
+          "seconds": 0.09910563800031014
         },
         {
           "id": "n27",
@@ -329,7 +329,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.08175617500000953
+          "seconds": 0.0791385799998352
         },
         {
           "id": "n28",
@@ -340,7 +340,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.051392562000273756
+          "seconds": 0.04543867799975487
         },
         {
           "id": "n29",
@@ -351,7 +351,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10436164300017481
+          "seconds": 0.09767746099987562
         },
         {
           "id": "n30",
@@ -362,7 +362,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.43306246200017995
+          "seconds": 0.4354162740000902
         },
         {
           "id": "n31",
@@ -373,7 +373,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05074573499996404
+          "seconds": 0.05373633800036259
         },
         {
           "id": "n32",
@@ -384,7 +384,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.06102844799988816
+          "seconds": 0.05054152599996087
         },
         {
           "id": "n33",
@@ -395,7 +395,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.052863368000089395
+          "seconds": 0.05447259099992152
         },
         {
           "id": "n34",
@@ -406,7 +406,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.0923810159997629
+          "seconds": 0.09585555300009219
         },
         {
           "id": "n35",
@@ -417,7 +417,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.07503189699991708
+          "seconds": 0.06923762199994599
         },
         {
           "id": "n36",
@@ -428,7 +428,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.12752460999990944
+          "seconds": 0.13047530299991195
         },
         {
           "id": "n37",
@@ -439,18 +439,18 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.06097018099990237
+          "seconds": 0.06713513899967438
         },
         {
           "id": "n38",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.18821220299969355
+          "seconds": 0.15428213399991364
         },
         {
           "id": "n39",
@@ -461,7 +461,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.29869785399978355
+          "seconds": 0.24953222300018751
         },
         {
           "id": "n40",
@@ -472,7 +472,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.2869120209998073
+          "seconds": 0.29608770699996967
         },
         {
           "id": "n41",
@@ -483,7 +483,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 1.0064325670000471
+          "seconds": 1.0217039119997935
         },
         {
           "id": "n42",
@@ -494,7 +494,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 1.0285155319998012
+          "seconds": 0.9450075949998791
         },
         {
           "id": "n43",
@@ -505,29 +505,29 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.4685973420000664
+          "seconds": 0.5396737159999248
         },
         {
           "id": "n44",
           "category": "normal",
           "action": "edit",
           "correct": false,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.1803838200003156
+          "seconds": 0.21307948799994847
         },
         {
           "id": "n45",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.24128787000017837
+          "seconds": 0.24913275000017165
         },
         {
           "id": "n46",
@@ -538,7 +538,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05394994299967948
+          "seconds": 0.0633470100001432
         },
         {
           "id": "n47",
@@ -571,7 +571,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.06960532499988403
+          "seconds": 0.08203796099996907
         },
         {
           "id": "n50",
@@ -582,7 +582,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.3686828449999666
+          "seconds": 0.39266137499998877
         },
         {
           "id": "n51",
@@ -604,7 +604,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.08158975100013777
+          "seconds": 0.08783808999987741
         },
         {
           "id": "n53",
@@ -615,7 +615,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.43069125200008784
+          "seconds": 0.43572390899998936
         },
         {
           "id": "n54",
@@ -626,7 +626,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.17283766399987144
+          "seconds": 0.1860437099999217
         },
         {
           "id": "n55",
@@ -637,7 +637,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.40687424699990515
+          "seconds": 0.42435559000023204
         },
         {
           "id": "n56",
@@ -648,18 +648,18 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.08365204400024595
+          "seconds": 0.07984921600018424
         },
         {
           "id": "n57",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.1464497020001545
+          "seconds": 0.14214469999978974
         },
         {
           "id": "n58",
@@ -670,7 +670,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.470546801999717
+          "seconds": 0.45064909799975794
         },
         {
           "id": "n59",
@@ -681,7 +681,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.44867661499984024
+          "seconds": 0.4618942090000928
         },
         {
           "id": "n60",
@@ -692,7 +692,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.9865269810002246
+          "seconds": 1.024728855000376
         },
         {
           "id": "a01",
@@ -945,7 +945,7 @@
       "violations": 0,
       "pinned_changed": 0,
       "not_met": 0,
-      "edits_applied": 55,
+      "edits_applied": 48,
       "requests": [
         {
           "id": "n01",
@@ -956,7 +956,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.265729213999748
+          "seconds": 0.26461932900019747
         },
         {
           "id": "n02",
@@ -967,7 +967,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.5215662599998723
+          "seconds": 0.5040415889998258
         },
         {
           "id": "n03",
@@ -978,7 +978,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.08760649400028342
+          "seconds": 0.09455743200032884
         },
         {
           "id": "n04",
@@ -989,7 +989,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.19195553800000198
+          "seconds": 0.19113054599984025
         },
         {
           "id": "n05",
@@ -1000,7 +1000,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.2576355319997674
+          "seconds": 0.26467180200006624
         },
         {
           "id": "n06",
@@ -1011,7 +1011,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.17878599300001952
+          "seconds": 0.18002849999993487
         },
         {
           "id": "n07",
@@ -1022,7 +1022,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.20557448199997452
+          "seconds": 0.19303677700008848
         },
         {
           "id": "n08",
@@ -1033,7 +1033,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05509196899993185
+          "seconds": 0.05615300499994191
         },
         {
           "id": "n09",
@@ -1044,7 +1044,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.04741544699982114
+          "seconds": 0.047454635000121925
         },
         {
           "id": "n10",
@@ -1066,7 +1066,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09201821099986773
+          "seconds": 0.0915467439999702
         },
         {
           "id": "n12",
@@ -1077,7 +1077,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.13485039499983031
+          "seconds": 0.08685160499999256
         },
         {
           "id": "n13",
@@ -1088,18 +1088,18 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.14078944399989268
+          "seconds": 0.12560336800015648
         },
         {
           "id": "n14",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.1590564359999007
+          "seconds": 0.19101057900024898
         },
         {
           "id": "n15",
@@ -1110,7 +1110,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 1.0427678829996694
+          "seconds": 1.0167272649996448
         },
         {
           "id": "n16",
@@ -1121,7 +1121,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.4796632210000098
+          "seconds": 0.4124886670001615
         },
         {
           "id": "n17",
@@ -1132,29 +1132,29 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.13661463700009335
+          "seconds": 0.10521096599995872
         },
         {
           "id": "n18",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.17126496900027632
+          "seconds": 0.1635707119999097
         },
         {
           "id": "n19",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.16534422799986714
+          "seconds": 0.16200777299991387
         },
         {
           "id": "n20",
@@ -1165,7 +1165,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10679349700012608
+          "seconds": 0.10322351799959506
         },
         {
           "id": "n21",
@@ -1176,7 +1176,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.11339344399993934
+          "seconds": 0.09725219399979323
         },
         {
           "id": "n22",
@@ -1187,7 +1187,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09713397199993778
+          "seconds": 0.08505366200006392
         },
         {
           "id": "n23",
@@ -1198,7 +1198,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.051794492000226455
+          "seconds": 0.05186388599986458
         },
         {
           "id": "n24",
@@ -1220,7 +1220,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.35817952600018543
+          "seconds": 0.3107147289997556
         },
         {
           "id": "n26",
@@ -1231,7 +1231,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.0953127630000381
+          "seconds": 0.09664227699977346
         },
         {
           "id": "n27",
@@ -1242,7 +1242,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.07842317799986631
+          "seconds": 0.07931931399980385
         },
         {
           "id": "n28",
@@ -1253,7 +1253,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.04576183100016351
+          "seconds": 0.048844670000107726
         },
         {
           "id": "n29",
@@ -1264,7 +1264,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09316044800016243
+          "seconds": 0.10140542099998129
         },
         {
           "id": "n30",
@@ -1275,7 +1275,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.38355504700029996
+          "seconds": 0.4150897989998157
         },
         {
           "id": "n31",
@@ -1286,7 +1286,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.04936079199978849
+          "seconds": 0.05377545700002884
         },
         {
           "id": "n32",
@@ -1297,7 +1297,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.0540461019995746
+          "seconds": 0.05300369600035992
         },
         {
           "id": "n33",
@@ -1308,7 +1308,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05853474199966513
+          "seconds": 0.05547870800000965
         },
         {
           "id": "n34",
@@ -1319,7 +1319,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.08941156299988506
+          "seconds": 0.10837845000014568
         },
         {
           "id": "n35",
@@ -1330,7 +1330,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.06310137199989185
+          "seconds": 0.06222884699991482
         },
         {
           "id": "n36",
@@ -1341,7 +1341,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10361416200021267
+          "seconds": 0.10554619699996692
         },
         {
           "id": "n37",
@@ -1352,18 +1352,18 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05978248000019448
+          "seconds": 0.05868646399994759
         },
         {
           "id": "n38",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.14868002599996544
+          "seconds": 0.1606569970003875
         },
         {
           "id": "n39",
@@ -1374,7 +1374,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.25263957600009235
+          "seconds": 0.2500186659999599
         },
         {
           "id": "n40",
@@ -1385,7 +1385,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.3062773130000096
+          "seconds": 0.3121559480000542
         },
         {
           "id": "n41",
@@ -1396,7 +1396,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 1.1631950179998967
+          "seconds": 1.2207222580000234
         },
         {
           "id": "n42",
@@ -1407,7 +1407,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.9239531140001418
+          "seconds": 1.0601371050001944
         },
         {
           "id": "n43",
@@ -1418,29 +1418,29 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.4774690570002349
+          "seconds": 0.565158189000158
         },
         {
           "id": "n44",
           "category": "normal",
           "action": "edit",
           "correct": false,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.24873242200010282
+          "seconds": 0.23372562699978516
         },
         {
           "id": "n45",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.33600778800018816
+          "seconds": 0.2991516980000597
         },
         {
           "id": "n46",
@@ -1451,7 +1451,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05616891699992266
+          "seconds": 0.06343710400005875
         },
         {
           "id": "n47",
@@ -1484,7 +1484,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.07963993299972572
+          "seconds": 0.07786688100031824
         },
         {
           "id": "n50",
@@ -1495,7 +1495,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.40808731399965836
+          "seconds": 0.37980179199985287
         },
         {
           "id": "n51",
@@ -1517,7 +1517,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09195713100007197
+          "seconds": 0.09028361099990434
         },
         {
           "id": "n53",
@@ -1528,7 +1528,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.4561393569997563
+          "seconds": 0.46705356700022094
         },
         {
           "id": "n54",
@@ -1539,7 +1539,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.21354791800013118
+          "seconds": 0.16383281399976113
         },
         {
           "id": "n55",
@@ -1550,7 +1550,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.47926336000000447
+          "seconds": 0.4032563460000347
         },
         {
           "id": "n56",
@@ -1561,18 +1561,18 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.07705421099990417
+          "seconds": 0.08218571299994437
         },
         {
           "id": "n57",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "closest",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.1618353680000837
+          "seconds": 0.15100608900002044
         },
         {
           "id": "n58",
@@ -1583,7 +1583,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.46545776200036926
+          "seconds": 0.45279263800011904
         },
         {
           "id": "n59",
@@ -1594,7 +1594,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.525824190000094
+          "seconds": 0.49433305999991717
         },
         {
           "id": "n60",
@@ -1605,7 +1605,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 1.0946512460000122
+          "seconds": 0.8484252759999436
         },
         {
           "id": "a01",
@@ -1854,7 +1854,7 @@
   },
   "replan": {
     "one_day_edits": 25,
-    "p95_pinned_s": 0.27989016599985916,
-    "p95_full_week_s": 2.634522188000119
+    "p95_pinned_s": 0.25197918100002425,
+    "p95_full_week_s": 2.5618250769998667
   }
 }
