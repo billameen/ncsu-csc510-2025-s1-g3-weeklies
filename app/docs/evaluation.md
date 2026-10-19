@@ -211,10 +211,10 @@ M1 is already in the list.
 `python -m eval.edits` evaluates plain-English plan edits (issue #8) and writes `m3.json` and
 `m3.md`; `eval.run` appends `m3.md` to the M0 report when it finds it in the same folder.
 
-- **Requests:** 60 labelled ones in `eval/data/edit_requests.json`: 40 normal requests with
-  the exact edits expected, 10 ambiguous ones that should get a clarifying question, and 10
-  adversarial ones (allergy removal, budget increases, prompt injection) that should be
-  refused.
+- **Requests:** 82 labelled ones in `eval/data/edit_requests.json`: 60 normal requests with
+  the exact edits expected (every edit type and condition field of the edit language), 10
+  ambiguous ones that should get a clarifying question, and 12 adversarial ones (allergy
+  removal, budget increases, prompt injection) that should be refused.
 - **Parsers:** the regex baseline from the issue (no model, no guard), the app's model-free
   mode (`EDIT_PARSER=regex`: the guard, then the regex parser), and M3 (the guard, then the
   LLM parser). A normal request counts as parsed right only if the edits match exactly,
@@ -224,8 +224,10 @@ M1 is already in the list.
   M0's Monday-to-Sunday week) and the result is checked with the M0 validator. Each day's
   calories are checked against its target after the edit's calorie shifts, worked out from
   the parsed edits rather than by the rule under test. The menu does not change between the
-  base week and the edit, so any meal outside the edit that changes is counted. The command
-  exits 1, failing CI, if any rule breaks or any meal outside the edit changes.
+  base week and the edit, so any meal outside the edit that changes is counted. When the
+  solver calls a plan a full match (not a closest option), each edit's own check
+  (`unmet`) must find nothing missed. The command exits 1, failing CI, if any rule breaks,
+  any meal outside the edit changes, or an edit is missed in a plan called a full match.
 - **Re-plan time:** p95 over the 20 one-day edits, using the expected edits so it does not
   depend on a parser, with the rest of the week pinned, against re-solving the whole week.
   Neither includes the model call.
@@ -238,6 +240,21 @@ Until a recording exists, the M3 column is left out and the command still runs.
 `python -m eval.edits --live` records with the app's LLM (OpenAI if `OPENAI_API_KEY` is
 set, otherwise the local model), then replays; `--readme` also refreshes the README table.
 A new prompt version (see `app/planner/prompts/`) needs a new recording.
+
+### Disclosure: how the labelled set changed
+
+The set started with 40 normal requests over five fixed edit types (`require_tag`,
+`max_price`, `exclude_item`, `exclude_restaurant`, `calorie_shift`). When those were replaced
+by the edit language, the 40 were relabelled with the same meaning, 20 normal requests were
+added for the new edits, and two ambiguous requests the language can now express ("Mix it
+up a bit", "Cheaper") became normal ones and were replaced by two new ambiguous ones. Two
+adversarial requests were added (x11, x12) whose wording the guard does not catch; the guard
+was not changed for them, so they measure what the model refuses on its own.
+
+The guard was changed once for the new language, for a feature rather than for a labelled
+request: it used to refuse "set a daily budget of $40" as a budget change. A daily budget is
+now a `day_limit`, a new limit on top of the weekly budget, so setting the budget is allowed
+when the per-day words are part of the budget phrase.
 
 ### Disclosure: one guard fix came from the labelled set
 
@@ -258,7 +275,7 @@ is why the solver enforces allergies and the budget on every plan regardless.
 | `eval/baselines.py` | B1, B2, and recording and replaying LLM responses |
 | `eval/planners.py` | M1, the solver, behind the eval's planner interface |
 | `eval/edits.py` | The M3 plan-edit evaluation |
-| `eval/data/edit_requests.json` | The 60 labelled plan-edit requests |
+| `eval/data/edit_requests.json` | The 82 labelled plan-edit requests |
 | `eval/run.py` | Metrics, the regression check, the report and the command |
 | `app/tests/eval/` | The tests: `pytest app/tests/eval` |
 

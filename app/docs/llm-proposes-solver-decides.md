@@ -16,30 +16,60 @@ saved until the user accepts a diff.
    or ignore an allergy, raise or remove the budget, or instruct the assistant ("ignore
    previous instructions", role tags, pasted JSON) are refused here with a fixed message
    that points to the profile page where relevant. A model is never asked.
-2. **Parser (model).** The model fills in a fixed JSON format with `action` set to `edit`,
-   `clarify` or `refuse`, plus typed edits. The only edit types are the ones that exist as
-   solver plug-ins: `require_tag`, `max_price`, `exclude_item`, `exclude_restaurant` and
-   `calorie_shift`, each with the days and meals it applies to. Pydantic checks the reply.
-   An invalid reply gets one retry, then the request is reported as not understood.
-   The model's own words are shown only when it asks a clarifying question.
+2. **Parser (model).** The model writes the request in the edit language below, as JSON
+   with `action` set to `edit`, `clarify` or `refuse`. Pydantic checks the reply. An
+   invalid reply gets one retry, then the request is reported as not understood, with a
+   list of what can be asked for. The model's own words are shown only when it asks a
+   clarifying question.
 3. **Resolve (code).** "Thursday" becomes a date in the plan window, "dinners" a meal
-   number, and dish or restaurant names become menu ids. A name that matches nothing turns
-   into a question ("I couldn't find "Lasagna" on the menu. Which dish did you mean?").
+   number, and dish words or restaurant names become menu ids (a dish word matches item
+   names or descriptions, singular or plural, so "pork" finds every pork dish). A name
+   that matches nothing turns into a question ("I couldn't find "Lasagna" on the menu.
+   Which dish did you mean?").
 4. **Re-plan (solver).** Every meal outside the edit is pinned. The edit's rules are added
    to the plan's usual rules (allergens, opening hours, stock, daily calories, weekly
    budget, variety), and the solver re-plans the rest, changing as few meals as it can.
-   If the edit can't be met, the user gets the reason and the closest plan, with how many
-   of the edited meals match.
+   If the edit can't be met, the user gets the reason and the closest plan: every edit is
+   turned into a strong preference, and the preview says what that plan still misses
+   ("Every day costs $42.18 (you asked for at most $4.00 a day)").
 5. **Accept or Discard.** The diff shows each changed meal, its price change, and the
    week's cost and calories before and after. Accept checks the proposal again against the
    menu and profile as they are now (stock, opening hours, allergies, budget, calories) and
    saves it; it is refused if anything changed since the preview. Discard leaves the plan
    untouched.
 
+## The edit language
+
+Each edit applies to some days and meals (`days`, `meals`; all of them if left out).
+
+| Edit | Means | Example request |
+|---|---|---|
+| `filter` | Every meal meets a condition | "make Thursday vegetarian", "dinners under $15", "no pork this week", "only Cowpers for breakfast" |
+| `include` | At least `times` meals meet a condition | "pizza on Friday night", "chicken twice this week" |
+| `day_limit` | Each day's cost (with tax and fees) or calories under or over a limit | "keep each day under $40", "no day over 2,000 calories" |
+| `prefer` | A wish, never a rule: cheaper, fewer or more calories, more variety, or meals that meet a condition | "cheaper lunches if possible", "vegetarian dinners when you can" |
+| `calorie_shift` | Move a day's calorie target by up to 1,000 kcal | "lighter days on the weekend" |
+
+A condition is a field, an operator and a value:
+
+| Field | Operators | Value |
+|---|---|---|
+| `tag` | `is`, `is_not` | vegetarian, vegan, spicy, gluten-free, dairy-free, low-calorie |
+| `dish` | `is`, `is_not` | a dish name or food word |
+| `restaurant` | `is`, `is_not` | a restaurant name |
+| `allergen` | `is`, `is_not` | an allergen word, such as shellfish |
+| `price` | `<=`, `>=` | dollars for one meal (menu price) |
+| `calories` | `<=`, `>=` | calories for one meal |
+
+Every edit only adds a restriction or a preference. Nothing in the language can remove an
+allergy, raise the weekly budget or relax a rule: a daily cost limit is checked on top of
+the weekly budget, and a preference is weighed against the plan's other preferences but
+never against a hard rule. Requests the language can't express get a clarifying question.
+
 ## Why this is safe even when the model is wrong
 
-The parser can only *add* restrictions, and the solver enforces every rule whatever the
-parser produces. A wrong parse can give the user a week they didn't ask for, which they
+The parser can only *add* restrictions and preferences, and the solver enforces every rule
+whatever the parser produces. A wrong parse can give the user a week they didn't ask for, which they
 see in the diff and can discard. It cannot give them a week that breaks a rule.
 
 The evaluation checks this directly. It applies **every** edit any parser produces, even
@@ -67,6 +97,9 @@ about 3 s to re-solve the whole week (target ≤ 2 s, excluding the model call).
   column), and deliberately strictly: any meat word rules out "vegetarian".
 - Edits apply to the next 7 days of an existing plan, or to as many of them as are fully
   planned. A day that is not planned is never filled in. Plan the week first.
+- The menu has no cuisine, protein or ingredient columns, so "Italian" or "high protein"
+  can only be matched through dish words in names and descriptions, or a new tag (see the
+  tutorial).
 - A calorie shift changes whole days, up to 1,000 kcal, within the profile's 800 to
   6,000 kcal bounds, and each day can have only one shift per edit.
 

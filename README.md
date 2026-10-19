@@ -64,10 +64,12 @@ Reproduce with `python -m eval.run --seed 510` (about 3 minutes, no API key). `P
 ## 💬 Plan Edits (M3)
 
 Since M3, users can change their week in plain English on the calendar ("make Thursday vegetarian
-under $10"). The LLM only turns the sentence into typed edits; the solver re-plans just the affected
-meals and still enforces every rule, and nothing is saved until the user accepts a diff
-([how it works](app/docs/llm-proposes-solver-decides.md),
-[teach it a new request](app/docs/teach-the-parser.md)). Evaluation on 60 labelled requests
+under $10", "keep each day under $40", "pizza on Friday night", "cheaper lunches if possible"). The
+LLM only turns the sentence into a small edit language (filters, inclusions, daily limits,
+preferences and calorie shifts over tags, dishes, restaurants, allergens, prices and calories); the
+solver re-plans just the affected meals and still enforces every rule, and nothing is saved until
+the user accepts a diff ([how it works](app/docs/llm-proposes-solver-decides.md),
+[teach it a new request](app/docs/teach-the-parser.md)). Evaluation on 82 labelled requests
 ([full results](eval/results/m3.md)):
 
 <!-- m3-results:start -->

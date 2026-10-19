@@ -98,7 +98,8 @@ local model).
 ### Changing your week in plain English
 
 Once a week is planned, type a change into **Change your week** on the calendar, such as
-"make Thursday vegetarian under $10" or "no Beef Ribs this week", and press **Preview**. You
+"make Thursday vegetarian under $10", "keep each day under $40", "pizza on Friday night" or
+"cheaper lunches if possible", and press **Preview**. You
 see exactly which meals would change and what the week would cost; nothing is saved until you
 press **Accept**. Allergies and the budget can't be loosened this way; change them on your
 profile.
