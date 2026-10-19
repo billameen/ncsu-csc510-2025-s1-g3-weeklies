@@ -498,7 +498,7 @@ def logout():
     Returns:
         Response: Redirect to the login route.
     """
-    for k in ["Username","Fname","Lname","Email","Phone","Wallet","Preferences","Allergies","GeneratedMenu","is_admin","usr_id"]:
+    for k in ["Username","Fname","Lname","Email","Phone","Wallet","Preferences","Allergies","GeneratedMenu","is_admin","usr_id","plan_edit"]:
         session.pop(k, None)
     return redirect(url_for("login"))
 

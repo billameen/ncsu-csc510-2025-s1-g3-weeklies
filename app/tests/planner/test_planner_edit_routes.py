@@ -295,6 +295,19 @@ def test_empty_overlong_or_non_text_input_is_a_400(client, user, monkeypatch, te
     assert resp.status_code == 400 and resp.get_json()["status"] == "error"
 
 
+def test_logging_out_drops_the_pending_edit(client, temp_db_path, user, monkeypatch):
+    use_model(monkeypatch, Scripted(veg_edit()))
+    edit_id = edit(client).get_json()["edit_id"]
+    email = fetch_one(
+        create_connection(temp_db_path), 'SELECT email FROM "User" WHERE usr_id = ?', (user,)
+    )[0]
+
+    client.get("/logout")
+    client.post("/login", data={"email": email, "password": PASSWORD})
+
+    assert client.post(f"/plan/edit/{edit_id}/accept").status_code == 409
+
+
 def test_a_model_timeout_is_reported(client, user, monkeypatch):
     use_model(monkeypatch, Scripted(veg_edit(), delay=0.5), timeout_s=0.05)
     body = edit(client).get_json()
