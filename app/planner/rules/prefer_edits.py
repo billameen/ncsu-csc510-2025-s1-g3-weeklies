@@ -7,9 +7,9 @@ from planner.registry import register
 @register
 class PreferEdits(SoftConstraint):
     """
-    The soft version of a set of edit filters (require_tag, max_price, ...): each meal that
-    breaks one of them costs `weight`. Used only when the edit cannot be met exactly, to find
-    the plan that meets it in as many meals as possible. The default weight, 5000, is $50 a
+    The soft version of a set of edit filters (filter_meals): each meal that breaks one of
+    them costs `weight`. Used only when the edit cannot be met exactly, to find the plan that
+    meets it in as many meals as possible. The default weight, 5000, is $50 a
     meal, far above what cost or variety trade, so the solver gives way on those first.
     """
 

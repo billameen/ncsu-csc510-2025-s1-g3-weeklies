@@ -11,7 +11,7 @@ from planner.match import Condition
 from planner.scope import MealScope
 
 TUESDAY = date(2026, 10, 20)
-RequireTag = get("require_tag")
+FilterMeals = get("filter_meals")
 
 MENU = menu(
     [
@@ -35,12 +35,13 @@ CURRENT = {
 }
 
 
-def edit(rule_cls, *args, scope):
-    return [rule_cls(*args, scope)], [scope]
+def tag_edit(tag, scope):
+    """A "make these meals <tag>" edit: its rules and the meals it re-plans."""
+    return [FilterMeals(Condition("tag", "is", tag), scope)], [scope]
 
 
 def test_only_the_edited_day_changes_and_it_meets_the_edit():
-    rules, affected = edit(RequireTag, "vegetarian", scope=MealScope(days={TUESDAY}))
+    rules, affected = tag_edit("vegetarian", MealScope(days={TUESDAY}))
     preview = preview_edits(request(days=2), MENU, CURRENT, rules, affected)
 
     assert preview.status == PREVIEW
@@ -53,7 +54,7 @@ def test_only_the_edited_day_changes_and_it_meets_the_edit():
 
 def test_pinned_meals_are_saved_unchanged_in_the_new_entries():
     # Only Tuesday's dinner (Chicken Wings) is edited; it has to become vegetarian.
-    rules, affected = edit(RequireTag, "vegetarian", scope=MealScope(days={TUESDAY}, meals={3}))
+    rules, affected = tag_edit("vegetarian", MealScope(days={TUESDAY}, meals={3}))
     preview = preview_edits(request(days=2), MENU, CURRENT, rules, affected)
     assert preview.status == PREVIEW
     assert [(c.slot.day, c.slot.meal) for c in preview.changes] == [(TUESDAY, 3)]
@@ -62,7 +63,7 @@ def test_pinned_meals_are_saved_unchanged_in_the_new_entries():
 
 
 def test_costs_and_calories_before_and_after_are_reported():
-    rules, affected = edit(RequireTag, "vegetarian", scope=MealScope(days={TUESDAY}))
+    rules, affected = tag_edit("vegetarian", MealScope(days={TUESDAY}))
     preview = preview_edits(request(days=2), MENU, CURRENT, rules, affected)
     assert preview.kcal_before == {MONDAY: 1800, TUESDAY: 1800}
     assert preview.kcal_after[MONDAY] == 1800
@@ -74,7 +75,7 @@ def test_costs_and_calories_before_and_after_are_reported():
 def test_an_edit_that_cannot_be_met_returns_the_closest_option():
     # Only the 300 kcal salad is low-calorie, and three of it (900 kcal) cannot reach the
     # 1,620 kcal floor. Closest: two salads and the 1,100 kcal lasagna (1,700 kcal).
-    rules, affected = edit(RequireTag, "low-calorie", scope=MealScope(days={TUESDAY}))
+    rules, affected = tag_edit("low-calorie", MealScope(days={TUESDAY}))
     preview = preview_edits(request(days=2), MENU, CURRENT, rules, affected)
 
     assert preview.status == CLOSEST
@@ -85,7 +86,7 @@ def test_an_edit_that_cannot_be_met_returns_the_closest_option():
 
 def test_when_not_even_a_close_plan_exists_the_edit_is_impossible():
     # The pinned Monday meals alone already exceed a $30 budget.
-    rules, affected = edit(RequireTag, "vegetarian", scope=MealScope(days={TUESDAY}))
+    rules, affected = tag_edit("vegetarian", MealScope(days={TUESDAY}))
     preview = preview_edits(request(days=2, budget_cents=3000), MENU, CURRENT, rules, affected)
     assert preview.status == IMPOSSIBLE
     assert preview.changes == () and preview.entries == ()
@@ -94,21 +95,21 @@ def test_when_not_even_a_close_plan_exists_the_edit_is_impossible():
 
 def test_a_pinned_item_that_is_gone_is_replaced_and_reported():
     gone = menu([*MENU.items.values()][:4] + [item(5, in_stock=False), item(6, price_cents=1000)])
-    rules, affected = edit(RequireTag, "vegetarian", scope=MealScope(days={TUESDAY}))
+    rules, affected = tag_edit("vegetarian", MealScope(days={TUESDAY}))
     preview = preview_edits(request(days=2), gone, CURRENT, rules, affected)
     assert preview.status == PREVIEW
     assert [(s.day, s.meal) for s in preview.replaced_unavailable] == [(MONDAY, 3)]
 
 
 def test_a_one_day_edit_is_fast():
-    rules, affected = edit(RequireTag, "vegetarian", scope=MealScope(days={TUESDAY}))
+    rules, affected = tag_edit("vegetarian", MealScope(days={TUESDAY}))
     assert preview_edits(request(days=2), MENU, CURRENT, rules, affected).seconds < 2
 
 
 def test_meals_that_already_meet_the_edit_are_kept():
     # Tuesday lunch is already vegetarian (Bean Chili); only breakfast and dinner should change.
     current = {**CURRENT, (TUESDAY, 2): 6}
-    rules, affected = edit(RequireTag, "vegetarian", scope=MealScope(days={TUESDAY}))
+    rules, affected = tag_edit("vegetarian", MealScope(days={TUESDAY}))
     preview = preview_edits(request(days=2), MENU, current, rules, affected)
     assert [c.slot.meal for c in preview.changes] == [1, 3]
 
@@ -118,7 +119,7 @@ def test_the_closest_option_keeps_the_meal_it_cannot_fix():
     # salad + salad + lasagna (1,700 kcal) fits the band, so breakfast stays as it is and
     # lunch and dinner become salads.
     current = {**CURRENT, (TUESDAY, 1): 7}
-    rules, affected = edit(RequireTag, "low-calorie", scope=MealScope(days={TUESDAY}))
+    rules, affected = tag_edit("low-calorie", MealScope(days={TUESDAY}))
     preview = preview_edits(request(days=2), MENU, current, rules, affected)
     assert preview.status == CLOSEST
     assert preview.unmet == ("1 of 3 meals (Tue Oct 20) are not low-calorie",)
@@ -126,7 +127,7 @@ def test_the_closest_option_keeps_the_meal_it_cannot_fix():
 
 
 def vegetarian_tuesday():
-    rules, affected = edit(RequireTag, "vegetarian", scope=MealScope(days={TUESDAY}))
+    rules, affected = tag_edit("vegetarian", MealScope(days={TUESDAY}))
     return preview_edits(request(days=2), MENU, CURRENT, rules, affected), rules
 
 
