@@ -13,7 +13,7 @@ from eval.profiles import Profile
 from eval.validate import WEEKDAYS, Meal, validate_week
 from planner.menu import load_menu
 from planner.request import PlanRequest
-from planner.solver import plan_week
+from planner.solver import Status, plan_week
 from scripts.init_db import SEED_FILE, init_db
 
 
@@ -64,6 +64,29 @@ def test_the_same_request_always_gets_the_same_plan(seed_menu):
     first = plan_week(_request(), seed_menu)
     second = plan_week(_request(), seed_menu)
     assert first.menu_entries() == second.menu_entries()
+
+
+def test_hitting_the_limit_returns_the_best_valid_plan_marked_not_optimal(seed_db, seed_menu):
+    result = plan_week(_request(), seed_menu, work_limit=0.3)
+
+    assert result.status is Status.FEASIBLE
+    assert result.ok and not result.optimal
+    assert _validate(result, 2200, 450, ("Eggs", "Soy"), seed_db) == []
+
+
+def test_running_out_of_time_before_any_plan_is_reported(seed_menu):
+    result = plan_week(_request(), seed_menu, time_limit_s=0.001)
+
+    assert result.status is Status.TIMED_OUT and not result.ok
+    assert "stopped after 0.001 seconds" in result.explanation
+
+
+def test_a_budget_below_the_cheapest_valid_week_is_explained_with_both_amounts(seed_menu):
+    result = plan_week(_request(budget_dollars=150), seed_menu)
+
+    assert result.status is Status.INFEASIBLE
+    assert result.explanation.startswith("The cheapest week that meets your other requirements")
+    assert result.explanation.endswith("your weekly budget is $150.00.")
 
 
 def test_out_of_stock_items_on_the_seed_db_are_never_planned(seed_menu):
