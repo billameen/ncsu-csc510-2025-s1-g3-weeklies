@@ -145,6 +145,30 @@ class ScopedItemFilter(ItemFilter):
                     if not self.allows(item, slot, ctx):
                         ctx.forbid(slot, item, self)
 
+    # Plan edits use the two methods below: `soften` when the edit cannot be met exactly (to
+    # plan the closest option instead) and `unmet` to say what that option misses.
+
+    def soften(self) -> "Constraint":
+        """The preference version of this filter: each meal that breaks it costs a penalty."""
+        from planner.registry import get  # the registry imports this module
+
+        return get("prefer_edits")([self])
+
+    def unmet(self, plan) -> str | None:
+        """
+        What a plan misses of this filter, e.g. "2 of 3 meals (Thu Oct 22) are not vegan".
+        Args:
+            plan: {slot: picked MenuItem} for every slot of the plan.
+        """
+        covered = [slot for slot in plan if self.scope.covers(slot)]
+        misses = [slot for slot in covered if not self.allows(plan[slot], slot, None)]
+        if not misses:
+            return None
+        return (
+            f"{len(misses)} of {len(covered)} meals ({self.scope.describe()}) "
+            f"{self.describe_block(misses[0], None)}"
+        )
+
 
 class SoftConstraint(Constraint):
     """
