@@ -34,7 +34,7 @@ from pathlib import Path
 from planner.edits import regex_parser
 from planner.edits.llm_parser import LLMEditParser
 from planner.edits.replan import IMPOSSIBLE, preview_edits
-from planner.edits.resolve import Unresolvable, affected_scope, to_rule
+from planner.edits.resolve import affected_scope, to_rule
 from planner.edits.result import ParseResult
 from planner.edits.schema import CalorieShift, ParsedRequest, edit_keys
 from planner.menu import Menu, load_menu
@@ -148,7 +148,7 @@ def apply_edits(edits, menu: Menu, catalog: Catalog, current: dict) -> dict:
     try:
         rules = [to_rule(e, window, menu) for e in edits]
         affected = [affected_scope(e, window) for e in edits]
-    except Unresolvable:
+    except ValueError:  # Unresolvable, or a value a rule refuses: nothing is applied
         return {
             "outcome": "unresolved",
             "violations": [],

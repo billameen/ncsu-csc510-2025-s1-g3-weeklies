@@ -15,13 +15,14 @@ the language removes an allergy, raises the budget or relaxes a rule, and the so
 those whatever the edits say. Anything that does not fit the format is rejected.
 """
 
+import math
 import re
 from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from planner.allergens import normalize_allergen
-from planner.match import FIELDS, NUMERIC_FIELDS
+from planner.match import FIELDS
 from planner.tags import TAGS
 
 WEEKDAY_CODES = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
@@ -90,7 +91,10 @@ def _words(value, aliases):
         value = [value]
     if not isinstance(value, list):
         return value  # let Pydantic report the type error
-    return [aliases.get(str(v).strip().lower(), str(v).strip().lower()) for v in value] or ["all"]
+    if not value:
+        # An empty list could mean "none" or "all"; make the model say which by leaving it out.
+        raise ValueError("list at least one, or leave it out to mean all")
+    return [aliases.get(str(v).strip().lower(), str(v).strip().lower()) for v in value]
 
 
 class _Scoped(BaseModel):
@@ -178,6 +182,13 @@ def _alias(value, aliases):
     return value
 
 
+def _no_bool(value):
+    """JSON true and false are not numbers here, though Python would count them as 1 and 0."""
+    if isinstance(value, bool):
+        raise ValueError("expected a number, not true or false")
+    return value
+
+
 def _number(value):
     """A number from 12, 12.5, "12", "$12.50", "4$" or "1,200 kcal"; anything else unchanged."""
     if isinstance(value, str):
@@ -231,6 +242,24 @@ def _value_key(value):
     return value[4:] if value.startswith("the ") else value
 
 
+def _amount(value, label: str, *, cents: bool, maximum: float) -> float:
+    """
+    A positive amount, rounded to cents (dollars) or whole calories, checked after rounding.
+    Raises:
+        ValueError: Not a finite number, a yes/no value, 0 or less once rounded, or over
+            `maximum`.
+    """
+    number = _number(value)
+    if isinstance(number, bool) or not isinstance(number, (int, float)):
+        raise ValueError(f"{label} needs a number, got {value!r}")
+    if not math.isfinite(number):
+        raise ValueError(f"{label} needs a finite number, got {value!r}")
+    rounded = round(float(number), 2) if cents else float(round(number))
+    if not 0 < rounded <= maximum:
+        raise ValueError(f"{label} must be above 0 and at most {maximum:,}, got {value!r}")
+    return rounded
+
+
 def condition_value(field: str, op: str, value):
     """
     The value checked and normalized for the field: a tag name, an allergen, a dish or
@@ -240,17 +269,10 @@ def condition_value(field: str, op: str, value):
     """
     if op not in FIELDS[field]:
         raise ValueError(f"{field} takes {' or '.join(FIELDS[field])}, not {op!r}")
-    if field in NUMERIC_FIELDS:
-        number = _number(value)
-        if isinstance(number, str) or number <= 0:
-            raise ValueError(f"{field} needs a positive number, got {value!r}")
-        if field == "price":
-            if number > MAX_PRICE_DOLLARS:
-                raise ValueError(f"price is per item, at most ${MAX_PRICE_DOLLARS}")
-            return round(float(number), 2)
-        if number > MAX_ITEM_KCAL:
-            raise ValueError(f"calories are per item, at most {MAX_ITEM_KCAL}")
-        return int(round(number))
+    if field == "price":
+        return _amount(value, "price", cents=True, maximum=MAX_PRICE_DOLLARS)
+    if field == "calories":
+        return int(_amount(value, "calories", cents=False, maximum=MAX_ITEM_KCAL))
     if not isinstance(value, str):
         raise ValueError(f"{field} needs a name, got {value!r}")
     value = " ".join(value.split())
@@ -279,6 +301,11 @@ class Include(_Condition):
 
     type: Literal["include"]
     times: int = Field(default=1, ge=1, le=21)
+
+    @field_validator("times", mode="before")
+    @classmethod
+    def _times(cls, value):
+        return _no_bool(value)
 
     def key(self):
         return (
@@ -313,15 +340,14 @@ class DayLimit(_Scoped):
     @field_validator("value", mode="before")
     @classmethod
     def _value(cls, value):
-        return _number(value)
+        return _number(_no_bool(value))
 
     @model_validator(mode="after")
     def _check_limit(self):
         self.meals = ["all"]  # a day's total covers all of its meals
-        limit = MAX_DAY_COST_DOLLARS if self.metric == "cost" else MAX_DAY_KCAL
-        if not 0 < self.value <= limit:
-            raise ValueError(f"a daily {self.metric} limit must be above 0 and at most {limit}")
-        self.value = round(self.value, 2) if self.metric == "cost" else float(round(self.value))
+        cost = self.metric == "cost"
+        limit = MAX_DAY_COST_DOLLARS if cost else MAX_DAY_KCAL
+        self.value = _amount(self.value, f"a daily {self.metric} limit", cents=cost, maximum=limit)
         return self
 
     def key(self):
@@ -367,6 +393,11 @@ class Prefer(_Scoped):
     def _op(cls, value):
         return _alias(value, _OP_ALIASES)
 
+    @field_validator("value", mode="before")
+    @classmethod
+    def _value(cls, value):
+        return _no_bool(value)
+
     @model_validator(mode="after")
     def _check_goal(self):
         parts = (self.field, self.op, self.value)
@@ -395,6 +426,11 @@ class CalorieShift(_Scoped):
 
     type: Literal["calorie_shift"]
     kcal_delta: int = Field(ge=-1000, le=1000)
+
+    @field_validator("kcal_delta", mode="before")
+    @classmethod
+    def _delta(cls, value):
+        return _no_bool(value)
 
     @field_validator("kcal_delta")
     @classmethod

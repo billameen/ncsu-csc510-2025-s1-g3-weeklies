@@ -34,6 +34,7 @@ from planner.edits.llm_parser import LLMEditParser
 from planner.edits.regex_parser import GuardedRegexParser
 from planner.edits.replan import IMPOSSIBLE, check_proposal, preview_edits
 from planner.edits.resolve import Unresolvable, affected_scope, to_rule
+from planner.edits.result import UNPARSED_MESSAGE
 from planner.edits.schema import CalorieShift
 
 # Which planner /generate_plan uses: "solver" (CP-SAT, the default) or "llm" (v1, kept as the
@@ -1772,6 +1773,9 @@ def plan_edit():
             affected = [affected_scope(e, window) for e in parsed.edits]
         except Unresolvable as e:
             return reply("clarify", str(e))
+        except ValueError:  # an edit the schema let through but a rule refuses
+            app.logger.warning("Plan edit rejected by a rule: %r", parsed.edits)
+            return reply("error", UNPARSED_MESSAGE)
         try:
             preview = preview_edits(plan_request, menu, current, rules, affected)
         except Exception as e:  # a planner bug: answer in JSON, the page expects it

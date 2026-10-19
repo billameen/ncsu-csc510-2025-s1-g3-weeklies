@@ -83,6 +83,28 @@ def test_day_phrases_resolve(days, expected):
         {"action": "edit", "edits": [{**VEGAN, "field": "calories", "op": ">=", "value": 9000}]},
         {"action": "edit", "edits": [{**VEGAN, "field": "dish", "op": "is", "value": ""}]},
         {"action": "edit", "edits": [{**VEGAN, "value": True}]},
+        {"action": "edit", "edits": [{**VEGAN, "field": "price", "op": "<=", "value": 0.001}]},
+        {"action": "edit", "edits": [{**VEGAN, "field": "price", "op": "<=", "value": "nan"}]},
+        {"action": "edit", "edits": [{**VEGAN, "field": "price", "op": "<=", "value": "inf"}]},
+        {"action": "edit", "edits": [{**VEGAN, "field": "calories", "op": "<=", "value": 0.4}]},
+        {"action": "edit", "edits": [{**VEGAN, "days": []}]},
+        {"action": "edit", "edits": [{**VEGAN, "meals": []}]},
+        {"action": "edit", "edits": [{**VEGAN, "type": "include", "times": True}]},
+        {"action": "edit", "edits": [{"type": "calorie_shift", "kcal_delta": True}]},
+        {
+            "action": "edit",
+            "edits": [{"type": "day_limit", "metric": "cost", "op": "<=", "value": 0.001}],
+        },
+        {
+            "action": "edit",
+            "edits": [{"type": "day_limit", "metric": "calories", "op": "<=", "value": True}],
+        },
+        {
+            "action": "edit",
+            "edits": [
+                {"type": "prefer", "goal": "match", "field": "price", "op": "<=", "value": True}
+            ],
+        },
         {"action": "edit", "edits": [{**VEGAN, "type": "include", "times": 0}]},
         {"action": "edit", "edits": [{**VEGAN, "type": "include", "times": 30}]},
         {

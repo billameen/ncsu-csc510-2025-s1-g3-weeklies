@@ -398,3 +398,16 @@ def test_a_daily_cost_cap_too_low_for_the_menu_gets_the_reason_and_closest_plan(
     assert "you asked for at most $4.00 a day" in body["message"]
     assert len(body["unmet"]) == 1 and body["unmet"][0].startswith(TARGET_LABEL)
     assert {c["day"] for c in body["changes"]} <= {TARGET_LABEL}
+
+
+def test_an_edit_a_rule_refuses_is_reported_not_crashed(client, user, monkeypatch):
+    use_model(monkeypatch, Scripted(veg_edit()))
+
+    def refuse(*args):
+        raise ValueError("a rule refused the value")
+
+    monkeypatch.setattr(Flask_app, "to_rule", refuse)
+    resp = edit(client)
+    body = resp.get_json()
+    assert resp.status_code == 200 and body["status"] == "error"
+    assert body["history"][0]["status"] == "error"
