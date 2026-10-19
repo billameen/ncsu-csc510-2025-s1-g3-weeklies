@@ -32,7 +32,7 @@ from sqlQueries import create_connection, close_connection, fetch_one, fetch_all
 #     assert pdf.mimetype == "application/pdf"
 #     assert pdf.data.startswith(b"%PDF-1.")  # from fake pdf in fixture
 
-def test_db_view_pagination(client, seed_minimal_data, login_session):
+def test_db_view_pagination(client, seed_minimal_data, admin_session):
     # default table=User, page defaults to 1
     r = client.get("/db")
     assert r.status_code == 200

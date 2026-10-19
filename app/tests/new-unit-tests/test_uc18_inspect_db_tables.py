@@ -88,6 +88,7 @@ def test_db_view_success_default_user_table(client, mock_db_and_render):
 
     with client.session_transaction() as sess:
         sess["Username"] = "Alice Smith"
+        sess["is_admin"] = True
 
     response = client.get("/db")
     assert response.status_code == 200
@@ -102,7 +103,7 @@ def test_db_view_success_default_user_table(client, mock_db_and_render):
     assert ctx["start"] == 1
     assert ctx["end"] == 10
     assert ctx["total"] == 25
-    assert ctx["allowed"] == ["MenuItem", "Order", "Restaurant", "Review", "User"]
+    assert ctx["allowed"] == ["MenuItem", "Order", "Restaurant", "Review", "Ticket", "User"]
 # This proves accessing the database viewer without table parameters defaults to the User table and renders the first page.
 
 
@@ -116,6 +117,7 @@ def test_db_view_success_pagination_calculations(client, mock_db_and_render):
 
     with client.session_transaction() as sess:
         sess["Username"] = "Alice Smith"
+        sess["is_admin"] = True
 
     response = client.get("/db?t=MenuItem&page=2")
     assert response.status_code == 200
@@ -140,6 +142,7 @@ def test_db_view_unapproved_table_falls_back_to_user_table(client, mock_db_and_r
 
     with client.session_transaction() as sess:
         sess["Username"] = "Alice Smith"
+        sess["is_admin"] = True
 
     response = client.get('/db?t=SecretTable"; DROP TABLE User;--')
     assert response.status_code == 200
@@ -160,6 +163,7 @@ def test_db_view_invalid_page_resets_to_first_page(client, mock_db_and_render, i
 
     with client.session_transaction() as sess:
         sess["Username"] = "Alice Smith"
+        sess["is_admin"] = True
 
     response = client.get(f"/db?t=Order&page={invalid_page}")
     assert response.status_code == 200
@@ -181,6 +185,7 @@ def test_db_view_page_exceeding_total_pages_clamped_to_max(client, mock_db_and_r
 
     with client.session_transaction() as sess:
         sess["Username"] = "Alice Smith"
+        sess["is_admin"] = True
 
     response = client.get("/db?t=Restaurant&page=99")
     assert response.status_code == 200
@@ -202,6 +207,7 @@ def test_db_view_empty_table_sets_zero_range(client, mock_db_and_render):
 
     with client.session_transaction() as sess:
         sess["Username"] = "Alice Smith"
+        sess["is_admin"] = True
 
     response = client.get("/db?t=Review")
     assert response.status_code == 200
@@ -223,6 +229,7 @@ def test_db_view_ensures_connection_closed_on_error(client, mock_db_and_render):
 
     with client.session_transaction() as sess:
         sess["Username"] = "Alice Smith"
+        sess["is_admin"] = True
 
     with pytest.raises(RuntimeError, match="SQLite query failure"):
         client.get("/db")
