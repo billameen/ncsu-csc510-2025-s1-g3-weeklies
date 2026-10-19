@@ -29,7 +29,7 @@
     "B1": {
       "h1_valid_pct": 0.0,
       "h2_median_distinct": 19,
-      "h3_p95_s": 0.0027510029995028162,
+      "h3_p95_s": 0.0027470340000945725,
       "h4_no_plan_pct": 0.0,
       "overall_valid_pct": 0.0,
       "explained_pct": 0.0,
@@ -47,7 +47,7 @@
     "B2": {
       "h1_valid_pct": 0.0,
       "h2_median_distinct": 19,
-      "h3_p95_s": 216.1976974840345,
+      "h3_p95_s": 216.21900838403417,
       "h4_no_plan_pct": 0.0,
       "overall_valid_pct": 0.0,
       "explained_pct": 0.0,
@@ -65,7 +65,7 @@
     "M1": {
       "h1_valid_pct": 100.0,
       "h2_median_distinct": 20,
-      "h3_p95_s": 2.9333137980001993,
+      "h3_p95_s": 2.8193988490002084,
       "h4_no_plan_pct": 100.0,
       "overall_valid_pct": 63.0,
       "explained_pct": 100.0,
