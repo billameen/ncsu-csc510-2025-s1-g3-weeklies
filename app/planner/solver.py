@@ -20,6 +20,7 @@ Solving stops after ``time_limit_s`` (4 s by default). If a valid plan was found
 is returned with ``optimal`` False; it is valid, just not proven to be the best one.
 """
 
+import math
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -39,6 +40,8 @@ DEFAULT_TIME_LIMIT_S = 4.0
 # enough that more workers mostly add CPU contention on a shared web server.
 DEFAULT_WORKERS = 1
 RANDOM_SEED = 0
+# Least time explain() calls get to re-solve after the model is found infeasible.
+MIN_DIAGNOSIS_S = 0.5
 
 
 class PlannerError(Exception):
@@ -179,6 +182,9 @@ def plan_week(
             seconds=time.monotonic() - started,
         )
     if status == cp_model.INFEASIBLE:
+        # Explanations may re-solve parts of the model; give them a moment even if the
+        # infeasibility proof used up most of the time limit.
+        ctx.deadline = max(ctx.deadline, time.monotonic() + MIN_DIAGNOSIS_S)
         return PlanResult(
             Status.INFEASIBLE, reasons=diagnose(ctx), seconds=time.monotonic() - started
         )
@@ -190,6 +196,36 @@ def plan_week(
         ),
         seconds=time.monotonic() - started,
     )
+
+
+@dataclass(frozen=True)
+class Cheapest:
+    """The cheapest plan cost found by `cheapest_without`."""
+
+    cost_cents: int  # exact if proven, else a lower bound: no plan costs less
+    proven: bool
+
+
+def cheapest_without(ctx: PlanContext, rule: Constraint) -> Cheapest | None:
+    """
+    For explain(): the lowest cost of any plan that meets every other hard rule in ctx,
+    ignoring rule and every soft rule. Uses whatever time is left before ctx.deadline.
+    Returns:
+        Cheapest | None: The cost (proven minimum, or a lower bound if time ran out), or
+        None if the other rules have no solution either, or nothing was learned in time.
+    """
+    others = [r for r in ctx.rules if r is not rule and r.kind is Kind.HARD]
+    sub = PlanContext(ctx.request, ctx.menu, others, deadline=ctx.deadline)
+    for other in others:
+        other.apply(sub)
+    sub.model.Minimize(sub.cost_cents())
+    solver = _solver(max(ctx.time_left(), 0.01), DEFAULT_WORKERS)
+    status = solver.Solve(sub.model)
+    if status == cp_model.OPTIMAL:
+        return Cheapest(round(solver.ObjectiveValue()), proven=True)
+    if status == cp_model.FEASIBLE:
+        return Cheapest(math.ceil(solver.BestObjectiveBound()), proven=False)
+    return None
 
 
 def diagnose(ctx: PlanContext) -> tuple[str, ...]:

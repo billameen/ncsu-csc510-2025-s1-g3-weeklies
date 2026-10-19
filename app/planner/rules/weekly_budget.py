@@ -18,3 +18,24 @@ class WeeklyBudget(Constraint):
 
     def apply(self, ctx):
         ctx.model.Add(ctx.cost_cents() <= ctx.request.weekly_budget_cents)
+
+    def explain(self, ctx):
+        """
+        The cost of the cheapest plan that meets every other hard rule, against the budget,
+        e.g. "The cheapest week that meets your other requirements costs $212.40 ...". None
+        if the other rules cannot be met either (then they explain), or if the cheapest
+        cost could not be pinned down above the budget in time.
+        """
+        from planner.solver import cheapest_without  # the solver imports the rule registry
+
+        budget = ctx.request.weekly_budget_cents
+        cheapest = cheapest_without(ctx, self)
+        if cheapest is None or cheapest.cost_cents <= budget:
+            return None
+        week = "week" if ctx.request.days == 7 else f"{ctx.request.days}-day plan"
+        costs = "costs" if cheapest.proven else "costs at least"
+        return (
+            f"The cheapest {week} that meets your other requirements {costs} "
+            f"${cheapest.cost_cents / 100:,.2f} with tax and fees; your weekly budget is "
+            f"${budget / 100:,.2f}."
+        )
