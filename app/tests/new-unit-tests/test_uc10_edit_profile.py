@@ -9,6 +9,7 @@ The route guards on ``session['usr_id']``. ``POST /login`` sets that key, so
 no extra ``GET /profile`` round trip is needed before editing. Each test
 creates its own user because ``temp_db_path`` is session-scoped.
 """
+import pytest
 from werkzeug.security import generate_password_hash
 
 from sqlQueries import close_connection, create_connection, execute_query, fetch_one
@@ -69,33 +70,62 @@ def test_editing_the_profile_writes_the_new_values_to_both_the_database_and_the_
 # This proves a valid profile edit persists phone, preferences and allergies to the User row and mirrors them into the active session before redirecting.
 
 
-def test_submitting_an_empty_allergies_field_silently_keeps_the_stored_allergy(client, temp_db_path):
-    """Each field is resolved with an ``or`` fallback to the current value:
-
-        new_allergies = request.form.get('allergies') or user['allergies']
-
-    An empty submitted string is falsy, so it never reaches the UPDATE. The
-    route reports success either way, so the form gives no sign the value was
-    ignored.
+def test_submitting_empty_allergies_and_preferences_clears_them(client, temp_db_path):
+    """Fields used to be resolved with an ``or`` fallback to the current value,
+    so an empty submission silently kept the old allergy. Only an absent field
+    falls back now; a present-but-empty one clears the value.
     """
     usr_id = _make_user(temp_db_path, "uc10-clear@example.test", allergies="peanuts")
     _login(client, "uc10-clear@example.test")
 
     response = client.post(
         "/profile/edit",
-        data={"phone": "9195550300", "preferences": "vegetarian", "allergies": ""},
+        data={"phone": "9195550300", "preferences": "", "allergies": ""},
         follow_redirects=False,
     )
 
     assert response.status_code == 302
     assert "/profile" in response.headers["Location"]
-    assert _profile_fields(temp_db_path, usr_id)[2] == "peanuts"
+    assert _profile_fields(temp_db_path, usr_id) == ("9195550300", "", "")
     with client.session_transaction() as sess:
-        assert sess["Allergies"] == "peanuts"
+        assert sess["Allergies"] == ""
+        assert sess["Preferences"] == ""
 
 
-# This proves a user who clears the allergies box is told the edit succeeded while the old allergy stays on file -- there is no way to remove an allergy once entered, and allergies feed meal generation, so this is a safety-relevant defect.
+# This proves a user can remove every allergy and preference, and the cleared values reach both the database and the session.
 
+
+def test_omitted_fields_and_an_empty_phone_keep_their_stored_values(client, temp_db_path):
+    usr_id = _make_user(temp_db_path, "uc10-keep@example.test", allergies="peanuts")
+    _login(client, "uc10-keep@example.test")
+
+    response = client.post("/profile/edit", data={"phone": ""}, follow_redirects=False)
+
+    assert response.status_code == 302
+    assert _profile_fields(temp_db_path, usr_id) == ("9195550300", "vegetarian", "peanuts")
+
+
+# This proves fields absent from the form keep their stored values, and an empty phone does not wipe the number collected at registration.
+
+
+@pytest.mark.parametrize("allergies", ["peenuts", "Peanuts,Sulphites"])
+def test_an_unknown_allergy_on_edit_is_rejected_and_nothing_is_saved(client, temp_db_path, allergies):
+    email = f"uc10-unknown-{allergies.lower().replace(',', '-')}@example.test"
+    usr_id = _make_user(temp_db_path, email, allergies="peanuts")
+    _login(client, email)
+
+    response = client.post(
+        "/profile/edit",
+        data={"phone": "9195550300", "preferences": "vegetarian", "allergies": allergies},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 400
+    assert "Unknown allergy" in response.get_data(as_text=True)
+    assert _profile_fields(temp_db_path, usr_id)[2] == "peanuts"
+
+
+# This proves an allergy the meal-plan filter cannot match is refused on edit instead of being saved and silently ignored.
 
 def test_the_phone_validation_enforced_at_registration_is_not_enforced_on_edit(client, temp_db_path):
     """POST /register normalises phone with ``re.sub(r"\\D+", "", phone)`` and

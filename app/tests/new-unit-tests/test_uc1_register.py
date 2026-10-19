@@ -6,6 +6,7 @@ project's Python dependencies installed.  The shared ``app`` fixture in
 these tests do not modify ``app/CSC510_DB.db``.
 """
 
+import pytest
 from werkzeug.security import check_password_hash
 
 from sqlQueries import close_connection, create_connection, fetch_one
@@ -59,23 +60,37 @@ def test_registering_with_valid_details_creates_a_hashed_user_record(client, tem
 # This proves a valid registration hashes its password and stores the expected user data before redirecting to login.
 
 
-def test_registering_with_a_misspelled_allergy_stores_the_unvalidated_text(client, temp_db_path):
+@pytest.mark.parametrize("allergies", ["peenuts", "Peanuts,Sulphites", "Dairy"])
+def test_registering_with_an_unknown_allergy_is_rejected(client, temp_db_path, allergies):
+    """Allergies feed meal-plan filtering, so only the selectable allergens are
+    accepted. "Sulphites" is no longer offered (no menu data tracks it), and
+    "Dairy" is a menu tag rather than a selectable allergy (users pick Milk/Lactose).
+    """
     form = _registration_data(
-        email="misspelled-allergy@example.test",
-        allergies="peenuts",
-        preferences="vegitarian",
+        email=f"unknown-allergy-{allergies.lower().replace(',', '-')}@example.test",
+        allergies=allergies,
     )
 
     response = client.post("/register", data=form, follow_redirects=False)
 
+    assert response.status_code == 200
+    assert "Unknown allergy" in response.get_data(as_text=True)
+    assert _user_by_email(temp_db_path, form["email"]) is None
+
+
+# This proves a misspelled or unsupported allergy is refused at registration instead of being stored and then matching nothing.
+
+
+def test_registering_with_known_allergies_in_any_case_is_accepted(client, temp_db_path):
+    form = _registration_data(email="known-allergies@example.test", allergies="tree nuts,MILK")
+
+    response = client.post("/register", data=form, follow_redirects=False)
+
     assert response.status_code == 302
-    user = _user_by_email(temp_db_path, form["email"])
-    assert user is not None
-    assert user[6:] == ("vegitarian", "peenuts")
+    assert _user_by_email(temp_db_path, form["email"])[7] == "tree nuts,MILK"
 
 
-# This proves misspelled preference and allergy values are accepted and persisted without validation.
-
+# This proves selectable allergens are accepted regardless of case.
 
 def test_registering_with_an_unverified_but_well_formed_email_creates_the_account(client, temp_db_path):
     form = _registration_data(email="address-not-owned@unverified.example")

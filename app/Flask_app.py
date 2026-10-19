@@ -18,7 +18,7 @@ from flask import Flask, render_template, url_for, redirect, request, session, s
 # Use ONLY these helpers for DB access
 from sqlQueries import create_connection, close_connection, fetch_one, fetch_all, execute_query
 from collections import Counter, defaultdict
-from menu_generation import MenuGenerator
+from menu_generation import MenuGenerator, ALLERGEN_TAGS, invalid_allergies
 from pricing import TAX_RATE, DELIVERY_FEE, SERVICE_FEE
 
 # ----------MANAGE ORDER STATUS--------------
@@ -37,6 +37,9 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'
 
 db_file = os.path.join(os.path.dirname(__file__), 'CSC510_DB.db')
+
+# The selectable allergens, shared by the register and edit-profile forms
+app.jinja_env.globals['ALLERGEN_OPTIONS'] = list(ALLERGEN_TAGS)
 
 # ---------------------- Helpers ----------------------
 
@@ -442,6 +445,10 @@ def register():
         digits_only = re.sub(r"\D+", "", phone)
         if len(digits_only) < 7:
             return render_template('register.html', error="Please enter a valid phone number")
+        # Allergies drive meal-plan filtering, so only accept allergens the filter understands
+        unknown = invalid_allergies(allergies)
+        if unknown:
+            return render_template('register.html', error=f"Unknown allergy: {', '.join(unknown)}")
 
         conn = create_connection(db_file)
         try:
@@ -674,9 +681,17 @@ def edit_profile():
     if request.method == 'POST':
         # You’ll expand this with update logic later
         # Example: update phone, preferences, allergies
+        # Phone is required at registration, so an empty value keeps the stored one. Preferences
+        # and allergies can be cleared: only fall back when the field is absent, not when it is "".
         new_phone = request.form.get('phone') or user['phone']
-        new_prefs = request.form.get('preferences') or user['preferences']
-        new_allergies = request.form.get('allergies') or user['allergies']
+        new_prefs = (request.form.get('preferences', user['preferences']) or '').strip()
+        new_allergies = (request.form.get('allergies', user['allergies']) or '').strip()
+
+        # Allergies drive meal-plan filtering, so only accept allergens the filter understands
+        unknown = invalid_allergies(new_allergies)
+        if unknown:
+            return render_template("edit_profile.html", user=user,
+                                   error=f"Unknown allergy: {', '.join(unknown)}"), 400
 
         conn = create_connection(db_file)
         try:
@@ -1449,7 +1464,8 @@ def generate_plan():
 
         # 2. Initialize Generator
         # Using 500 tokens as defined in your system
-        gen = MenuGenerator(tokens=500)
+        # strict_allergens: translate allergies into menu tags and exclude items with unknown allergens
+        gen = MenuGenerator(tokens=500, strict_allergens=True)
         
         # 3. Define Timeframe (Next 7 days starting tomorrow)
         start_date = (date.today() + timedelta(days=1)).isoformat()
@@ -1473,8 +1489,9 @@ def generate_plan():
         return jsonify({"ok": True})
 
     except Exception as e:
-        print(f"Generation Error: {e}")
-        return jsonify({"ok": False, "error": str(e)}), 500
+        # Log the details server-side; don't expose internal error text to the client
+        print(f"Generation Error: {e!r}")
+        return jsonify({"ok": False, "error": "Meal plan generation failed. Please try again."}), 500
     finally:
         close_connection(conn)
 
