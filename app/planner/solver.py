@@ -16,11 +16,13 @@ such as the budget, which picking one meal at a time cannot guarantee.
     else:
         ...  # result.explanation says why no week could be planned
 
-Solving stops after ``time_limit_s`` (4 s by default) or after ``work_limit`` of the solver's
-deterministic time (2.0 by default), whichever comes first. If a valid plan was found by then
-it is returned with ``optimal`` False; it is valid, just not proven to be the best one.
-Because the work limit does not depend on the clock, the same request always gets the same
-plan.
+Solving stops after ``time_limit_s`` (4 s by default, counted from the call, so building the
+model is included) or after ``work_limit`` of the solver's deterministic time (2.0 by
+default), whichever comes first. If a valid plan was found by then it is returned with
+``optimal`` False; it is valid, just not proven to be the best one. On a machine that is not
+overloaded the work limit is reached first, and since it counts work rather than seconds, the
+same request gets the same plan every time. If the machine is so busy that the 4 s limit is
+reached first, the plan may differ between runs; it still meets every hard rule.
 """
 
 import math
@@ -41,8 +43,8 @@ from planner.request import PlanRequest, Slot
 DEFAULT_TIME_LIMIT_S = 4.0
 # Search effort cap in CP-SAT's deterministic time (roughly seconds on a laptop, but counted
 # in work done, not on the clock). Stopping on work instead of wall-clock time makes the plan
-# for a given request the same on every run and every machine; the wall-clock limit above is
-# only a backstop for a machine more than twice as slow. On the M0 users 2.0 gives the same
+# for a given request the same on every run; the wall-clock limit above is a backstop that
+# only wins on a machine about twice as slow, or as busy, as a typical laptop. On the M0 users 2.0 gives the same
 # H1, H2 and H4 as running to the 4 s limit, with p95 planning time under 3 s instead of 4.1 s.
 DEFAULT_WORK_LIMIT = 2.0
 # One search worker keeps the search, and so the plan, the same on every run. Plans are small
@@ -174,7 +176,9 @@ def plan_week(
         rule.apply(ctx)
     ctx.model.Minimize(ctx.objective())
 
-    solver = _solver(time_limit_s, workers, work_limit)
+    # The time limit covers the whole call, so building the model counts against it.
+    solve_budget = max(0.05, started + time_limit_s - time.monotonic())
+    solver = _solver(solve_budget, workers, work_limit)
     status = solver.Solve(ctx.model)
 
     if status == cp_model.MODEL_INVALID:
@@ -202,13 +206,18 @@ def plan_week(
         return PlanResult(
             Status.INFEASIBLE, reasons=diagnose(ctx), seconds=time.monotonic() - started
         )
+    # Neither a plan nor a proof that none exists. The search is deterministic, so asking
+    # again gives the same answer; say what would help instead.
+    seconds = time.monotonic() - started
     return PlanResult(
         Status.TIMED_OUT,
         reasons=(
-            f"Planning stopped after {time_limit_s:g} seconds without finding a week that meets "
-            "all of your requirements. Try again, or loosen your budget or calorie target.",
+            f"Planning stopped after {seconds:.1f} seconds without finding a week that meets "
+            "all of your requirements, or proving that none exists. A higher budget or a "
+            "higher calorie target leaves more weeks to choose from and makes one easier to "
+            "find.",
         ),
-        seconds=time.monotonic() - started,
+        seconds=seconds,
     )
 
 

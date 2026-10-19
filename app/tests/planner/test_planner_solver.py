@@ -87,3 +87,28 @@ def test_empty_result_defaults():
     result = PlanResult(Status.TIMED_OUT, reasons=("slow",))
     assert result.total_cost_cents == 0 and result.kcal_by_day() == {}
     assert result.explanation == "slow"
+
+
+def test_building_the_model_counts_against_the_time_limit(monkeypatch):
+    """The solver gets what is left of time_limit_s after the rules are applied."""
+    import time as _time
+
+    from planner import solver as solver_module
+
+    budgets = []
+    real = solver_module._solver
+
+    def spy(time_limit_s, workers, work_limit=2.0):
+        budgets.append(time_limit_s)
+        return real(time_limit_s, workers, work_limit)
+
+    class SlowRule(Constraint):
+        name = "slow_rule_test"
+        summary = "Takes a while to apply."
+
+        def apply(self, ctx):
+            _time.sleep(0.3)
+
+    monkeypatch.setattr(solver_module, "_solver", spy)
+    plan_week(request(), menu([item(1)]), rules=[SlowRule(), OneItemPerMeal()], time_limit_s=1.0)
+    assert budgets and budgets[0] <= 0.71
