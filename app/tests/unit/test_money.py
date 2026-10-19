@@ -21,6 +21,7 @@ from money import (
     parse_cents,
 )
 from sqlQueries import close_connection, create_connection, execute_query, fetch_one
+import ledger
 
 cent_amounts = st.integers(min_value=-MAX_CENTS, max_value=MAX_CENTS)
 
@@ -147,7 +148,7 @@ def _make_user(db, email, wallet_cents):
 def _wallet(db, usr_id):
     conn = create_connection(db)
     try:
-        return fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))[0]
+        return ledger.wallet_balance(conn, usr_id)
     finally:
         close_connection(conn)
 

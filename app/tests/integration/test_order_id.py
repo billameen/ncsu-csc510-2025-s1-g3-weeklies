@@ -13,6 +13,7 @@ import threading
 from werkzeug.security import generate_password_hash
 
 import Flask_app
+import ledger
 from sqlQueries import close_connection, create_connection, execute_query, fetch_one
 
 PASSWORD = "secret123"
@@ -86,17 +87,17 @@ def test_order_id_belongs_to_the_order_just_placed_even_if_another_lands_first(
 
     # Right after the first order is saved, the same user's second tab places
     # another order before the first request has worked out its order ID.
-    real_execute_transaction = Flask_app._execute_transaction
+    real_post = ledger.post_transaction
     state = {"second_id": None}
 
-    def transaction_then_second_order(conn, queries_and_params, *args, **kwargs):
-        ok = real_execute_transaction(conn, queries_and_params, *args, **kwargs)
-        if state["second_id"] is None:
+    def post_then_second_order(conn, kind, *args, **kwargs):
+        result = real_post(conn, kind, *args, **kwargs)
+        if kind == "order" and state["second_id"] is None:
             state["second_id"] = -1  # don't recurse into the second tab's own order
             state["second_id"] = _order(second_tab, rtr_b, itm_b).get_json()["ord_id"]
-        return ok
+        return result
 
-    monkeypatch.setattr(Flask_app, "_execute_transaction", transaction_then_second_order)
+    monkeypatch.setattr(ledger, "post_transaction", post_then_second_order)
 
     first = _order(client, rtr_a, itm_a).get_json()
 

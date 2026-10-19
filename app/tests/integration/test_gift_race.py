@@ -6,8 +6,10 @@ Two gifts sent at once can both pass the check before either debits, so a
 $10.00 balance can send two $6.00 gifts and end at -$2.00.
 
 ``test_interleaved_gifts_cannot_overdraw`` reproduces that interleaving
-deterministically: it pauses the first gift right after its balance check
-and runs the second gift to completion in the gap.
+deterministically: the second gift runs to completion after the first gift
+request has started but before its payment is recorded. Since the ledger
+(M2) the balance is checked while the database write lock is held, inside
+``ledger.post_transaction``.
 """
 import threading
 
@@ -16,6 +18,7 @@ from werkzeug.security import generate_password_hash
 
 import Flask_app
 from sqlQueries import close_connection, create_connection, execute_query, fetch_one
+import ledger
 
 PASSWORD = "secret123"
 
@@ -37,7 +40,7 @@ def _make_user(db, email, phone, wallet_cents):
 def _wallet(db, usr_id):
     conn = create_connection(db)
     try:
-        return fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))[0]
+        return ledger.wallet_balance(conn, usr_id)
     finally:
         close_connection(conn)
 
@@ -59,19 +62,18 @@ def test_interleaved_gifts_cannot_overdraw(app, client, temp_db_path, monkeypatc
     second_device = app.test_client()
     _login(second_device, "race-sender@example.test")
 
-    real_fetch_one = Flask_app.fetch_one
+    real_post = ledger.post_transaction
     state = {"fired": False, "second_location": None}
 
-    def fetch_one_then_race(conn, query, params=()):
-        row = real_fetch_one(conn, query, params)
-        # The first gift has just read the sender's balance: run the second
-        # gift to completion before the first one reaches its debit.
-        if not state["fired"] and query.startswith('SELECT wallet FROM "User"'):
+    def race_then_post(conn, kind, *args, **kwargs):
+        # The first gift is about to record its payment: run the second gift
+        # to completion first.
+        if kind == "gift" and not state["fired"]:
             state["fired"] = True
             state["second_location"] = _gift(second_device, "race-bob@example.test", "6.00").headers["Location"]
-        return row
+        return real_post(conn, kind, *args, **kwargs)
 
-    monkeypatch.setattr(Flask_app, "fetch_one", fetch_one_then_race)
+    monkeypatch.setattr(ledger, "post_transaction", race_then_post)
 
     first = _gift(client, "race-alice@example.test", "6.00")
 

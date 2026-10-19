@@ -17,7 +17,9 @@ from flask import Flask, render_template, url_for, redirect, request, session, s
 
 # Use ONLY these helpers for DB access
 from sqlQueries import create_connection, close_connection, fetch_one, fetch_all, execute_query
-from money import MoneyError, parse_cents
+from money import MoneyError, parse_cents, cents_to_str
+import uuid
+import ledger
 from collections import Counter, defaultdict
 from menu_generation import MenuGenerator
 
@@ -129,6 +131,100 @@ def _execute_transaction(conn, queries_and_params: list, result: dict = None) ->
         print(f"Transaction failed, rolling back: {e}")
         conn.rollback()
         return False
+
+# --- Wallet ledger helpers (M2) ------------------------------------------------
+# Wallet balances live in the double-entry ledger (ledger.py), not in the old
+# User.wallet column. session['Wallet'] is only a display copy and is refreshed
+# from the ledger after every money operation; it is never used to decide
+# whether a user can pay.
+
+_LEDGER_READY = set()
+
+
+def _ledger_ready(conn):
+    """Create the ledger tables in the current database if needed (once per file)."""
+    if db_file not in _LEDGER_READY:
+        ledger.ensure_schema(conn)
+        _LEDGER_READY.add(db_file)
+
+
+def _wallet_cents(conn, usr_id) -> int:
+    """A user's wallet balance in cents, read from the ledger."""
+    _ledger_ready(conn)
+    return ledger.wallet_balance(conn, usr_id)
+
+
+def _refresh_session_wallet(conn, usr_id) -> int:
+    """Copy the user's ledger balance into session['Wallet'] for display."""
+    session['Wallet'] = _wallet_cents(conn, usr_id)
+    return session['Wallet']
+
+
+def _new_request_key(kind: str) -> str:
+    """A unique idempotency key for one money request."""
+    return f"{kind}:{uuid.uuid4().hex}"
+
+
+def _charge_and_save_order(usr_id, rtr_id, restaurant_name, details):
+    """
+    Pay for an order from the user's wallet and save it, all or nothing.
+    The payment is one ledger transaction split into restaurant (food + tip),
+    tax and fee accounts; the order row is inserted inside that same database
+    transaction, so an order is never saved without being paid for.
+    Args:
+        usr_id (int): Buyer.
+        rtr_id (int): Restaurant.
+        restaurant_name (str): Used in the transaction-history memo.
+        details (dict): Order details including "charges" in dollars. The ledger
+            transaction ID is added to it as "ledger_txn_id".
+    Returns:
+        tuple: (ord_id, None) on success, or (None, "insufficient_funds" | "db_failed").
+    """
+    charges = details["charges"]
+    subtotal = _dollars_to_cents(charges["subtotal"])
+    tax = _dollars_to_cents(charges["tax"])
+    delivery_fee = _dollars_to_cents(charges["delivery_fee"])
+    service_fee = _dollars_to_cents(charges["service_fee"])
+    tip = _dollars_to_cents(charges["tip"])
+    total = subtotal + tax + delivery_fee + service_fee + tip
+
+    entries = [
+        (ledger.user_account(usr_id), -total),
+        (ledger.restaurant_account(rtr_id), subtotal + tip),
+        ("tax", tax),
+        ("fees:delivery", delivery_fee),
+        ("fees:service", service_fee),
+    ]
+    entries = [(account, cents) for account, cents in entries if cents]
+
+    def save_order(cur, txn_id):
+        details["ledger_txn_id"] = txn_id
+        cur.execute(
+            'INSERT INTO "Order" (rtr_id, usr_id, details, status) VALUES (?, ?, ?, ?)',
+            (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value),
+        )
+        return cur.lastrowid
+
+    conn = create_connection(db_file)
+    try:
+        _ledger_ready(conn)
+        ledger.open_legacy_wallet(conn, usr_id)
+        try:
+            result = ledger.post_transaction(
+                conn, "order", entries, _new_request_key("order"),
+                memo=f"Order at {restaurant_name}", after=save_order,
+            )
+        except ledger.InsufficientFunds:
+            return None, "insufficient_funds"
+        except ledger.LedgerError as e:
+            print(f"Order payment failed: {e}")
+            return None, "db_failed"
+        finally:
+            _refresh_session_wallet(conn, usr_id)
+        return result.extra, None
+    finally:
+        close_connection(conn)
+
 
 def parse_generated_menu(gen_str):
     """
@@ -414,7 +510,11 @@ def login():
             session["Username"] = user[1] + " " + user[2]
             session["Email"] = email
             session["Phone"] = user[4]
-            session["Wallet"] = user[6]
+            conn = create_connection(db_file)
+            try:
+                session["Wallet"] = _wallet_cents(conn, user[0])
+            finally:
+                close_connection(conn)
             session["Preferences"] = user[7] if len(user) > 7 else ""
             session["Allergies"] = user[8] if len(user) > 8 else ""
             session["GeneratedMenu"] = user[9] if len(user) > 9 else ""
@@ -552,7 +652,7 @@ def profile():
             "email":         row[3],
             "phone":         row[4],
             "password_HS":   row[5],
-            "wallet":        (row[6] or 0) / 100.0,
+            "wallet":        cents_to_str(_wallet_cents(conn, row[0])),
             "preferences":   row[7] or "",
             "allergies":     row[8] or "",
         }
@@ -683,6 +783,7 @@ def edit_profile():
             SELECT usr_id, first_name, last_name, email, phone, wallet, preferences, allergies
             FROM "User" WHERE usr_id = ?
         ''', (usr_id,))
+        wallet_cents = _wallet_cents(conn, row[0]) if row else 0
     finally:
         close_connection(conn)
 
@@ -695,7 +796,7 @@ def edit_profile():
         "last_name": row[2],
         "email": row[3],
         "phone": row[4],
-        "wallet": (row[5] or 0) / 100.0,
+        "wallet": cents_to_str(wallet_cents),
         "preferences": row[6] or "",
         "allergies": row[7] or "",
     }
@@ -814,18 +915,20 @@ def wallet_topup():
     
     conn = create_connection(db_file)
     try:
-        # Atomically update the user's wallet balance
-        success = _execute_transaction(conn, [
-            ('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, usr_id))
-        ])
-
-        if success:
-            # Refresh the session's display balance from the database (it may be stale)
-            row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
-            session['Wallet'] = row[0] if row else 0
-            return redirect(url_for('profile', wallet_updated='topup'))
-        else:
+        _ledger_ready(conn)
+        ledger.open_legacy_wallet(conn, usr_id)
+        try:
+            ledger.post_transaction(
+                conn, "topup",
+                [(ledger.user_account(usr_id), amount_cents), ("external:topup", -amount_cents)],
+                _new_request_key("topup"), memo="Wallet top-up",
+            )
+        except ledger.LedgerError as e:
+            print(f"Top-up failed: {e}")
             return redirect(url_for('profile', wallet_error='db_failed'))
+        finally:
+            _refresh_session_wallet(conn, usr_id)
+        return redirect(url_for('profile', wallet_updated='topup'))
     finally:
         close_connection(conn)
 
@@ -853,45 +956,35 @@ def wallet_gift():
 
     conn = create_connection(db_file)
     try:
-        # 1. Get sender's current balance and recipient's ID
-        sender = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (sender_id,))
+        _ledger_ready(conn)
         recipient = fetch_one(conn, 'SELECT usr_id FROM "User" WHERE email = ?', (recipient_email,))
-
-        if not sender or not recipient:
+        if not recipient:
             return redirect(url_for('profile', wallet_error='recipient_not_found'))
-
-        sender_balance = sender[0] or 0
         recipient_id = recipient[0]
-
         if recipient_id == sender_id:
             return redirect(url_for('profile', wallet_error='self_gift'))
-        # Fast path only: another request can spend the money between this read and the
-        # debit below, so the debit itself is guarded too (M2 bug 4).
-        if sender_balance < amount_cents:
-            return redirect(url_for('profile', wallet_error='insufficient_funds'))
 
-        # 2. Prepare the atomic transaction (two steps: debit and credit). The debit only
-        # applies if the balance still covers the amount at the moment it runs; if it
-        # changes no rows, require_rows cancels the credit as well.
-        queries_and_params = [
-            # Debit sender
-            require_rows('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (amount_cents, sender_id, amount_cents)),
-            # Credit recipient
-            require_rows('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, recipient_id))
-        ]
+        ledger.open_legacy_wallet(conn, sender_id)
+        ledger.open_legacy_wallet(conn, recipient_id)
+        # The ledger checks the sender's balance while holding the database write
+        # lock, so two gifts at once cannot both spend the same money (M2 bug 4).
+        try:
+            ledger.post_transaction(
+                conn, "gift",
+                [(ledger.user_account(sender_id), -amount_cents),
+                 (ledger.user_account(recipient_id), amount_cents)],
+                _new_request_key("gift"),
+                memo=f"Gift from {session.get('Email')} to {recipient_email}",
+            )
+            outcome = {'wallet_updated': 'gift'}
+        except ledger.InsufficientFunds:
+            outcome = {'wallet_error': 'insufficient_funds'}
+        except ledger.LedgerError as e:
+            print(f"Gift failed: {e}")
+            outcome = {'wallet_error': 'db_failed'}
 
-        # 3. Execute the atomic transaction
-        succeeded = _execute_transaction(conn, queries_and_params)
-
-        # Refresh sender's session wallet value from the database (it may be stale)
-        row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (sender_id,))
-        session['Wallet'] = row[0] if row else 0
-
-        if succeeded:
-            return redirect(url_for('profile', wallet_updated='gift'))
-        if session['Wallet'] < amount_cents:
-            return redirect(url_for('profile', wallet_error='insufficient_funds'))
-        return redirect(url_for('profile', wallet_error='db_failed'))
+        _refresh_session_wallet(conn, sender_id)
+        return redirect(url_for('profile', **outcome))
     finally:
         close_connection(conn)
 
@@ -977,6 +1070,8 @@ def order():
         if delivery_type not in ("delivery", "pickup"):
             delivery_type = "delivery"
         tip_dollars = _money(payload.get("tip") or 0)
+        if tip_dollars < 0:
+            return jsonify({"ok": False, "error": "invalid_tip"}), 400
         eta_minutes = int(payload.get("eta_minutes") or 40)
         iso_date = (payload.get("date") or datetime.now().date().isoformat())
         try:
@@ -1061,72 +1156,15 @@ def order():
             "meal": meal
         }
 
-        # Handle amount being debited from user's wallet. The balance is checked by the
-        # guarded debit below against the database, never against session['Wallet'],
-        # which is only a display cache and can be stale (M2 bug 3).
-        total_cents = _dollars_to_cents(total)
-
-        # Insert the single order row with status "Ordered" AND debit the wallet atomically
-        conn = create_connection(db_file)
-        new_ord_id = None
-        try:
-            # 1. Prepare queries for atomic transaction: Debit wallet AND Insert order
-            queries_and_params = [
-                # Debit the wallet only if it covers the total. require_rows makes a debit that
-                # matches no rows cancel the whole transaction, including the order (M2 bug 2).
-                require_rows('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (total_cents, usr_id, total_cents)),
-                # Insert the new order
-                ('INSERT INTO "Order" (rtr_id, usr_id, details, status) VALUES (?, ?, ?, ?)', (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value))
-            ]
-
-            tx_result = {}
-            if _execute_transaction(conn, queries_and_params, result=tx_result):
-                # Transaction succeeded. Wallet debited and order inserted.
-                # Use the ID SQLite assigned to *this* insert, not "the user's newest
-                # order", which may belong to another request (M2 bug 5).
-                new_ord_id = tx_result.get("lastrowid")
-
-                # Refresh the session's display balance from the database
-                wallet_row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
-                session['Wallet'] = wallet_row[0] if wallet_row else 0
-
-            else:
-                # Transaction failed. Most likely due to the `wallet >= ?` check failing (insufficient funds).
-                # Re-fetch wallet balance to confirm the insufficient funds error.
-                updated_wallet_row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
-                updated_wallet = updated_wallet_row[0] if updated_wallet_row else 0
-                session['Wallet'] = updated_wallet
-
-                if updated_wallet < total_cents:
-                    return jsonify({"ok": False, "error": "insufficient_funds"}), 402
-                
-                # Fallback for unexpected DB error during atomic transaction.
-                return jsonify({"ok": False, "error": "db_failed"}), 500
-
-        except Exception as e:
-            print(f"Order Placement Error: {e}")
-            return jsonify({"ok": False, "error": "server_error"}), 500
-
-        finally:
-            close_connection(conn)
-
-        if new_ord_id is None:
-             return jsonify({"ok": False, "error": "order_id_missing"}), 500
-        
-        return jsonify({"ok": True, "ord_id": new_ord_id})
-
-        # Insert the single order row with status "Ordered"
-        conn = create_connection(db_file)
-        try:
-            execute_query(conn, '''
-                INSERT INTO "Order" (rtr_id, usr_id, details, status)
-                VALUES (?, ?, ?, ?)
-            ''', (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value))
-            row = fetch_one(conn, 'SELECT last_insert_rowid()')
-            new_ord_id = row[0] if row else None
-        finally:
-            close_connection(conn)
-
+        # Pay from the wallet and save the order in one all-or-nothing ledger
+        # transaction. The balance is checked by the ledger, never against
+        # session['Wallet'] (M2 bugs 2 and 3).
+        restaurant_name = dbmap[itm_ids[0]]["restaurant_name"]
+        new_ord_id, error = _charge_and_save_order(usr_id, rtr_id, restaurant_name, details)
+        if error == "insufficient_funds":
+            return jsonify({"ok": False, "error": "insufficient_funds"}), 402
+        if error:
+            return jsonify({"ok": False, "error": error}), 500
         return jsonify({"ok": True, "ord_id": new_ord_id})
 
     # ---- (optional) legacy GET single-item path, kept for compatibility ----
@@ -1147,6 +1185,8 @@ def order():
         tip_dollars = _money(float(request.args.get("tip", "0")))
     except Exception:
         tip_dollars = 0.0
+    if tip_dollars < 0:
+        return redirect(url_for("orders"))
     try:
         eta_minutes = int(request.args.get("eta", "40"))
     except Exception:
@@ -1206,16 +1246,10 @@ def order():
         "meal": meal
     }
 
-    conn = create_connection(db_file)
-    try:
-        execute_query(conn, '''
-            INSERT INTO "Order" (rtr_id, usr_id, details, status)
-            VALUES (?, ?, ?, ?)
-        ''', (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value))
-        row = fetch_one(conn, 'SELECT last_insert_rowid()')
-        new_ord_id = row[0] if row else None
-    finally:
-        close_connection(conn)
+    # This path used to save the order without charging the wallet at all.
+    new_ord_id, error = _charge_and_save_order(usr_id, rtr_id, restaurant_name, details)
+    if error:
+        return redirect(url_for('profile', wallet_error=error))
 
     return redirect(url_for("profile") + (f"?ordered={new_ord_id}" if new_ord_id else ""))
 

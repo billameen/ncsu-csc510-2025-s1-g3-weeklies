@@ -21,6 +21,7 @@ import pytest
 from werkzeug.security import generate_password_hash
 
 from sqlQueries import close_connection, create_connection, execute_query, fetch_one
+import ledger
 
 PASSWORD = "secret123"
 
@@ -68,7 +69,7 @@ def _make_restaurant_with_item(temp_db_path, name, price_cents=1000):
 def _wallet_cents(temp_db_path, usr_id):
     conn = create_connection(temp_db_path)
     try:
-        return fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))[0]
+        return ledger.wallet_balance(conn, usr_id)
     finally:
         close_connection(conn)
 
@@ -131,16 +132,11 @@ def test_placing_a_json_order_debits_the_wallet_and_stores_the_computed_charges(
 # This proves a valid JSON order computes tax and fees as documented, writes an "Ordered" row, and debits the wallet by exactly the charged total.
 
 
-def test_a_negative_tip_inverts_the_total_and_credits_the_wallet_instead_of_debiting_it(client, temp_db_path):
-    """``tip`` is read straight from the payload with no lower bound:
-
-        tip_dollars = _money(payload.get("tip") or 0)
-        total = _money(subtotal + tax + delivery_fee + service_fee + tip_dollars)
-
-    A large negative tip drives ``total`` below zero. The affordability guard
-    is ``if user_wallet_cents < total_cents``, which a negative total always
-    passes, and the debit is ``SET wallet = wallet - ?``, so subtracting a
-    negative number pays the user.
+def test_a_negative_tip_is_rejected_and_moves_no_money(client, temp_db_path):
+    """Regression (M2): ``tip`` had no lower bound, so a large negative tip made
+    the order total negative and the debit (``wallet - total``) paid the user.
+    With the ledger that would mean the restaurant paying the customer, so a
+    negative tip is now rejected before any money moves.
     """
     usr_id = _make_user(temp_db_path, "uc8-tip@example.test", wallet_cents=0)
     rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, "UC8 Tip Cafe", price_cents=1000)
@@ -151,23 +147,16 @@ def test_a_negative_tip_inverts_the_total_and_credits_the_wallet_instead_of_debi
         json={"restaurant_id": rtr_id, "items": [{"itm_id": itm_id, "qty": 1}], "tip": -100},
     )
 
-    assert response.status_code == 200
-    assert response.get_json()["ok"] is True
-    # $10.00 + $0.73 tax + $3.99 + $1.49 - $100.00 = -$83.79
-    _, details, _ = _latest_order(temp_db_path, usr_id)
-    assert json.loads(details)["charges"]["total"] == -83.79
-    assert _wallet_cents(temp_db_path, usr_id) == 8379
-    with client.session_transaction() as sess:
-        assert sess["Wallet"] == 8379
+    assert response.status_code == 400
+    assert response.get_json() == {"ok": False, "error": "invalid_tip"}
+    assert _latest_order(temp_db_path, usr_id) is None
+    assert _wallet_cents(temp_db_path, usr_id) == 0
 
 
-# This proves a negative tip is accepted unvalidated, produces a negative order total, and credits the user's wallet -- a real defect that lets an order mint money.
-
-
-def test_the_legacy_get_path_places_an_order_with_no_wallet_check_and_no_debit(client, temp_db_path):
-    """The POST/JSON branch checks funds and debits atomically. The legacy GET
-    branch further down the same view does neither: it computes the same
-    charges and runs a bare INSERT into "Order" with no balance check.
+def test_the_legacy_get_path_refuses_an_order_the_wallet_cannot_pay_for(client, temp_db_path):
+    """Regression (M2): the legacy GET branch used to compute the charges and run
+    a bare INSERT with no balance check and no debit, so a $0.00 wallet could
+    place a $37.66 order. It now pays through the ledger like the JSON path.
     """
     usr_id = _make_user(temp_db_path, "uc8-legacy@example.test", wallet_cents=0)
     rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, "UC8 Legacy Cafe", price_cents=1000)
@@ -176,14 +165,24 @@ def test_the_legacy_get_path_places_an_order_with_no_wallet_check_and_no_debit(c
     response = client.get(f"/order?itm_id={itm_id}&qty=3", follow_redirects=False)
 
     assert response.status_code == 302
+    assert response.headers["Location"] == "/profile?wallet_error=insufficient_funds"
+    assert _latest_order(temp_db_path, usr_id) is None
+    assert _wallet_cents(temp_db_path, usr_id) == 0
+
+
+def test_the_legacy_get_path_charges_the_wallet(client, temp_db_path):
+    usr_id = _make_user(temp_db_path, "uc8-legacy-paid@example.test", wallet_cents=5000)
+    rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, "UC8 Legacy Paid Cafe", price_cents=1000)
+    _login(client, "uc8-legacy-paid@example.test")
+
+    response = client.get(f"/order?itm_id={itm_id}&qty=3", follow_redirects=False)
+
+    assert response.status_code == 302
     assert "/profile?ordered=" in response.headers["Location"]
     ord_id, details, status = _latest_order(temp_db_path, usr_id)
     assert status == "Ordered"
     assert json.loads(details)["charges"]["total"] == 37.66
-    assert _wallet_cents(temp_db_path, usr_id) == 0
-
-
-# This proves a user with a $0.00 balance can place a $37.66 order through the legacy GET path, which skips both the insufficient_funds check and the wallet debit entirely -- a real defect.
+    assert _wallet_cents(temp_db_path, usr_id) == 5000 - 3766
 
 
 def test_an_item_id_of_zero_alongside_a_valid_one_escapes_validation_and_raises_a_key_error(

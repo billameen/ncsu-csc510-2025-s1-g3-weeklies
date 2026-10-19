@@ -17,6 +17,8 @@ from werkzeug.security import generate_password_hash
 
 import Flask_app
 from sqlQueries import close_connection, create_connection, execute_query, fetch_one
+from wallet_helpers import set_wallet_cents, wallet_cents, wallet_cents_by_email
+import ledger
 
 PASSWORD = "secret123"
 
@@ -63,7 +65,7 @@ def _make_item(db, name):
 def _wallet(db, usr_id):
     conn = create_connection(db)
     try:
-        return fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))[0]
+        return ledger.wallet_balance(conn, usr_id)
     finally:
         close_connection(conn)
 
@@ -150,11 +152,7 @@ def test_a_balance_spent_elsewhere_after_login_saves_no_order(client, temp_db_pa
     buyer = _make_user(temp_db_path, "bug2-direct@example.test", "9195557013", 5000)
     rtr_id, itm_id = _make_item(temp_db_path, "Bug2 Direct Cafe")
     _login(client, "bug2-direct@example.test")
-    conn = create_connection(temp_db_path)
-    try:
-        execute_query(conn, 'UPDATE "User" SET wallet = 1000 WHERE usr_id = ?', (buyer,))
-    finally:
-        close_connection(conn)
+    set_wallet_cents(temp_db_path, buyer, 1000)   # money spent from another device
 
     resp = _place_pickup_order(client, rtr_id, itm_id)
 

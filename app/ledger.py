@@ -327,3 +327,51 @@ def check_ledger(conn) -> LedgerCheck:
         '''SELECT account FROM "LedgerEntry" WHERE account LIKE 'user:%'
            GROUP BY account HAVING SUM(amount_cents) < 0'''))
     return LedgerCheck(total, unbalanced, negative)
+
+
+# --- User wallets and the old User.wallet column ------------------------------
+
+#: Counter-account for balances moved over from the old ``User.wallet`` column.
+OPENING_ACCOUNT = "external:opening"
+
+
+def opening_key(usr_id) -> str:
+    """Idempotency key of a user's opening-balance transaction."""
+    return f"opening:user:{int(usr_id)}"
+
+
+def open_legacy_wallet(conn, usr_id):
+    """Move a user's pre-ledger ``User.wallet`` balance into the ledger, once.
+
+    Before the ledger, a wallet was a single editable ``User.wallet`` column.
+    The first time a user's money is touched, their column value becomes an
+    ``opening_balance`` transaction (from ``external:opening``); after that the
+    column is never read again. Safe to call any number of times and from
+    concurrent requests: the idempotency key makes it happen at most once.
+    A zero balance needs no opening entry.
+
+    Returns the ``PostResult`` if an opening transaction was written or already
+    existed, or None if there was nothing to open.
+    """
+    key = opening_key(usr_id)
+    if conn.execute('SELECT 1 FROM "LedgerTransaction" WHERE idempotency_key = ?',
+                    (key,)).fetchone():
+        return PostResult(txn_id=conn.execute(
+            'SELECT txn_id FROM "LedgerTransaction" WHERE idempotency_key = ?', (key,)
+        ).fetchone()[0], created=False)
+    row = conn.execute('SELECT wallet FROM "User" WHERE usr_id = ?', (int(usr_id),)).fetchone()
+    cents = row[0] if row else 0
+    if not cents:
+        return None
+    if type(cents) is not int or cents < 0:
+        raise LedgerError(f"user {usr_id} has an invalid legacy wallet value: {cents!r}")
+    return post_transaction(
+        conn, "opening_balance", [(user_account(usr_id), cents), (OPENING_ACCOUNT, -cents)], key,
+        memo="Opening balance (moved from the old wallet)",
+    )
+
+
+def wallet_balance(conn, usr_id) -> int:
+    """A user's wallet balance in cents, opening their legacy balance first if needed."""
+    open_legacy_wallet(conn, usr_id)
+    return user_balance(conn, usr_id)

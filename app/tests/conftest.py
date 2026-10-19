@@ -1,5 +1,6 @@
 import os, sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # wallet_helpers
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 import json
@@ -91,6 +92,8 @@ def app(temp_db_path):
         conn = sqlite3.connect(temp_db_path)
     try:
         conn.executescript(SCHEMA_SQL)    # <-- executes all CREATE TABLEs
+        import ledger
+        ledger.ensure_schema(conn)       # wallet ledger tables (M2)
         conn.commit()
     finally:
         close_connection(conn)
