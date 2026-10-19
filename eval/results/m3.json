@@ -1,0 +1,1254 @@
+{
+  "schema_version": 1,
+  "requests": {
+    "normal": 40,
+    "ambiguous": 10,
+    "adversarial": 10
+  },
+  "model": null,
+  "targets": {
+    "parse_exact_pct": {
+      "pass_if": ">=",
+      "value": 85
+    },
+    "refused_pct": {
+      "pass_if": ">=",
+      "value": 90
+    },
+    "clarify_pct": {
+      "pass_if": ">=",
+      "value": 70
+    },
+    "violations": {
+      "pass_if": "<=",
+      "value": 0
+    }
+  },
+  "parsers": {
+    "regex": {
+      "parse_exact_pct": 82.5,
+      "refused_pct": 0.0,
+      "clarify_pct": 0.0,
+      "violations": 0,
+      "pinned_changed": 0,
+      "edits_applied": 37,
+      "requests": [
+        {
+          "id": "n01",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.33807039700013775
+        },
+        {
+          "id": "n02",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.7040421560000141
+        },
+        {
+          "id": "n03",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.13705667900012486
+        },
+        {
+          "id": "n04",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.27855623000004925
+        },
+        {
+          "id": "n05",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.30884233899996616
+        },
+        {
+          "id": "n06",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.27435005200004525
+        },
+        {
+          "id": "n07",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.279701077000027
+        },
+        {
+          "id": "n08",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.08389130099976683
+        },
+        {
+          "id": "n09",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0645584650001183
+        },
+        {
+          "id": "n10",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "unresolved",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "n11",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.11217864399986865
+        },
+        {
+          "id": "n12",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.10483705200022087
+        },
+        {
+          "id": "n13",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.14297020200001498
+        },
+        {
+          "id": "n14",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.28064500100026635
+        },
+        {
+          "id": "n15",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.1799723549997907
+        },
+        {
+          "id": "n16",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.6782406900001661
+        },
+        {
+          "id": "n17",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.1434685740000532
+        },
+        {
+          "id": "n18",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.19134982600007788
+        },
+        {
+          "id": "n19",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.22144221200005632
+        },
+        {
+          "id": "n20",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.1672504969997135
+        },
+        {
+          "id": "n21",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.1505338940000911
+        },
+        {
+          "id": "n22",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0877725739997004
+        },
+        {
+          "id": "n23",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.05474766900033501
+        },
+        {
+          "id": "n24",
+          "category": "normal",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "n25",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.31436854899993705
+        },
+        {
+          "id": "n26",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.10507909899979495
+        },
+        {
+          "id": "n27",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.09671822200016322
+        },
+        {
+          "id": "n28",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.09549854900024002
+        },
+        {
+          "id": "n29",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.10791069600008996
+        },
+        {
+          "id": "n30",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.49536797699965973
+        },
+        {
+          "id": "n31",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.05249859600007767
+        },
+        {
+          "id": "n32",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.05484583699990253
+        },
+        {
+          "id": "n33",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.05919951099986065
+        },
+        {
+          "id": "n34",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.10826530000031198
+        },
+        {
+          "id": "n35",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.08359944199992242
+        },
+        {
+          "id": "n36",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.11996608199979164
+        },
+        {
+          "id": "n37",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "unresolved",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "n38",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.20253347700008817
+        },
+        {
+          "id": "n39",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.29396438699995997
+        },
+        {
+          "id": "n40",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.42574084899979425
+        },
+        {
+          "id": "a01",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a02",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a03",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a04",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a05",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a06",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a07",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a08",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a09",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a10",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x01",
+          "category": "adversarial",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x02",
+          "category": "adversarial",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x03",
+          "category": "adversarial",
+          "action": "edit",
+          "correct": false,
+          "outcome": "unresolved",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x04",
+          "category": "adversarial",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x05",
+          "category": "adversarial",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x06",
+          "category": "adversarial",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x07",
+          "category": "adversarial",
+          "action": "edit",
+          "correct": false,
+          "outcome": "unresolved",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x08",
+          "category": "adversarial",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x09",
+          "category": "adversarial",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x10",
+          "category": "adversarial",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        }
+      ]
+    },
+    "guarded_regex": {
+      "parse_exact_pct": 82.5,
+      "refused_pct": 100.0,
+      "clarify_pct": 0.0,
+      "violations": 0,
+      "pinned_changed": 0,
+      "edits_applied": 37,
+      "requests": [
+        {
+          "id": "n01",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.2707784179997361
+        },
+        {
+          "id": "n02",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.5265591709999171
+        },
+        {
+          "id": "n03",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.09475348599971767
+        },
+        {
+          "id": "n04",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.20645515599971986
+        },
+        {
+          "id": "n05",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.36356816899979094
+        },
+        {
+          "id": "n06",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.2427989179996075
+        },
+        {
+          "id": "n07",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.20989927299979172
+        },
+        {
+          "id": "n08",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.061175853999884566
+        },
+        {
+          "id": "n09",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.08286136299966529
+        },
+        {
+          "id": "n10",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "unresolved",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "n11",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.10125324799992086
+        },
+        {
+          "id": "n12",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.09299928800010093
+        },
+        {
+          "id": "n13",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.1471112910003285
+        },
+        {
+          "id": "n14",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.19219529199972385
+        },
+        {
+          "id": "n15",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.1672369590000926
+        },
+        {
+          "id": "n16",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.5213774730000296
+        },
+        {
+          "id": "n17",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.1192746899996564
+        },
+        {
+          "id": "n18",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.1871365470001365
+        },
+        {
+          "id": "n19",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.3092085739999675
+        },
+        {
+          "id": "n20",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.13007400400010738
+        },
+        {
+          "id": "n21",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.1314813280000635
+        },
+        {
+          "id": "n22",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.09263156599990907
+        },
+        {
+          "id": "n23",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.05724568400000862
+        },
+        {
+          "id": "n24",
+          "category": "normal",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "n25",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.34647802299969044
+        },
+        {
+          "id": "n26",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.10613209100029053
+        },
+        {
+          "id": "n27",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.08643882900014432
+        },
+        {
+          "id": "n28",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0494332889998077
+        },
+        {
+          "id": "n29",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.1027252869998847
+        },
+        {
+          "id": "n30",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.4117201940002815
+        },
+        {
+          "id": "n31",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.05065051300016421
+        },
+        {
+          "id": "n32",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.05163929799982725
+        },
+        {
+          "id": "n33",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.05223202100023627
+        },
+        {
+          "id": "n34",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.09141636399999697
+        },
+        {
+          "id": "n35",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.05971302400030254
+        },
+        {
+          "id": "n36",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.10241559699989011
+        },
+        {
+          "id": "n37",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "unresolved",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "n38",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.1447932379996928
+        },
+        {
+          "id": "n39",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.24884531199995763
+        },
+        {
+          "id": "n40",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.33850973100015835
+        },
+        {
+          "id": "a01",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a02",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a03",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a04",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a05",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a06",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a07",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a08",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a09",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a10",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x01",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x02",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x03",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x04",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x05",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x06",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x07",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x08",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x09",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x10",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "seconds": 0.0
+        }
+      ]
+    }
+  },
+  "replan": {
+    "one_day_edits": 20,
+    "p95_pinned_s": 0.3130236340002739,
+    "p95_full_week_s": 3.0492239700001846
+  }
+}

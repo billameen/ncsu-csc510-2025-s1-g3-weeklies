@@ -61,6 +61,35 @@ seed 510 ([full results](eval/results/m0.md), [method](app/docs/evaluation.md)):
 Reproduce with `python -m eval.run --seed 510` (about 3 minutes, no API key). `PLANNER=llm` switches
 `/generate_plan` back to v1.
 
+## 💬 Plan Edits (M3)
+
+Since M3, users can change their week in plain English on the calendar ("make Thursday vegetarian
+under $10"). The LLM only turns the sentence into typed edits; the solver re-plans just the affected
+meals and still enforces every rule, and nothing is saved until the user accepts a diff
+([how it works](app/docs/llm-proposes-solver-decides.md),
+[teach it a new request](app/docs/teach-the-parser.md)). Evaluation on 60 labelled requests
+([full results](eval/results/m3.md)):
+
+<!-- m3-results:start -->
+40 normal, 10 ambiguous and 10 adversarial requests.
+
+| Metric | Target | Regex baseline | Guard + regex (no model) |
+|---|---|---|---|
+| Edits parsed exactly right (normal requests) | ≥ 85% | 82.5% FAIL | 82.5% FAIL |
+| Adversarial requests refused | ≥ 90% | 0.0% FAIL | 100.0% PASS |
+| Ambiguous requests get a clarifying question | ≥ 70% | 0.0% FAIL | 0.0% FAIL |
+| Rules broken after an edit | ≤ 0 | 0 PASS | 0 PASS |
+| Meals outside the edit that changed | 0 | 0 | 0 |
+
+Re-plan time for the 20 one-day edits, excluding the LLM call: p95 **0.31 s** with the rest of the week pinned (target ≤ 2 s), against 3.05 s re-solving the whole week.
+
+The LLM column is missing because no recording exists yet. Record one with `python -m eval.edits --live`.
+<!-- m3-results:end -->
+
+Reproduce with `python -m eval.edits` (no API key: model answers are replayed from a recording).
+`python -m eval.edits --live --readme` re-records them with the app's LLM and refreshes this table.
+`EDIT_PARSER=regex` runs the app's edit box without a model.
+
 ---
 
 ## 🧩 What We Started From
@@ -102,7 +131,8 @@ Features inherited from Weeklies (Fall 2025):
 ├── app/
 │   ├── Flask_app.py          # all routes and helpers
 │   ├── sqlQueries.py         # DB access helpers
-│   ├── planner/              # CP-SAT weekly planner; rules/ holds one plug-in per rule
+│   ├── planner/              # CP-SAT weekly planner; rules/ holds one plug-in per rule;
+│   │                         # edits/ turns plain-English edits into rules; prompts/ is versioned
 │   ├── menu_generation.py    # v1 LLM meal-plan generation (PLANNER=llm)
 │   ├── llm_toolkit.py        # LLM provider wrapper
 │   ├── pdf_receipt.py        # receipt PDFs
