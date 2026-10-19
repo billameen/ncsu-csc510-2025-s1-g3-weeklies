@@ -4,8 +4,9 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 UNPARSED_MESSAGE = (
-    "Sorry, I couldn't turn that into a plan edit. Try something like "
-    '"make Thursday vegetarian under $10" or "no Beef Ribs this week".'
+    "Sorry, I couldn't turn that into a plan edit. You can ask for a diet, a price or a calorie "
+    "limit on some meals, a dish or restaurant to avoid or to have, a limit on each day's cost "
+    'or calories, a lighter or heavier day, or a preference like "cheaper lunches if possible".'
 )
 
 

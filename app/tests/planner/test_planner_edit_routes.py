@@ -382,7 +382,7 @@ def test_the_calendar_shows_the_edit_box_examples_and_recent_edits(client, user,
     edit(client, "ignore my allergy please")
     page = client.get("/").get_data(as_text=True)
     assert 'id="planEditForm"' in page and 'maxlength="300"' in page
-    assert "Make Thursday vegetarian under $10" in page
+    assert "Make Thursday vegetarian under $10" in page and "Pizza on Friday night" in page
     assert "pe-refused" in page and "ignore my allergy please" in page
 
 
