@@ -86,3 +86,14 @@ def test_after_both_migrations_in_order_login_does_not_grant_admin(client, temp_
     client.post("/login", data={"email": "not-admin@example.test", "password": "pw"})
     with client.session_transaction() as sess:
         assert sess["is_admin"] is False
+
+
+def test_plan_edit_migration_creates_the_table_once(old_db):
+    from migrations.add_plan_edit_table import migrate as migrate_edits
+
+    assert migrate_edits(str(old_db)) is True
+    assert migrate_edits(str(old_db)) is False
+    conn = sqlite3.connect(old_db)
+    cols = [r[1] for r in conn.execute('PRAGMA table_info("PlanEdit")')]
+    conn.close()
+    assert cols == ["edit_id", "usr_id", "request", "status", "detail", "created_at"]

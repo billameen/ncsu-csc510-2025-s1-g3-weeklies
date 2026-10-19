@@ -58,6 +58,21 @@ python migrations/add_plan_targets.py
 at index 10. This migration refuses to run until `is_admin` exists, because adding its columns
 first would put `daily_calorie_target` at index 10 and make users with a calorie target admins.
 
+### 4. `add_plan_edit_table.py`
+Adds the history of plain-English plan edits.
+
+**What it does:**
+- Creates the `PlanEdit` table (request text, status, detail, timestamp per user)
+- Adds an index for fetching a user's latest edits
+
+**Run:**
+```bash
+cd app
+python migrations/add_plan_edit_table.py
+```
+
+`db/seed.sql` and the test schema in `tests/conftest.py` already include this table.
+
 ## Running Migrations
 
 Migrations are idempotent - they can be run multiple times safely. If a migration has already been applied, it will skip the changes.
@@ -75,6 +90,7 @@ If running all migrations from scratch:
 1. `add_ticket_table.py` - Can run independently
 2. `add_admin_column.py` - Must run before `add_plan_targets.py`
 3. `add_plan_targets.py` - Refuses to run until `add_admin_column.py` has
+4. `add_plan_edit_table.py` - Can run independently
 
 ## Verifying Migrations
 
