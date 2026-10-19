@@ -1,0 +1,202 @@
+"""
+The weekly planner: picks every meal of the week at once with the OR-Tools CP-SAT solver.
+
+Each rule in `planner.rules` adds itself to one model (see `planner.constraint`). Hard rules
+must hold; soft rules add weighted penalties, and the solver looks for the plan with the
+lowest total penalty. Choosing all meals together is what lets a plan meet weekly limits
+such as the budget, which picking one meal at a time cannot guarantee.
+
+    from planner.menu import load_menu
+    from planner.request import PlanRequest
+    from planner.solver import plan_week
+
+    result = plan_week(request, load_menu(db_file))
+    if result.ok:
+        ...  # result.meals, result.total_cost_cents, result.kcal_by_day()
+    else:
+        ...  # result.explanation says why no week could be planned
+
+Solving stops after ``time_limit_s`` (4 s by default). If a valid plan was found by then it
+is returned with ``optimal`` False; it is valid, just not proven to be the best one.
+"""
+
+import time
+from collections.abc import Sequence
+from dataclasses import dataclass
+from datetime import date
+from enum import StrEnum
+
+from ortools.sat.python import cp_model
+
+from planner.constraint import Constraint
+from planner.context import PlanContext
+from planner.menu import Menu, MenuItem
+from planner.registry import rules_for
+from planner.request import PlanRequest, Slot
+
+DEFAULT_TIME_LIMIT_S = 4.0
+# One search worker keeps the search, and so the plan, the same on every run. Plans are small
+# enough that more workers mostly add CPU contention on a shared web server.
+DEFAULT_WORKERS = 1
+RANDOM_SEED = 0
+
+
+class PlannerError(Exception):
+    """A rule built a model the solver rejects: a bug in that rule, not in the request."""
+
+
+class Status(StrEnum):
+    """How planning ended."""
+
+    OPTIMAL = "optimal"  # the best week the rules allow, proven
+    FEASIBLE = "feasible"  # a valid week; time ran out before it was proven best
+    INFEASIBLE = "infeasible"  # no week meets every hard rule; see PlanResult.reasons
+    TIMED_OUT = "timed_out"  # time ran out before any valid week was found
+
+
+@dataclass(frozen=True)
+class PlannedMeal:
+    """One meal of the plan."""
+
+    slot: Slot
+    item: MenuItem
+
+    @property
+    def day(self) -> date:
+        return self.slot.day
+
+    @property
+    def meal(self) -> int:
+        """1 breakfast, 2 lunch, 3 dinner."""
+        return self.slot.meal
+
+    @property
+    def itm_id(self) -> int:
+        return self.item.itm_id
+
+    @property
+    def cost_cents(self) -> int:
+        """Price with tax and fees."""
+        return self.item.cost_cents
+
+
+@dataclass(frozen=True)
+class PlanResult:
+    """
+    The outcome of `plan_week`.
+    Attributes:
+        status: How planning ended.
+        meals: The planned meals in slot order; empty unless status is OPTIMAL or FEASIBLE.
+        reasons: Why there is no plan (one sentence per cause); empty when there is one.
+        seconds: Wall-clock time taken, including building the model.
+    """
+
+    status: Status
+    meals: tuple[PlannedMeal, ...] = ()
+    reasons: tuple[str, ...] = ()
+    seconds: float = 0.0
+
+    @property
+    def ok(self) -> bool:
+        """True if there is a valid plan."""
+        return self.status in (Status.OPTIMAL, Status.FEASIBLE)
+
+    @property
+    def optimal(self) -> bool:
+        """True if the plan is proven to be the best one; False if time ran out first."""
+        return self.status is Status.OPTIMAL
+
+    @property
+    def explanation(self) -> str | None:
+        """The reasons as one message for the user, or None when there is a plan."""
+        return " ".join(self.reasons) or None
+
+    @property
+    def total_cost_cents(self) -> int:
+        """What the whole plan costs, tax and fees included."""
+        return sum(m.cost_cents for m in self.meals)
+
+    def kcal_by_day(self) -> dict[date, int]:
+        """Calories planned per day, days in order."""
+        totals: dict[date, int] = {}
+        for m in self.meals:
+            totals[m.day] = totals.get(m.day, 0) + m.item.calories
+        return totals
+
+    def menu_entries(self) -> list[str]:
+        """The plan in User.generated_menu's format: "[YYYY-MM-DD,itm_id,meal]" per meal."""
+        return [f"[{m.day.isoformat()},{m.itm_id},{m.meal}]" for m in self.meals]
+
+
+def plan_week(
+    request: PlanRequest,
+    menu: Menu,
+    *,
+    rules: Sequence[Constraint] | None = None,
+    time_limit_s: float = DEFAULT_TIME_LIMIT_S,
+    workers: int = DEFAULT_WORKERS,
+) -> PlanResult:
+    """
+    Plan every meal of a request at once.
+    Args:
+        request: The week, targets, allergens and preferences.
+        menu: What can be picked (see planner.menu.load_menu).
+        rules: The rules to use, in any order. Default: rules_for(request), i.e. every
+            registered rule that is on by default plus those the request's options enable.
+        time_limit_s: When to stop searching and return the best plan found so far.
+        workers: CP-SAT search workers. More can be faster but makes plans vary run to run.
+    Returns:
+        PlanResult: The plan, or the reasons there is none.
+    Raises:
+        PlannerError: A rule made the model invalid.
+    """
+    started = time.monotonic()
+    rules = sorted(rules_for(request) if rules is None else rules, key=lambda r: r.order)
+    ctx = PlanContext(request, menu, rules, deadline=started + time_limit_s)
+    for rule in rules:
+        rule.apply(ctx)
+    ctx.model.Minimize(ctx.objective())
+
+    solver = _solver(time_limit_s, workers)
+    status = solver.Solve(ctx.model)
+
+    if status == cp_model.MODEL_INVALID:
+        raise PlannerError(f"The rules built an invalid model: {ctx.model.Validate()}")
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        meals = tuple(
+            PlannedMeal(slot, item)
+            for slot in ctx.slots
+            for item, var in ctx.picks(slot)
+            if solver.BooleanValue(var)
+        )
+        # CP-SAT reports OPTIMAL once it stops for a gap limit too; only claim a proof.
+        proven = (
+            status == cp_model.OPTIMAL and solver.ObjectiveValue() == solver.BestObjectiveBound()
+        )
+        return PlanResult(
+            Status.OPTIMAL if proven else Status.FEASIBLE,
+            meals=meals,
+            seconds=time.monotonic() - started,
+        )
+    if status == cp_model.INFEASIBLE:
+        return PlanResult(
+            Status.INFEASIBLE,
+            reasons=("No week meets all of your requirements.",),
+            seconds=time.monotonic() - started,
+        )
+    return PlanResult(
+        Status.TIMED_OUT,
+        reasons=(
+            f"Planning stopped after {time_limit_s:g} seconds without finding a week that meets "
+            "all of your requirements. Try again, or loosen your budget or calorie target.",
+        ),
+        seconds=time.monotonic() - started,
+    )
+
+
+def _solver(time_limit_s: float, workers: int) -> cp_model.CpSolver:
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = time_limit_s
+    solver.parameters.num_workers = workers
+    solver.parameters.random_seed = RANDOM_SEED
+    return solver
