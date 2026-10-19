@@ -7,6 +7,7 @@ from menu_factory import MONDAY, item, menu, request
 from planner.registry import get
 from planner.tags import has_tag
 from planner.edits.replan import CLOSEST, IMPOSSIBLE, PREVIEW, check_proposal, preview_edits
+from planner.match import Condition
 from planner.scope import MealScope
 
 TUESDAY = date(2026, 10, 20)
@@ -46,7 +47,7 @@ def test_only_the_edited_day_changes_and_it_meets_the_edit():
     assert {c.slot.day for c in preview.changes} == {TUESDAY}
     assert all(has_tag(c.after, "vegetarian") for c in preview.changes)
     assert len(preview.changes) == 3
-    assert preview.met == preview.edited == 3
+    assert preview.unmet == ()
     assert preview.replaced_unavailable == ()
 
 
@@ -78,7 +79,7 @@ def test_an_edit_that_cannot_be_met_returns_the_closest_option():
 
     assert preview.status == CLOSEST
     assert "kcal" in preview.explanation
-    assert (preview.met, preview.edited) == (2, 3)
+    assert preview.unmet == ("1 of 3 meals (Tue Oct 20) are not low-calorie",)
     assert {c.slot.day for c in preview.changes} == {TUESDAY}
 
 
@@ -119,7 +120,8 @@ def test_the_closest_option_keeps_the_meal_it_cannot_fix():
     current = {**CURRENT, (TUESDAY, 1): 7}
     rules, affected = edit(RequireTag, "low-calorie", scope=MealScope(days={TUESDAY}))
     preview = preview_edits(request(days=2), MENU, current, rules, affected)
-    assert preview.status == CLOSEST and (preview.met, preview.edited) == (2, 3)
+    assert preview.status == CLOSEST
+    assert preview.unmet == ("1 of 3 meals (Tue Oct 20) are not low-calorie",)
     assert [(c.slot.meal, c.after.itm_id) for c in preview.changes] == [(2, 4), (3, 4)]
 
 
@@ -174,3 +176,34 @@ def test_a_calorie_shift_proposal_is_checked_against_the_shifted_target():
     assert preview.status == PREVIEW
     assert check_proposal(request(days=2), MENU, preview.entries, [shift]) is None
     assert check_proposal(request(days=2), MENU, preview.entries) is not None
+
+
+def test_a_day_limit_that_cannot_be_met_gets_the_closest_option_too():
+    limit = get("day_limit")("cost", "<=", 400, days={TUESDAY})
+    preview = preview_edits(request(days=2), MENU, CURRENT, [limit], [MealScope(days={TUESDAY})])
+    assert preview.status == CLOSEST
+    assert "you asked for at most $4.00 a day" in preview.explanation
+    # The cheapest Tuesday that still meets the calorie target, and the miss said in words.
+    tuesday = [e for e in preview.entries if e.startswith("[2026-10-20,")]
+    tuesday_cost = sum(MENU.items[int(e.split(",")[1])].cost_cents for e in tuesday)
+    assert preview.unmet == (
+        f"Tue Oct 20 costs ${tuesday_cost / 100:,.2f} (you asked for at most $4.00 a day)",
+    )
+
+
+def test_an_include_that_cannot_be_met_gets_the_closest_option():
+    lasagna = Condition("dish", "is", "Vegetable Lasagna", ids={7})
+    include = get("include_meals")(lasagna, MealScope(days={TUESDAY}), times=2)
+    preview = preview_edits(request(days=2), MENU, CURRENT, [include], [MealScope(days={TUESDAY})])
+    assert preview.status == CLOSEST
+    assert sum(c.after.itm_id == 7 for c in preview.changes) == 1
+    assert preview.unmet == (
+        'Only 1 of the 2 meals you asked for (Tue Oct 20) are "Vegetable Lasagna"',
+    )
+
+
+def test_a_preference_never_makes_an_edit_impossible():
+    cheaper = get("prefer_meals")("cheaper", MealScope(days={TUESDAY}))
+    preview = preview_edits(request(days=2), MENU, CURRENT, [cheaper], [MealScope(days={TUESDAY})])
+    assert preview.status == PREVIEW and preview.unmet == ()
+    assert all(c.after.cost_cents < c.before.cost_cents for c in preview.changes)

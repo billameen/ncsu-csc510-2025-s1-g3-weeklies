@@ -565,8 +565,9 @@
     totals.textContent = 'Week: ' + money(body.cost_before) + ' → ' + money(body.cost_after) +
       ' with tax & fees' + (kcalChanged.length ? ' · ' + kcalChanged.join(' · ') : '');
     if (body.status === 'closest') {
-      note.textContent = "Couldn't do exactly that. " + body.message + ' Closest option: ' +
-        body.met + ' of ' + body.edited + ' edited meals match your request.';
+      const misses = (body.unmet || []).join('; ');
+      note.textContent = "Couldn't do exactly that. " + body.message + ' Closest option' +
+        (misses ? ', which still misses: ' + misses + '.' : '.');
       note.hidden = false;
     } else { note.hidden = true; }
     result.hidden = false;

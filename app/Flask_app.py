@@ -1791,7 +1791,7 @@ def plan_edit():
             cost_after=_cents_to_dollars(preview.cost_after_cents),
             kcal=[{"day": f"{d:%a %b} {d.day}", "before": preview.kcal_before.get(d, 0),
                    "after": preview.kcal_after.get(d, 0)} for d in window],
-            met=preview.met, edited=preview.edited,
+            unmet=list(preview.unmet),
         )
         session["plan_edit"] = {
             "edit_id": response.get_json()["edit_id"],

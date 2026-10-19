@@ -16,6 +16,7 @@ CODES = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 OPEN = json.dumps({d: [600, 2300] for d in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")})
 TARGET_DAY = date.today() + timedelta(days=3)  # inside the 7-day window starting tomorrow
 TARGET_CODE = CODES[TARGET_DAY.weekday()]
+TARGET_LABEL = f"{TARGET_DAY:%a %b} {TARGET_DAY.day}"
 
 
 class Scripted:
@@ -328,7 +329,7 @@ def test_an_impossible_edit_offers_the_closest_option(client, user, monkeypatch)
     )
     body = edit(client, "under $1").get_json()
     assert body["status"] == "closest" and "cost more than $1.00" in body["message"]
-    assert body["met"] == 0 and body["edited"] == 3
+    assert body["unmet"] == [f"3 of 3 meals ({TARGET_LABEL}) cost more than $1.00"]
 
 
 def test_editing_before_planning_asks_to_plan_first(client, temp_db_path, user, monkeypatch):
