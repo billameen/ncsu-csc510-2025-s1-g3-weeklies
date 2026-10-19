@@ -95,15 +95,12 @@ def test_viewing_the_profile_lists_the_users_orders_with_formatted_dates_and_tot
 # This proves an authenticated GET /profile renders 200 with the user's order history, its restaurant name, and its ISO timestamp and total reformatted for display.
 
 
-def test_an_order_that_actually_reached_delivered_is_never_offered_a_review_button(client, temp_db_path):
-    """The route names the flag ``is_delivered`` but compares against
-    ``OrderStatus.ORDERED.get_lowercase()``:
-
-        is_delivered = (status or "").lower() == OrderStatus.ORDERED.get_lowercase()
-
-    so review eligibility keys on "Ordered", not "Delivered". Two separate
-    restaurants are used because eligibility is also suppressed once any
-    order from the same restaurant has claimed the review slot.
+def test_only_an_order_that_reached_delivered_is_offered_a_review_button(client, temp_db_path):
+    """The ``is_delivered`` flag used to compare against
+    ``OrderStatus.ORDERED``, so review eligibility keyed on "Ordered" rather
+    than "Delivered". Two separate restaurants are used because eligibility is
+    also suppressed once any order from the same restaurant has claimed the
+    review slot.
     """
     usr_id = _make_user(temp_db_path, "uc9-delivered@example.test")
     delivered_rtr = _make_restaurant(temp_db_path, "UC9 Delivered Diner")
@@ -116,20 +113,17 @@ def test_an_order_that_actually_reached_delivered_is_never_offered_a_review_butt
 
     assert response.status_code == 200
     reviewable = REVIEW_BUTTON.findall(response.get_data(as_text=True))
-    assert str(ordered_ord) in reviewable
-    assert str(delivered_ord) not in reviewable
+    assert str(delivered_ord) in reviewable
+    assert str(ordered_ord) not in reviewable
 
 
-# This proves the only order a user can review is one that has merely been placed, while an order whose status actually reached "Delivered" is permanently locked out of reviewing -- the eligibility check is inverted against its own variable name, a real defect.
+# This proves a delivered order is offered a Review button while an order that has merely been placed is not.
 
 
-def test_an_order_whose_total_is_exactly_zero_renders_a_blank_total_cell(client, temp_db_path):
-    """``_fmt_total`` is only reached when a truthy total survives:
-
-        total_val = charges.get("total") or charges.get("grand_total") or charges.get("amount")
-
-    A total of 0.0 is falsy, so the chain falls through to ``None`` and the
-    template is handed an empty string instead of "$0.00".
+def test_an_order_whose_total_is_exactly_zero_renders_as_zero_dollars(client, temp_db_path):
+    """The total used to be picked with an ``or`` chain, which treated a real
+    total of 0.0 as missing and rendered a blank cell. ``_first_present`` only
+    skips keys whose value is ``None``.
     """
     usr_id = _make_user(temp_db_path, "uc9-zero@example.test")
     rtr_id = _make_restaurant(temp_db_path, "UC9 Zero Diner")
@@ -142,10 +136,10 @@ def test_an_order_whose_total_is_exactly_zero_renders_a_blank_total_cell(client,
     assert response.status_code == 200
     page = response.get_data(as_text=True)
     assert "$12.34" in page
-    assert "$0.00" not in page
+    assert "$0.00" in page
 
 
-# This proves a comped or fully-discounted $0.00 order shows an empty total instead of "$0.00", because the falsy-zero `or` chain treats a real total of zero as a missing value -- a real defect.
+# This proves a comped or fully-discounted $0.00 order shows "$0.00" instead of a blank total.
 
 
 def test_an_unparseable_details_blob_is_swallowed_and_the_page_still_renders(client, temp_db_path):

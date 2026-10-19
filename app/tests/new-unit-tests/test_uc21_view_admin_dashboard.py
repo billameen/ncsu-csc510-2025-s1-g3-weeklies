@@ -347,3 +347,33 @@ def test_admin_dashboard_non_standard_order_status_not_dropped(client, mock_db_a
     assert 108 in all_order_ids
 # This fails while the Cancelled order is silently dropped from every column; it passes once
 # non-standard order statuses are surfaced somewhere on the Kanban board.
+
+
+def test_admin_dashboard_zero_dollar_order_shows_zero_not_na(client, mock_db_and_render):
+    # A $0.00 total used to be treated as missing twice over: the `or` chain picking the total
+    # and the `if total else "N/A"` formatting both treated 0.0 as falsy.
+    recent_time = (datetime.now() - timedelta(days=1)).isoformat()
+    zero_details = json.dumps({"placed_at": recent_time, "charges": {"total": 0.0}})
+    missing_details = json.dumps({"placed_at": recent_time, "charges": {}})
+
+    order_rows = [
+        (107, 1, 42, zero_details, "Ordered", "Alice", "Smith", "Tokyo Diner"),
+        (108, 1, 42, missing_details, "Ordered", "Alice", "Smith", "Tokyo Diner"),
+    ]
+
+    mock_db_and_render["fetch_one"].return_value = (0,)
+    mock_db_and_render["fetch_all"].side_effect = [
+        order_rows,
+        [],
+    ]
+
+    with client.session_transaction() as sess:
+        sess["Username"] = "Admin User"
+        sess["is_admin"] = True
+
+    response = client.get("/admin")
+    assert response.status_code == 200
+
+    totals = {o["ord_id"]: o["total"] for o in mock_db_and_render["context"]["orders_by_status"]["Ordered"]}
+    assert totals == {107: "$0.00", 108: "N/A"}
+# This proves a $0.00 order shows "$0.00" on the admin dashboard, while an order with no total at all still shows "N/A".
