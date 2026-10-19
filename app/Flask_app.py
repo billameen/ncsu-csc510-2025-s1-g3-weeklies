@@ -20,6 +20,7 @@ from sqlQueries import create_connection, close_connection, fetch_one, fetch_all
 from money import MoneyError, parse_cents, cents_to_str, format_cents
 import uuid
 import ledger
+from charges import compute_charges, order_charges_cents, item_cents
 from collections import Counter, defaultdict
 from menu_generation import MenuGenerator
 
@@ -247,8 +248,8 @@ def _charge_and_save_order(usr_id, rtr_id, restaurant_name, details, client_key=
         usr_id (int): Buyer.
         rtr_id (int): Restaurant.
         restaurant_name (str): Used in the transaction-history memo.
-        details (dict): Order details including "charges" in dollars. The ledger
-            transaction ID is added to it as "ledger_txn_id".
+        details (dict): Order details including "charges_cents" (int cents, see
+            charges.py). The ledger transaction ID is added to it as "ledger_txn_id".
         client_key (str, optional): The page's one-time idempotency key. Sending
             the same order again with the same key returns the original order
             instead of charging twice.
@@ -257,13 +258,13 @@ def _charge_and_save_order(usr_id, rtr_id, restaurant_name, details, client_key=
         "insufficient_funds", "duplicate_request" (key reused for a different
         order) or "db_failed".
     """
-    charges = details["charges"]
-    subtotal = _dollars_to_cents(charges["subtotal"])
-    tax = _dollars_to_cents(charges["tax"])
-    delivery_fee = _dollars_to_cents(charges["delivery_fee"])
-    service_fee = _dollars_to_cents(charges["service_fee"])
-    tip = _dollars_to_cents(charges["tip"])
-    total = subtotal + tax + delivery_fee + service_fee + tip
+    charges = details["charges_cents"]
+    subtotal = charges["subtotal"]
+    tax = charges["tax"]
+    delivery_fee = charges["delivery_fee"]
+    service_fee = charges["service_fee"]
+    tip = charges["tip"]
+    total = charges["total"]
 
     entries = [
         (ledger.user_account(usr_id), -total),
@@ -771,9 +772,8 @@ def profile():
                     j = json.loads(details)
                     ledger_txn_id = j.get("ledger_txn_id")
                     placed = _fmt_date(j.get("placed_at") or j.get("time"))
-                    charges = j.get("charges") or {}
-                    total_val = charges.get("total") or charges.get("grand_total") or charges.get("amount")
-                    total = _fmt_total(total_val) if total_val is not None else ""
+                    if j.get("charges_cents") or j.get("charges"):
+                        total = format_cents(order_charges_cents(j)["total"])
                 except Exception:
                     pass
 
@@ -1165,8 +1165,11 @@ def order():
         delivery_type = (payload.get("delivery_type") or "delivery").lower()
         if delivery_type not in ("delivery", "pickup"):
             delivery_type = "delivery"
-        tip_dollars = _money(payload.get("tip") or 0)
-        if tip_dollars < 0:
+        try:
+            tip_cents = parse_cents(payload.get("tip") or 0)
+        except MoneyError:
+            tip_cents = 0   # unreadable tip: treated as no tip, as before
+        if tip_cents < 0:
             return jsonify({"ok": False, "error": "invalid_tip"}), 400
         eta_minutes = int(payload.get("eta_minutes") or 40)
         iso_date = (payload.get("date") or datetime.now().date().isoformat())
@@ -1207,30 +1210,24 @@ def order():
             if int(dbmap[it]["rtr_id"]) != rtr_id:
                 return jsonify({"ok": False, "error": "mixed_restaurants"}), 400
 
-        # Build items array for details; compute charges
+        # Build items array for details; compute charges in integer cents (charges.py)
         detail_items = []
-        subtotal = 0.0
+        lines = []
         for it in items_in:
             iid = int(it.get("itm_id"))
             qty = int(it.get("qty") or 1)
             if qty <= 0: qty = 1
             meta = dbmap[iid]
-            unit_price = _cents_to_dollars(meta["price_cents"])
-            line_total = _money(unit_price * qty)
-            subtotal = _money(subtotal + line_total)
+            unit_cents = int(meta["price_cents"] or 0)
+            lines.append((unit_cents, qty))
             detail_items.append({
                 "itm_id": iid,
                 "name": meta["name"],
                 "qty": qty,
-                "unit_price": unit_price,
-                "line_total": line_total,
+                "unit_price_cents": unit_cents,
+                "line_total_cents": unit_cents * qty,
                 **({"notes": (it.get("notes") or "")} if it.get("notes") else {})
             })
-
-        tax = _money(subtotal * 0.0725)
-        delivery_fee = 3.99 if delivery_type == "delivery" else 0.00
-        service_fee = 1.49
-        total = _money(subtotal + tax + delivery_fee + service_fee + tip_dollars)
 
         placed_iso = datetime.now().astimezone().isoformat()
 
@@ -1238,14 +1235,7 @@ def order():
             "placed_at": placed_iso,
             "restaurant_id": int(rtr_id),
             "items": detail_items,
-            "charges": {
-                "subtotal": subtotal,
-                "tax": tax,
-                "delivery_fee": delivery_fee,
-                "service_fee": service_fee,
-                "tip": tip_dollars,
-                "total": total
-            },
+            "charges_cents": compute_charges(lines, delivery_type, tip_cents),
             "delivery_type": delivery_type,
             "eta_minutes": int(eta_minutes),
             "date": iso_date,
@@ -1281,10 +1271,10 @@ def order():
     if delivery_type not in ("delivery", "pickup"):
         delivery_type = "delivery"
     try:
-        tip_dollars = _money(float(request.args.get("tip", "0")))
-    except Exception:
-        tip_dollars = 0.0
-    if tip_dollars < 0:
+        tip_cents = parse_cents(request.args.get("tip") or "0")
+    except MoneyError:
+        tip_cents = 0   # unreadable tip: treated as no tip, as before
+    if tip_cents < 0:
         return redirect(url_for("orders"))
     try:
         eta_minutes = int(request.args.get("eta", "40"))
@@ -1312,13 +1302,7 @@ def order():
         return redirect(url_for("orders"))
 
     item_id, rtr_id, item_name, price_cents, restaurant_name = mi
-    unit_price = _cents_to_dollars(price_cents)
-    line_total = _money(unit_price * qty)
-
-    tax = _money(line_total * 0.0725)
-    delivery_fee = 3.99 if delivery_type == "delivery" else 0.00
-    service_fee = 1.49
-    total = _money(line_total + tax + delivery_fee + service_fee + tip_dollars)
+    unit_cents = int(price_cents or 0)
 
     details = {
         "placed_at": datetime.now().astimezone().isoformat(),
@@ -1327,18 +1311,11 @@ def order():
             "itm_id": int(item_id),
             "name": item_name,
             "qty": int(qty),
-            "unit_price": unit_price,
-            "line_total": line_total,
+            "unit_price_cents": unit_cents,
+            "line_total_cents": unit_cents * int(qty),
             **({"notes": notes} if notes else {})
         }],
-        "charges": {
-            "subtotal": line_total,
-            "tax": tax,
-            "delivery_fee": delivery_fee,
-            "service_fee": service_fee,
-            "tip": tip_dollars,
-            "total": total
-        },
+        "charges_cents": compute_charges([(unit_cents, int(qty))], delivery_type, tip_cents),
         "delivery_type": delivery_type,
         "eta_minutes": int(eta_minutes),
         "date": iso_date,
@@ -1908,9 +1885,8 @@ def admin_dashboard():
                         # Format for display
                         placed_at_display = order_dt.strftime("%Y-%m-%d %H:%M")
                     
-                    # Get total from charges
-                    charges = details.get("charges", {})
-                    total = charges.get("total") or charges.get("grand_total")
+                    # Get total from charges (new orders: int cents; old orders: float dollars)
+                    total = order_charges_cents(details)["total"]
                     ledger_txn_id = details.get("ledger_txn_id")
                     
                 except Exception as e:
@@ -1926,7 +1902,7 @@ def admin_dashboard():
                 'ord_id': ord_id,
                 'customer_name': f"{first_name} {last_name}",
                 'restaurant_name': restaurant_name,
-                'total': f"${total:.2f}" if total else "N/A",
+                'total': format_cents(total) if total else "N/A",
                 'placed_at': placed_at_display,
                 'status': status,
                 'refunded': ledger_txn_id in refunded_txns,
@@ -2304,12 +2280,12 @@ def insights_data():
                     weekday_activity[dt.strftime("%A")] += 1
                 
                 # financials
-                charges = d.get("charges", {})
-                subtotal = float(charges.get("subtotal", 0))
-                tax = float(charges.get("tax", 0))
-                fee = float(charges.get("delivery_fee", 0)) + float(charges.get("service_fee", 0))
-                tip = float(charges.get("tip", 0))
-                total = float(charges.get("total", 0))
+                cc = order_charges_cents(d)   # int cents for new and old orders
+                subtotal = cc["subtotal"] / 100
+                tax = cc["tax"] / 100
+                fee = (cc["delivery_fee"] + cc["service_fee"]) / 100
+                tip = cc["tip"] / 100
+                total = cc["total"] / 100
                 
                 total_spend += total
                 spending_breakdown["food"] += subtotal
@@ -2330,7 +2306,7 @@ def insights_data():
                     item_frequencies[item.get("name")] += item.get("qty", 1)
                     
                     # For scatter plot, we try to estimate unit price
-                    u_price = float(item.get("unit_price", 0))
+                    u_price = item_cents(item)[0] / 100
                     # Note: We assume calories aren't always in order JSON. 
                     # If you want calories, we'd need to query MenuItem table.
                     # Let's do a bulk query for Item Metadata later.
