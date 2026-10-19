@@ -233,4 +233,9 @@ class ParsedRequest(BaseModel):
 
 def edit_keys(edits) -> list:
     """Order-independent comparison keys for a list of edits (used to score parsers)."""
-    return sorted((e.key() for e in edits), key=repr)
+    return sorted((e.key() for e in edits), key=_sort_key)
+
+
+def _sort_key(key) -> str:
+    # A frozenset's repr depends on how it was built; sort its members so equal keys sort alike.
+    return repr(tuple(sorted(part) if isinstance(part, frozenset) else part for part in key))

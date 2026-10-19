@@ -133,3 +133,15 @@ def test_calorie_shifts_cannot_stack_on_one_day():
     )
     assert len(separate.edits) == 2
 
+
+def test_edit_keys_sort_the_same_however_the_days_were_listed():
+    days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+    edits = [
+        {"type": "require_tag", "tag": "vegan", "days": days},
+        {"type": "require_tag", "tag": "vegan", "days": "thu"},
+    ]
+    forward = parse({"action": "edit", "edits": edits})
+    backward = parse(
+        {"action": "edit", "edits": [{**edits[0], "days": days[::-1]}, edits[1]][::-1]}
+    )
+    assert edit_keys(forward.edits) == edit_keys(backward.edits)
