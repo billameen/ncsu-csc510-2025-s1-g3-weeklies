@@ -208,3 +208,22 @@ def test_a_preference_never_makes_an_edit_impossible():
     preview = preview_edits(request(days=2), MENU, CURRENT, [cheaper], [MealScope(days={TUESDAY})])
     assert preview.status == PREVIEW and preview.unmet == ()
     assert all(c.after.cost_cents < c.before.cost_cents for c in preview.changes)
+
+
+def test_a_preference_never_makes_the_closest_option_miss_more():
+    """With a strong wish for calories, the closest option still misses as few meals as it can."""
+    big = menu(
+        [
+            item(1, name="Toast", price_cents=500, calories=500),
+            item(2, name="Feast", price_cents=1500, calories=1250),
+            item(3, name="Plate", price_cents=1500, calories=900),
+        ]
+    )
+    current = {(MONDAY, 1): 2, (MONDAY, 2): 3, (MONDAY, 3): 1}
+    under_5 = FilterMeals(Condition("price", "<=", 500))
+    for extra in ([], [get("prefer_meals")("more_calories")]):
+        preview = preview_edits(
+            request(kcal=2500, days=1), big, current, [under_5, *extra], [MealScope()]
+        )
+        assert preview.status == CLOSEST
+        assert preview.unmet == ("1 of 3 meals (every day) are over $5.00",)

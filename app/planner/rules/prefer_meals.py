@@ -16,6 +16,16 @@ GOALS = {
     "variety": 3000,
     "match": 3000,
 }
+# Weights in a closest option, where the other edits become preferences worth $50 a missed
+# meal (prefer_edits): small enough that a wish only breaks ties and never makes the plan
+# miss more of what the user required.
+CLOSEST_GOALS = {
+    "cheaper": 1,
+    "fewer_calories": 1,
+    "more_calories": 1,
+    "variety": 100,
+    "match": 100,
+}
 
 
 @register
@@ -72,6 +82,10 @@ class PreferMeals(SoftConstraint):
                     repeats = ctx.model.NewIntVar(0, len(picks) - 1, f"repeat_{itm_id}_{id(self)}")
                     ctx.model.Add(repeats >= sum(picks) - 1)
                     ctx.add_penalty(self, repeats)
+
+    def soften(self):
+        """This preference at a tie-breaking weight, for the closest option."""
+        return PreferMeals(self.goal, self.scope, self.condition, CLOSEST_GOALS[self.goal])
 
     def __repr__(self) -> str:
         what = self.condition.describe() if self.condition else self.goal
