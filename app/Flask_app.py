@@ -398,6 +398,12 @@ def index(year, month):
     gen_str = user[9] if len(user) > 9 else ""
     gen_map = parse_generated_menu(gen_str)
 
+    conn = create_connection(db_file)
+    try:
+        edit_history = _edit_history(conn, user[0])
+    finally:
+        close_connection(conn)
+
     # All item ids referenced (for the whole plan)
     all_item_ids = sorted({e['itm_id'] for entries in gen_map.values() for e in entries})
     items_by_id = fetch_menu_items_by_ids(all_item_ids)
@@ -435,6 +441,7 @@ def index(year, month):
         next_year=next_m.year,
         calendar_cells=cells,
         month_cost_cents=month_cost_cents,
+        edit_history=edit_history,
         month_avg_kcal=month_avg_kcal,
         today_year=today.year,
         today_month=today.month,

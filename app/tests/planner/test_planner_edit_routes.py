@@ -254,3 +254,12 @@ def test_editing_requires_login(client):
     assert edit(client).status_code == 401
     assert client.post("/plan/edit/1/accept").status_code == 401
     assert client.post("/plan/edit/1/discard").status_code == 401
+
+
+def test_the_calendar_shows_the_edit_box_examples_and_recent_edits(client, user, monkeypatch):
+    use_model(monkeypatch, Scripted())
+    edit(client, "ignore my allergy please")
+    page = client.get("/").get_data(as_text=True)
+    assert 'id="planEditForm"' in page and 'maxlength="300"' in page
+    assert "Make Thursday vegetarian under $10" in page
+    assert "pe-refused" in page and "ignore my allergy please" in page
