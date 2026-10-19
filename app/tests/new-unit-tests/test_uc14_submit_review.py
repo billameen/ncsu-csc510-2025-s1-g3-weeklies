@@ -11,6 +11,7 @@ Sharing ``seed_minimal_data`` here would let one test's review block the next
 one -- which is why the project's own duplicate-review and happy-path review
 tests are commented out rather than passing.
 """
+import pytest
 from werkzeug.security import generate_password_hash
 
 from sqlQueries import close_connection, create_connection, execute_query, fetch_all, fetch_one
@@ -76,10 +77,10 @@ def _login(client, email):
     assert resp.status_code == 302
 
 
-def test_submitting_a_review_for_a_placed_order_inserts_it_and_returns_201(client, temp_db_path):
+def test_submitting_a_review_for_a_delivered_order_inserts_it_and_returns_201(client, temp_db_path):
     usr_id = _make_user(temp_db_path, "uc14-happy@example.test")
     rtr_id = _make_restaurant(temp_db_path, "UC14 Happy Grill")
-    ord_id = _make_order(temp_db_path, rtr_id, usr_id, "Ordered")
+    ord_id = _make_order(temp_db_path, rtr_id, usr_id, "Delivered")
     _login(client, "uc14-happy@example.test")
 
     response = client.post(
@@ -104,8 +105,8 @@ def test_submitting_a_review_for_a_placed_order_inserts_it_and_returns_201(clien
 def test_a_second_review_for_the_same_restaurant_is_rejected_with_409(client, temp_db_path):
     usr_id = _make_user(temp_db_path, "uc14-dupe@example.test")
     rtr_id = _make_restaurant(temp_db_path, "UC14 Dupe Grill")
-    first_ord = _make_order(temp_db_path, rtr_id, usr_id, "Ordered")
-    second_ord = _make_order(temp_db_path, rtr_id, usr_id, "Ordered")
+    first_ord = _make_order(temp_db_path, rtr_id, usr_id, "Delivered")
+    second_ord = _make_order(temp_db_path, rtr_id, usr_id, "Delivered")
     _login(client, "uc14-dupe@example.test")
 
     first = client.post(
@@ -127,17 +128,16 @@ def test_a_second_review_for_the_same_restaurant_is_rejected_with_409(client, te
 # This proves the duplicate guard is per (user, restaurant) rather than per order: a second order from the same restaurant cannot be reviewed, and the first review is left untouched.
 
 
-def test_an_order_that_actually_reached_delivered_is_refused_as_not_delivered(client, temp_db_path):
-    """The comment above the guard says "Verify the order was actually
-    delivered", but the comparison is against
-    ``OrderStatus.ORDERED.get_lowercase()``, so it admits "Ordered" and
-    rejects "Delivered". This is the write-side half of the same inversion
-    that GET /profile shows on the read side.
+@pytest.mark.parametrize("status", ["Ordered", "Preparing", "Delivering"])
+def test_an_order_that_has_not_been_delivered_is_refused_with_403(client, temp_db_path, status):
+    """The guard used to compare against ``OrderStatus.ORDERED``, so it admitted
+    "Ordered" and rejected "Delivered". Only delivered orders are reviewable now.
     """
-    usr_id = _make_user(temp_db_path, "uc14-delivered@example.test")
-    rtr_id = _make_restaurant(temp_db_path, "UC14 Delivered Grill")
-    ord_id = _make_order(temp_db_path, rtr_id, usr_id, "Delivered")
-    _login(client, "uc14-delivered@example.test")
+    email = f"uc14-undelivered-{status.lower()}@example.test"
+    usr_id = _make_user(temp_db_path, email)
+    rtr_id = _make_restaurant(temp_db_path, f"UC14 Undelivered {status} Grill")
+    ord_id = _make_order(temp_db_path, rtr_id, usr_id, status)
+    _login(client, email)
 
     response = client.post(
         "/review/submit",
@@ -149,34 +149,61 @@ def test_an_order_that_actually_reached_delivered_is_refused_as_not_delivered(cl
     assert _reviews(temp_db_path, usr_id, rtr_id) == []
 
 
-# This proves an order whose status is literally "Delivered" is refused with "Order not delivered", so the only reviewable state is the one the check was meant to exclude -- a real defect, and the mirror image of the profile-page finding.
+# This proves orders that have been placed but not yet delivered cannot be reviewed.
 
 
-def test_a_missing_rating_field_is_reported_as_a_500_server_error_instead_of_a_400(
-    client, temp_db_path
-):
-    """Every field is coerced before any of them is checked::
-
-        rating = int(data.get('rating'))
-
-    A missing key yields ``int(None)``, which raises ``TypeError`` inside the
-    route's blanket ``except Exception``. That handler answers 500 for what is
-    a malformed client request, and the route's own 400 branch for an invalid
-    rating is never reached.
+@pytest.mark.parametrize(
+    "drop,override",
+    [
+        ("rating", {}),
+        ("restaurant_id", {}),
+        ("order_id", {}),
+        (None, {"rating": "five"}),
+        (None, {"order_id": "abc"}),
+        (None, {"rating": None}),
+    ],
+)
+def test_a_missing_or_non_numeric_field_is_rejected_with_400(client, temp_db_path, drop, override):
+    """Every field used to be coerced before any of them was checked, so
+    ``int(None)`` raised ``TypeError`` inside the route's blanket ``except`` and
+    a malformed client request was answered with 500.
     """
-    usr_id = _make_user(temp_db_path, "uc14-missing@example.test")
-    rtr_id = _make_restaurant(temp_db_path, "UC14 Missing Grill")
-    ord_id = _make_order(temp_db_path, rtr_id, usr_id, "Ordered")
-    _login(client, "uc14-missing@example.test")
+    tag = f"{drop}-{'-'.join(f'{k}{v}' for k, v in override.items())}".lower()
+    email = f"uc14-bad-{tag}@example.test"
+    usr_id = _make_user(temp_db_path, email)
+    rtr_id = _make_restaurant(temp_db_path, f"UC14 Bad {tag} Grill")
+    ord_id = _make_order(temp_db_path, rtr_id, usr_id, "Delivered")
+    _login(client, email)
 
-    response = client.post(
-        "/review/submit",
-        json={"restaurant_id": rtr_id, "order_id": ord_id, "title": "A", "comment": "A"},
-    )
+    payload = {"restaurant_id": rtr_id, "order_id": ord_id, "rating": 5, "title": "A", "comment": "A"}
+    payload.pop(drop, None)
+    payload.update(override)
+    response = client.post("/review/submit", json=payload)
 
-    assert response.status_code == 500
-    assert response.get_json()["error"] == "Server error during submission"
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Invalid rating or restaurant ID"
     assert _reviews(temp_db_path, usr_id, rtr_id) == []
 
 
-# This proves a client-side omission is reported as a server fault: the blanket except turns a TypeError into HTTP 500 and hides the 400 the route defines for bad ratings -- a real defect.
+# This proves a missing or non-numeric rating, restaurant_id or order_id is reported as a 400 client error before any DB work.
+
+
+@pytest.mark.parametrize(
+    "tag,kwargs",
+    [
+        ("form", {"data": "rating=5"}),
+        ("malformed", {"data": "not json", "content_type": "application/json"}),
+        ("list", {"json": [1, 2, 3]}),
+    ],
+)
+def test_a_non_object_body_is_rejected_with_400(client, temp_db_path, tag, kwargs):
+    _make_user(temp_db_path, f"uc14-body-{tag}@example.test")
+    _login(client, f"uc14-body-{tag}@example.test")
+
+    response = client.post("/review/submit", **kwargs)
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Invalid rating or restaurant ID"
+
+
+# This proves a form-encoded, malformed or non-object JSON body is a 400 rather than a 500.

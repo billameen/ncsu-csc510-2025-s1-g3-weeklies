@@ -2,6 +2,7 @@ import json
 import numbers
 import re
 import sqlite3
+from functools import partial
 
 import pytest
 
@@ -11,10 +12,13 @@ from eval.baselines import ReplayLLM, random_safe
 from eval.catalog import load_catalog
 from eval.feasibility import cheapest_week, is_feasible
 from eval.profiles import generate_profiles
+from eval.planners import NoValidWeek, m1_solver
 from eval.run import (
     Planner,
     UserResult,
     evaluate,
+    explained_pct,
+    h4_no_plan_pct,
     m0_planners,
     render_markdown,
     run,
@@ -28,6 +32,7 @@ PLANNER_METRICS = {
     "h3_p95_s",
     "h4_no_plan_pct",
     "overall_valid_pct",
+    "explained_pct",
     "users_with_violation",
 }
 
@@ -137,7 +142,7 @@ def test_report_schema(menu_db):
     report = small_run(menu_db)
 
     assert set(report) == {"schema_version", "seed", "users", "thresholds", "planners"}
-    assert report["schema_version"] == 1 and report["seed"] == 510
+    assert report["schema_version"] == 2 and report["seed"] == 510
     assert set(report["users"]) == {"total", "feasible", "hard", "hard_feasible"}
     assert report["users"]["total"] == 5
     assert set(report["thresholds"]) == {
@@ -200,14 +205,49 @@ def test_markdown_marks_pass_and_fail_against_the_threshold(menu_db):
 # --- the command ---
 
 
-def test_m0_planners_are_b1_and_b2_with_b2_adding_its_recorded_llm_time(tmp_path):
+def test_m0_planners_are_b1_b2_and_m1_with_b2_adding_its_recorded_llm_time(tmp_path):
     (tmp_path / "rec.json").write_text(json.dumps({"model": None, "calls": {}}))
     replay = ReplayLLM(tmp_path / "rec.json")
 
     planners = m0_planners(replay)
 
-    assert [p.name for p in planners] == ["B1", "B2"]
+    assert [p.name for p in planners] == ["B1", "B2", "M1"]
     assert planners[0].replay is None and planners[1].replay is replay
+    assert planners[2].replay is None
+
+
+def test_no_valid_week_with_a_reason_counts_as_explained(menu_db):
+    catalog = load_catalog(menu_db)
+    profiles = generate_profiles(510)[:5]
+    feasible = {p.user_id: False for p in profiles}  # pretend nobody can be served
+
+    def explains(profile, catalog, seed):
+        return NoValidWeek("budget too low")
+
+    results = evaluate(Planner("X", explains), profiles, catalog, 510, feasible)
+
+    assert all(r.meals is None and r.reason == "budget too low" for r in results)
+    assert explained_pct(results) == 100.0
+    assert h4_no_plan_pct(results) == 100.0
+
+
+def test_a_bare_no_valid_week_or_an_empty_reason_is_not_explained():
+    def result(meals, reason):
+        return UserResult(1, False, meals, (), 0.1, reason)
+
+    assert explained_pct([result(None, None), result(None, ""), result((), "why")]) == 0.0
+    assert explained_pct([result(None, "why"), result(None, None)]) == 50.0
+    assert explained_pct([UserResult(1, True, None, (), 0.1, "why")]) is None
+
+
+def test_the_table_has_an_explained_row(menu_db):
+    report = small_run(menu_db)
+    row = next(
+        line
+        for line in render_markdown(report).splitlines()
+        if line.startswith("| Infeasible users told why")
+    )
+    assert row.count("|") == 4 + len(report["planners"])
 
 
 class FakeOpenAI:
@@ -226,6 +266,9 @@ def command(menu_db, tmp_path, monkeypatch):
     monkeypatch.setattr(eval.run, "RECORDING", tmp_path / "fixtures" / "b2.json")
     monkeypatch.setattr(eval.run, "generate_profiles", lambda seed: generate_profiles(seed)[:5])
     monkeypatch.setattr(eval.run, "_live_llm", FakeOpenAI)
+    # These tests are about recording B2; M1 is tested in test_planners.py. A low work limit
+    # keeps M1 real but quick (and still deterministic).
+    monkeypatch.setattr(eval.run, "m1_solver", partial(m1_solver, work_limit=0.05))
     return tmp_path
 
 

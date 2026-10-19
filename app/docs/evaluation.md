@@ -15,7 +15,7 @@ From the repository root, with the virtual environment active:
 
 ```bash
 python app/scripts/init_db.py      # once: builds app/CSC510_DB.db from app/db/seed.sql
-python -m eval.run --seed 510      # about 30 seconds; no API key and no model needed
+python -m eval.run --seed 510      # about 3 minutes; no API key and no model needed
 ```
 
 This writes `eval/results/m0.json` and `eval/results/m0.md` and prints the table. Use
@@ -35,7 +35,9 @@ The exit code is 0 even when hypotheses fail. It is 1 only for a regression agai
 | H4 | Share of **infeasible** users who get an explicit "no valid week" answer | ≥ 90% | B1, B2 |
 
 The table also shows the share of **all** users who get a valid week. It has no threshold;
-it is the headline number for the product.
+it is the headline number for the product. Since M1 it also shows the share of **infeasible**
+users who are told why there is no valid week (`explained_pct`); M1's target is 100%, and it
+is not one of the fixed hypotheses.
 
 - **Feasible** means a valid week exists for the user at all (see Feasible users, below). A planner is not blamed for users nobody could serve,
   but it must say so instead of returning an invalid week: that is H4.
@@ -45,6 +47,8 @@ it is the headline number for the product.
 - **H3** is the 95th percentile by nearest rank: sort every user's planning time and take
   the value at position ceil(0.95 × n), so it is always a time that was actually measured.
   For B2 it is the recorded LLM time (see Planners, below).
+- **Told why** counts an infeasible user when the planner answered "no valid week" with a
+  non-empty reason (`eval.planners.NoValidWeek`). A bare `None` or an invalid week is a miss.
 - A metric is `n/a` (`null` in the JSON) when no user falls in its group.
 
 ## What counts as a valid week
@@ -113,7 +117,8 @@ checks they still match. After an intended change to the generator, regenerate i
 ## Planners
 
 Every planner is a function `(profile, catalog, seed)` that returns the planned meals, or
-`None` to answer "no valid week". They live in `eval/baselines.py`.
+`None` (or `NoValidWeek(reason)`) to answer "no valid week". The baselines live in
+`eval/baselines.py` and the planner under test in `eval/planners.py`.
 
 - **B1, random-safe:** for each slot, a random in-stock, allergen-free item from a restaurant
   that is open then. It knows nothing about budget or calories, so its misses show what
@@ -121,6 +126,11 @@ Every planner is a function `(profile, catalog, seed)` that returns the planned 
 - **B2, v1 LLM planner:** the app's `MenuGenerator` as shipped, run for the whole week, with
   the user's budget and calorie target passed in as preference text. It never says "no valid
   week". If v1 gives up on a meal, the whole week is lost and comes back empty.
+- **M1, CP-SAT solver:** `plan_week` from `app/planner` with its default rules, the same call
+  `/generate_plan` makes (`eval/planners.py`). It plans all 21 meals at once and, when no week
+  fits, answers `NoValidWeek` with the explanation the user sees. It is deterministic, so
+  `seed` is unused. Its H3 is real solver time on the machine running the eval, about 3 s at
+  p95. See [Why a solver](./why-a-solver.html).
 
 ### How B2 runs without a model
 
@@ -158,10 +168,10 @@ models, both when resuming and if the LLM switches model partway through, which 
 
 ## Outputs
 
-`m0.json` holds `schema_version`, `seed`, the user counts (total, feasible, hard and hard
-feasible), the thresholds, and for each planner H1 to H4 (`h1_valid_pct`,
-`h2_median_distinct`, `h3_p95_s`, `h4_no_plan_pct`), the headline `overall_valid_pct` and
-`users_with_violation`. Percentages are 0 to 100 and stored unrounded. There are no
+`m0.json` holds `schema_version` (2 since M1 added `explained_pct`), `seed`, the user counts
+(total, feasible, hard and hard feasible), the thresholds, and for each planner H1 to H4
+(`h1_valid_pct`, `h2_median_distinct`, `h3_p95_s`, `h4_no_plan_pct`), the headline
+`overall_valid_pct`, `explained_pct` and `users_with_violation`. Percentages are 0 to 100 and stored unrounded. There are no
 timestamps, so the file only changes when results change. `m0.md` is the same results as
 tables, with PASS or FAIL against each threshold.
 
@@ -190,9 +200,11 @@ the first run, and a change to the simulated users or the validity rules needs i
 
 ## Adding a planner
 
-Write it as a function `(profile, catalog, seed) -> meals | None`, add a
-`Planner("M1", your_function)` to the list in `m0_planners` in `eval/run.py`, and it becomes
-a new column in the results. Re-run the eval and commit the results when M1, M3 and M4 land.
+Write it as a function `(profile, catalog, seed) -> meals | NoValidWeek | None`, add a
+`Planner("M3", your_function)` to the list in `m0_planners` in `eval/run.py`, and it becomes
+a new column in the results. Re-run the eval and commit the results when M3 and M4 land, and
+whenever a change to `app/planner` affects plans (a rule or weight that is on by default).
+M1 is already in the list.
 
 ## Code map
 
@@ -203,6 +215,7 @@ a new column in the results. Re-run the eval and commit the results when M1, M3 
 | `eval/validate.py` | The definition of a valid week |
 | `eval/feasibility.py` | Whether a valid week exists for a user |
 | `eval/baselines.py` | B1, B2, and recording and replaying LLM responses |
+| `eval/planners.py` | M1, the solver, behind the eval's planner interface |
 | `eval/run.py` | Metrics, the regression check, the report and the command |
 | `app/tests/eval/` | The tests: `pytest app/tests/eval` |
 

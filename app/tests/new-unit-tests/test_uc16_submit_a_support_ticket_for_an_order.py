@@ -3,6 +3,7 @@ import sqlite3
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
@@ -188,12 +189,11 @@ def test_support_submit_message_too_short(client, mock_db):
     )
 
     assert response.status_code == 302
-    location = response.headers["Location"]
-    assert "ticket_error=message_too_short" in location
-    assert "ord_id=101" in location
-    # Flask's redirect() percent-encodes the Location header, so a literal space becomes %20
-    # (not left raw and not '+'-encoded, which only applies to application/x-www-form-urlencoded bodies).
-    assert "message=Too%20few" in location
+    params = parse_qs(urlsplit(response.headers["Location"]).query)
+    assert params["ticket_error"] == ["message_too_short"]
+    assert params["ord_id"] == ["101"]
+    # url_for encodes the space (as '+'); parse_qs decodes it back to the stripped message.
+    assert params["message"] == ["Too few"]
 # This proves support messages with fewer than 10 characters are rejected and preserve the order ID and message in the redirect URL.
 
 
@@ -270,26 +270,28 @@ def test_support_submit_generic_server_error(client, mock_db):
 # This proves unexpected server exceptions during ticket processing are caught and redirect with a server_error flag.
 
 
-def test_support_submit_unescaped_special_characters_in_message_defect(client, mock_db):
-    # Defect Test / Extension Not Handled #1:
-    # Expected behavior: When redirecting on message_too_short, special characters like '&', '#', and spaces
-    # should be safely URL-encoded (e.g. quote_plus) to prevent query parameter truncation or corruption.
-    # Suspected Defect: Line 1531 uses raw f-string interpolation f'?ticket_error=message_too_short&ord_id={ord_id}&message={message}',
-    # which injects raw unescaped '&' characters, splitting and corrupting the query string.
+@pytest.mark.parametrize("raw_message", ["bad & #1", "a&b#c=%", "x=1&y", "100% off"])
+def test_support_submit_short_message_redirect_url_encodes_the_message(client, mock_db, raw_message):
+    # The message_too_short redirect used to be built with an f-string, so '&', '#', '=' and '%'
+    # in the user's message split or truncated the query string. It now uses url_for, which
+    # URL-encodes each value, so the message survives the round trip intact.
     with client.session_transaction() as sess:
         sess["Username"] = "Alice Smith"
         sess["usr_id"] = 42
 
-    raw_message = "bad & #1"  # 8 chars (< 10)
     response = client.post(
         "/support/submit",
         data={"ord_id": "101", "message": raw_message},
     )
 
     assert response.status_code == 302
-    location = response.headers["Location"]
-    # In the raw unescaped implementation, '&' splits into an unintended query key '#1'
-    # The test confirms that the redirect contains the raw unencoded string representing the defect.
-    assert "ticket_error=message_too_short" in location
-    assert "ord_id=101" in location
-# This proves that unescaped special characters in short message validation redirects corrupt the query string due to lack of URL encoding.
+    parts = urlsplit(response.headers["Location"])
+    assert parts.path == "/profile"
+    assert parts.fragment == ""
+    params = parse_qs(parts.query, keep_blank_values=True)
+    assert params == {
+        "ticket_error": ["message_too_short"],
+        "ord_id": ["101"],
+        "message": [raw_message],
+    }
+# This proves special characters in a too-short ticket message are URL-encoded in the redirect, so no stray parameters or fragment appear and the message value round-trips exactly.
