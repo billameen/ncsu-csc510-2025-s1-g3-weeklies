@@ -15,8 +15,10 @@
 ## 🧠 Project Overview
 
 **Weeklies** is a full-stack Flask web application for planning and ordering a week of meals.
-Users register, set dietary preferences and allergies, browse restaurants and menus, and schedule
-orders on a calendar, with an LLM-generated weekly meal plan tailored to them.
+Users register, set dietary preferences, allergies, a daily calorie target and a weekly budget,
+browse restaurants and menus, and schedule orders on a calendar. A constraint solver plans all 21
+meals of their week at once so that every day hits the calorie target, the week fits the budget,
+and no meal contains their allergens.
 
 This repository is our team's continuation of Weeklies for *CSC 510: Software Engineering
 (NC State University)*. We are extending the existing application with a new set of milestones
@@ -38,6 +40,26 @@ This repository is our team's continuation of Weeklies for *CSC 510: Software En
 | 2 | _TBD_ | ⏳ Planned |
 | 3 | _TBD_ | ⏳ Planned |
 | 4 | _TBD_ | ⏳ Planned |
+
+---
+
+## 📊 Meal Planner Results
+
+Since M1 the week is planned by an OR-Tools CP-SAT solver instead of an LLM
+([why](app/docs/why-a-solver.md)). Every rule is a plug-in
+([add one in 15 minutes](app/docs/planner-rules.md)). M0 evaluation, 100 simulated users,
+seed 510 ([full results](eval/results/m0.md), [method](app/docs/evaluation.md)):
+
+| | Target | v1 LLM (B2) | Solver (M1) |
+|---|---|---|---|
+| H1 Feasible users who get a valid week | ≥ 90% | 0% | **100%** |
+| H2 Distinct items per week (median) | ≥ 14 | 19 | **20** |
+| H3 Time to plan a week (p95) | ≤ 5 s | 216 s | **2.9 s** |
+| H4 Infeasible users told "no valid week" | ≥ 90% | 0% | **100%** |
+| Infeasible users told why | 100% | 0% | **100%** |
+
+Reproduce with `python -m eval.run --seed 510` (about 3 minutes, no API key). `PLANNER=llm` switches
+`/generate_plan` back to v1.
 
 ---
 
@@ -66,7 +88,8 @@ Features inherited from Weeklies (Fall 2025):
 | **Frontend** | Server-rendered Jinja2 templates, plain HTML/CSS/JavaScript |
 | **Backend** | Python 3.11+, Flask |
 | **Database** | SQLite via raw `sqlite3` (helpers in `app/sqlQueries.py`) |
-| **LLM** | OpenAI API (`gpt-4o-mini`) or local HuggingFace model |
+| **Meal planner** | OR-Tools CP-SAT constraint solver (`app/planner/`) |
+| **LLM** | OpenAI API (`gpt-4o-mini`) or local HuggingFace model (v1 planner, `PLANNER=llm`) |
 | **PDF** | ReportLab |
 | **Tooling** | GitHub Actions, pytest, pytest-cov, ruff, black, pdoc |
 
@@ -79,7 +102,8 @@ Features inherited from Weeklies (Fall 2025):
 ├── app/
 │   ├── Flask_app.py          # all routes and helpers
 │   ├── sqlQueries.py         # DB access helpers
-│   ├── menu_generation.py    # weekly meal-plan generation
+│   ├── planner/              # CP-SAT weekly planner; rules/ holds one plug-in per rule
+│   ├── menu_generation.py    # v1 LLM meal-plan generation (PLANNER=llm)
 │   ├── llm_toolkit.py        # LLM provider wrapper
 │   ├── pdf_receipt.py        # receipt PDFs
 │   ├── models.py
@@ -87,11 +111,13 @@ Features inherited from Weeklies (Fall 2025):
 │   ├── db/seed.sql           # schema + demo data (source of truth for the local DB)
 │   ├── scripts/init_db.py    # builds app/CSC510_DB.db from db/seed.sql
 │   ├── migrations/           # one-off, idempotent schema changes
-│   ├── tests/                # smoke / unit / integration / e2e / llm
+│   ├── tests/                # smoke / unit / integration / e2e / llm / planner / eval
+│   ├── docs/                 # architecture, evaluation, planner rules, why a solver
 │   └── requirements.txt
-├── .github/workflows/        # ci.yml (tests), docs.yml (pdoc → GitHub Pages)
+├── eval/                     # M0 evaluation: validator, simulated users, planners, results
+├── .github/workflows/        # ci.yml (tests), eval.yml (M0 eval), docs.yml (pdoc → GitHub Pages)
 ├── scripts/build_docs.py
-├── INSTALLATION.md
+├── INSTALLATION.md  CONTRIBUTING.md
 ├── pytest.ini  pyproject.toml  .coveragerc  pdoc.toml
 └── README.md
 ```
