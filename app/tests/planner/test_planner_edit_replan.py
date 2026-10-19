@@ -227,3 +227,12 @@ def test_a_preference_never_makes_the_closest_option_miss_more():
         )
         assert preview.status == CLOSEST
         assert preview.unmet == ("1 of 3 meals (every day) are over $5.00",)
+
+
+def test_a_closest_option_that_changes_nothing_is_reported_as_impossible():
+    nothing_that_cheap = FilterMeals(Condition("price", "<=", 1), MealScope(days={TUESDAY}))
+    preview = preview_edits(
+        request(days=2), MENU, CURRENT, [nothing_that_cheap], [MealScope(days={TUESDAY})]
+    )
+    assert preview.status == IMPOSSIBLE and preview.changes == ()
+    assert "over $0.01" in preview.explanation

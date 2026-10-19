@@ -322,28 +322,25 @@ def test_a_model_timeout_is_reported(client, user, monkeypatch):
 
 
 def test_an_impossible_edit_offers_the_closest_option(client, user, monkeypatch):
-    # Nothing costs under $1, so "under $1 on that day" is met in 0 meals; the closest plan
-    # keeps the day valid and says so.
-    use_model(
-        monkeypatch,
-        Scripted(
-            {
-                "action": "edit",
-                "edits": [
-                    {
-                        "type": "filter",
-                        "field": "price",
-                        "op": "<=",
-                        "value": 1,
-                        "days": [TARGET_CODE],
-                    }
-                ],
-            }
-        ),
-    )
-    body = edit(client, "under $1").get_json()
+    # Nothing costs $1 or less, so "vegetarian and under $1" can't be met. The closest plan
+    # meets the half it can (vegetarian) and says what it still misses.
+    under_1 = {"type": "filter", "field": "price", "op": "<=", "value": 1, "days": [TARGET_CODE]}
+    reply = veg_edit()
+    reply["edits"].append(under_1)
+    use_model(monkeypatch, Scripted(reply))
+
+    body = edit(client, "vegetarian and under $1").get_json()
+
     assert body["status"] == "closest" and "are over $1.00" in body["message"]
     assert body["unmet"] == [f"3 of 3 meals ({TARGET_LABEL}) are over $1.00"]
+    assert body["changes"] and all(c["after"]["name"].startswith("Veggie") for c in body["changes"])
+
+
+def test_an_edit_whose_closest_option_changes_nothing_is_impossible(client, user, monkeypatch):
+    under_1 = {"type": "filter", "field": "price", "op": "<=", "value": 1, "days": [TARGET_CODE]}
+    use_model(monkeypatch, Scripted({"action": "edit", "edits": [under_1]}))
+    body = edit(client, "under $1").get_json()
+    assert body["status"] == "impossible" and "are over $1.00" in body["message"]
 
 
 def test_editing_before_planning_asks_to_plan_first(client, temp_db_path, user, monkeypatch):

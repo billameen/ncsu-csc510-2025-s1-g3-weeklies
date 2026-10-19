@@ -114,6 +114,9 @@ def preview_edits(
         for s in slots
         if current.get((s.day, s.meal)) != after[(s.day, s.meal)].itm_id
     )
+    if status == CLOSEST and not changes:
+        # The closest option is the plan as it is: nothing to offer, so say why instead.
+        return EditPreview(IMPOSSIBLE, explanation=explanation, seconds=time.monotonic() - started)
     plan = {m.slot: m.item for m in result.meals}
     unmet = tuple(
         message
