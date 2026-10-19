@@ -221,8 +221,11 @@ M1 is already in the list.
   ignoring order and spelling (`edit_keys`).
 - **Rules broken:** every edit any parser produces, for any request, is applied to the
   evaluation user's week (2,200 kcal, $450, allergic to eggs, planned by the solver for
-  M0's Monday-to-Sunday week) and the result is checked with the M0 validator. The
-  command exits 1, failing CI, if any rule breaks or any meal outside the edit changes.
+  M0's Monday-to-Sunday week) and the result is checked with the M0 validator. Each day's
+  calories are checked against its target after the edit's calorie shifts, worked out from
+  the parsed edits rather than by the rule under test. The menu does not change between the
+  base week and the edit, so any meal outside the edit that changes is counted. The command
+  exits 1, failing CI, if any rule breaks or any meal outside the edit changes.
 - **Re-plan time:** p95 over the 20 one-day edits, using the expected edits so it does not
   depend on a parser, with the rest of the week pinned, against re-solving the whole week.
   Neither includes the model call.

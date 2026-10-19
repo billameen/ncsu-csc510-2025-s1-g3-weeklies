@@ -31,8 +31,10 @@ saved until the user accepts a diff.
    If the edit can't be met, the user gets the reason and the closest plan, with how many
    of the edited meals match.
 5. **Accept or Discard.** The diff shows each changed meal, its price change, and the
-   week's cost and calories before and after. Accept saves it (refused if the plan changed
-   since the preview). Discard leaves the plan untouched.
+   week's cost and calories before and after. Accept checks the proposal again against the
+   menu and profile as they are now (stock, opening hours, allergies, budget, calories) and
+   saves it; it is refused if anything changed since the preview. Discard leaves the plan
+   untouched.
 
 ## Why this is safe even when the model is wrong
 
@@ -54,7 +56,7 @@ What a model adds is understanding: exact parses of varied wording, clarifying q
 for vague requests, and refusals the guard's patterns don't cover.
 
 Re-planning one day with the rest of the week pinned takes about 0.3 s at p95, against
-about 2.6 s to re-solve the whole week (target ≤ 2 s, excluding the model call).
+about 3 s to re-solve the whole week (target ≤ 2 s, excluding the model call).
 
 ## Limits
 
@@ -63,8 +65,9 @@ about 2.6 s to re-solve the whole week (target ≤ 2 s, excluding the model call
   varied wording correctly; the guard and the solver keep it safe either way.
 - Tags are decided from item names, descriptions and allergen tags (the menu has no tag
   column), and deliberately strictly: any meat word rules out "vegetarian".
-- Edits apply to the next 7 days of an existing plan. Plan the week first.
+- Edits apply to the next 7 days of an existing plan, or to as many of them as are fully
+  planned. A day that is not planned is never filled in. Plan the week first.
 - A calorie shift changes whole days, up to 1,000 kcal, within the profile's 800 to
-  6,000 kcal bounds.
+  6,000 kcal bounds, and each day can have only one shift per edit.
 
 To support a new kind of request, see [Teach the parser a new request](./teach-the-parser.html).
