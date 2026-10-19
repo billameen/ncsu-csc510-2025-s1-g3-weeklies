@@ -47,6 +47,18 @@ python app/scripts/init_db.py
 
 ---
 
+### Already have a local database?
+
+`app/CSC510_DB.db` is not rebuilt automatically. After pulling schema changes, either reset it
+to the seed data or apply the new migration (keeps your data):
+
+```bash
+python app/scripts/init_db.py --force             # reset to app/db/seed.sql
+cd app && python migrations/add_plan_targets.py   # or: add the planner's two User columns
+```
+
+---
+
 ## 🚀Usage
 
 ### Running the Application
@@ -65,6 +77,14 @@ flask run
 cd app
 flask run
 ```
+
+### Planning a week
+
+Set a **daily calorie target** and **weekly budget** on *Profile → Edit Profile*, then press
+**Auto-Plan Week** on the calendar. The constraint solver plans the next 7 days within both
+and never picks an item with one of your allergens; if no week fits, it says why. To use the
+v1 LLM planner instead, start the server with `PLANNER=llm` (it needs `OPENAI_API_KEY` or a
+local model).
 
 > [!NOTE]
 > If you have downloaded the repo locally and you're running into issues with
