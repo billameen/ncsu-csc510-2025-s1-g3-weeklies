@@ -234,7 +234,7 @@ def fetch_menu_items_by_ids(ids):
     return out
 
 
-def build_calendar_cells(gen_map, year, month, items_by_id):
+def build_calendar_cells(gen_map, year, month, items_by_id, today=None):
     """
     Build month-view calendar cells enriched with menu items per day.
     Args:
@@ -242,9 +242,11 @@ def build_calendar_cells(gen_map, year, month, items_by_id):
         year (int): The calendar year.
         month (int): The calendar month (1–12).
         items_by_id (dict): Mapping itm_id -> item detail dict from DB.
+        today (date | None): The current date (defaults to date.today()); days before it are past.
     Returns:
-        list: A flat list of calendar cell dicts with day number and a 'meals' list.
+        list: A flat list of calendar cell dicts with day number, an 'is_past' flag and a 'meals' list.
     """
+    today = today or date.today()
     def meal_sort_key(e):
         # Breakfast(1) first, then Lunch(2), then Dinner(3)
         return e.get('meal', 3)
@@ -273,7 +275,8 @@ def build_calendar_cells(gen_map, year, month, items_by_id):
                     "color": palette.get(itm['itm_id'], "#7aa2f7"),
                 })
 
-            cells.append({"day": d, "meals": meals})
+            # Past days are still shown (as history) but can no longer be ordered
+            cells.append({"day": d, "is_past": date(year, month, d) < today, "meals": meals})
 
     return cells
 
@@ -285,6 +288,10 @@ def _is_restaurant_reviewed(conn, usr_id: int, rtr_id: int) -> bool:
     return fetch_one(conn, sql, (usr_id, rtr_id)) is not None
 
 # ---------------------- Routes ----------------------
+
+# Calendar years the home view will render. Kept well inside date's 1..9999 range so the
+# prev/next month navigation can never step outside it.
+CALENDAR_MIN_YEAR, CALENDAR_MAX_YEAR = 2000, 2100
 
 # Home route (supports /<year>/<month> for nav)
 @app.route('/', defaults={'year': None, 'month': None})
@@ -302,8 +309,12 @@ def index(year, month):
         return redirect(url_for("login"))
 
     today = date.today()
-    if not year or not month:
+    # Only the bare "/" route omits year/month. Explicit values are validated rather than
+    # truthiness-checked, so /2026/0 and /2026/13 are both rejected the same way.
+    if year is None or month is None:
         year, month = today.year, today.month
+    elif not (1 <= month <= 12 and CALENDAR_MIN_YEAR <= year <= CALENDAR_MAX_YEAR):
+        abort(404)
 
     # Load current user's generated_menu
     conn = create_connection(db_file)
@@ -323,7 +334,7 @@ def index(year, month):
     items_by_id = fetch_menu_items_by_ids(all_item_ids)
 
     # Build cells for the month
-    cells = build_calendar_cells(gen_map, year, month, items_by_id)
+    cells = build_calendar_cells(gen_map, year, month, items_by_id, today=today)
 
     # Build "today_menu" (Breakfast, Lunch, Dinner if present)
     today_iso = f"{today.year:04d}-{today.month:02d}-{today.day:02d}"
@@ -350,6 +361,9 @@ def index(year, month):
         prev_year=prev_m.year,
         next_month=next_m.month,
         next_year=next_m.year,
+        # Hide nav links that would lead outside the renderable range (and so 404)
+        has_prev=prev_m.year >= CALENDAR_MIN_YEAR,
+        has_next=next_m.year <= CALENDAR_MAX_YEAR,
         calendar_cells=cells,
         today_year=today.year,
         today_month=today.month,
@@ -946,6 +960,15 @@ def order():
 
         if rtr_id <= 0 or not items_in:
             return jsonify({"ok": False, "error": "invalid_input"}), 400
+
+        # The calendar sends the plan entry's date; never accept a malformed or past-dated order
+        try:
+            order_date = date.fromisoformat(str(iso_date))
+        except ValueError:
+            return jsonify({"ok": False, "error": "invalid_date"}), 400
+        if order_date < date.today():
+            return jsonify({"ok": False, "error": "invalid_date"}), 400
+        iso_date = order_date.isoformat()
 
         # Look up all items strictly from DB to get authoritative prices/names
         itm_ids = [int(it.get("itm_id") or 0) for it in items_in if int(it.get("itm_id") or 0) > 0]

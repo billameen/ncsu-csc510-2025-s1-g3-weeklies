@@ -108,9 +108,13 @@
       <div class="calendar-toolbar" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin: 8px 0 14px;">
         <div class="cal-title" style="font-weight:700; font-size:1.25rem;">{{ month_name }} {{ year }}</div>
         <div class="btnrow">
+          {% if has_prev %}
           <a class="btn" href="{{ url_for('index', year=prev_year, month=prev_month) }}">&larr; Prev</a>
+          {% endif %}
           <a class="btn btn-outline" href="{{ url_for('index') }}">Today</a>
+          {% if has_next %}
           <a class="btn" href="{{ url_for('index', year=next_year, month=next_month) }}">Next &rarr;</a>
+          {% endif %}
         </div>
       </div>
 
@@ -124,7 +128,7 @@
           {% if cell.day == 0 %}
             <div class="day-cell muted"></div>
           {% else %}
-            <div class="day-cell{% if year==today_year and month==today_month and cell.day==today_day %} today{% endif %}">
+            <div class="day-cell{% if year==today_year and month==today_month and cell.day==today_day %} today{% endif %}{% if cell.is_past %} past{% endif %}">
               <div class="day-num">{{ cell.day }}</div>
 
               {% if cell.meals and cell.meals|length %}
@@ -173,6 +177,10 @@
                         {% endif %}
 
                         <div class="actions" style="margin-top:8px;">
+                        {% if cell.is_past %}
+                        {# Past plan entries are history only; /order also rejects past dates #}
+                        <span class="past-note">Past date</span>
+                        {% else %}
                         <a
                           class="order-btn"
                           href="#"
@@ -188,6 +196,7 @@
                         >
                           Order {{ meal_names.get(m.meal, 'Meal') }}
                         </a>
+                        {% endif %}
                       </div>
                       </div>
                     {% endfor %}
@@ -252,6 +261,18 @@
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(91, 140, 255, 0.2);
     border-color: rgba(91, 140, 255, 0.3);
+  }
+  /* Past days stay visible as history but are dimmed and can't be ordered */
+  .day-cell.past {
+    opacity: .55;
+  }
+  .day-cell.past:hover {
+    opacity: 1;
+  }
+  .past-note {
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
   }
   .day-cell.today {
     border-color: rgba(126, 214, 255, .6);
