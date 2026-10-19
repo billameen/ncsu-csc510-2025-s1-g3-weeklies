@@ -1,9 +1,24 @@
 import os
 import sys
 from pathlib import Path
+import re
 from unittest.mock import MagicMock
 
 import pytest
+
+# Each staff reply is stored as "[YYYY-MM-DD HH:MM] text" and appended after a blank line.
+ENTRY = re.compile(r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}\] (?P<text>.*)$", re.S)
+
+
+def _assert_append_params(sql_args, status, text, ticket_id):
+    """The UPDATE appends in one statement: (status, first-entry, separator+entry, ticket_id)."""
+    sql, params = sql_args[1], sql_args[2]
+    assert "response = CASE WHEN response IS NULL OR response = '' THEN ?" in sql
+    assert "ELSE response || ? END" in sql
+    assert params[0] == status and params[3] == ticket_id
+    assert ENTRY.match(params[1]).group("text") == text
+    assert params[2] == "\n\n" + params[1]
+
 
 # Assumption: The Flask application module is located in 'app/Flask_app.py' or in the current directory.
 # We ensure the module path is added to sys.path so 'Flask_app' can be imported in any test execution environment.
@@ -216,9 +231,8 @@ def test_admin_update_ticket_status_with_response_success(client, mock_db):
 
     mock_db["execute_query"].assert_called_once()
     sql_args = mock_db["execute_query"].call_args[0]
-    assert "UPDATE Ticket SET status = ?, response = ? WHERE ticket_id = ?" in sql_args[1]
-    assert sql_args[2] == ("Resolved", "We have refunded the missing item.", 5)
-# This proves administrators can simultaneously update ticket status and attach official staff response text.
+    _assert_append_params(sql_args, "Resolved", "We have refunded the missing item.", 5)
+# This proves administrators can simultaneously update ticket status and append a timestamped staff response.
 
 
 def test_admin_update_ticket_automatic_in_progress_promotion(client, mock_db):
@@ -243,7 +257,7 @@ def test_admin_update_ticket_automatic_in_progress_promotion(client, mock_db):
     assert data == {"ok": True, "ticket_id": 5, "new_status": "In Progress"}
 
     sql_args = mock_db["execute_query"].call_args[0]
-    assert sql_args[2] == ("In Progress", "We are currently investigating your delivery delay.", 5)
+    _assert_append_params(sql_args, "In Progress", "We are currently investigating your delivery delay.", 5)
 # This proves submitting a staff response on an Open ticket automatically promotes the ticket status to In Progress.
 
 
@@ -283,15 +297,11 @@ def test_admin_update_ticket_ensures_connection_closed(client, mock_db):
 
 
 def test_admin_update_ticket_response_preserves_previous_history(client, mock_db):
-    # Extension Not Handled #2:
-    # Expected behavior: follow-up responses from support should append to a thread or
-    # otherwise preserve prior response history, not silently erase it.
-    # Known defect: the route only ever fetches (ticket_id, status) and then executes
-    # 'UPDATE Ticket SET response = ?' with just the new text, discarding any previous
-    # response. This test asserts the CORRECT behavior and will fail until responses are
-    # appended/preserved instead of overwritten.
-    existing_response = "Here is our first update regarding your ticket."
-    mock_db["fetch_one"].return_value = (5, "In Progress", existing_response)
+    # Follow-up responses from support are appended to the existing response in a single
+    # UPDATE (`response || ?`), so earlier replies are never overwritten. The resulting stored
+    # value is checked against a real database in
+    # integration/test_admin_update_ticket_status.py::test_follow_up_responses_are_appended_not_overwritten.
+    mock_db["fetch_one"].return_value = (5, "In Progress")
 
     with client.session_transaction() as sess:
         sess["Username"] = "Admin User"
@@ -305,9 +315,7 @@ def test_admin_update_ticket_response_preserves_previous_history(client, mock_db
 
     assert response.status_code == 200
     sql_args = mock_db["execute_query"].call_args[0]
-    stored_response = sql_args[2][1]
-    # The persisted response should retain the prior message as well as the new one.
-    assert existing_response in stored_response
-    assert new_followup_response in stored_response
-# This fails while a new response wholly replaces the old one; it passes once staff responses
-# preserve a threaded history instead of overwriting the response column.
+    # The SQL keeps the existing column value and appends the new entry; it never sets it outright.
+    assert "response = ?" not in sql_args[1]
+    _assert_append_params(sql_args, "In Progress", new_followup_response, 5)
+# This proves a follow-up response is appended to the stored response rather than replacing it.

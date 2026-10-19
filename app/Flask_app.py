@@ -1388,14 +1388,16 @@ def order_receipt(ord_id: int):
         row = fetch_one(conn, 'SELECT usr_id FROM "Order" WHERE ord_id = ?', (ord_id,))
         if not row:
             abort(404)
-        if session.get('usr_id') and row[0] != session['usr_id']:
-            abort(403)
-        # If usr_id not in session (older sessions), compare via email
-        if not session.get('usr_id'):
-            # Resolve current user's usr_id by email
-            urow = fetch_one(conn, 'SELECT usr_id FROM "User" WHERE email = ?', (session.get('Email'),))
-            if not urow or urow[0] != row[0]:
+        # Admins can pull any customer's receipt (they already see every order on the dashboard)
+        if not session.get('is_admin'):
+            if session.get('usr_id') and row[0] != session['usr_id']:
                 abort(403)
+            # If usr_id not in session (older sessions), compare via email
+            if not session.get('usr_id'):
+                # Resolve current user's usr_id by email
+                urow = fetch_one(conn, 'SELECT usr_id FROM "User" WHERE email = ?', (session.get('Email'),))
+                if not urow or urow[0] != row[0]:
+                    abort(403)
 
         # Only the generator is wrapped: the abort(404/403) calls above raise HTTPExceptions,
         # which must not be swallowed and turned into a 500
@@ -1693,9 +1695,12 @@ def admin_dashboard():
             'Ordered': [],
             'Preparing': [],
             'Delivering': [],
-            'Delivered': []
+            'Delivered': [],
+            'Other': []  # any status the board has no column for, e.g. 'Cancelled'
         }
-        
+        # Case-insensitive lookup so e.g. 'delivered' lands in 'Delivered'
+        known_statuses = {s.lower(): s for s in orders_by_status if s != 'Other'}
+
         for row in order_rows:
             ord_id, rtr_id, usr_id, details_json, status, first_name, last_name, restaurant_name = row
             
@@ -1729,7 +1734,9 @@ def admin_dashboard():
             # Default status if missing
             if not status:
                 status = 'Ordered'
-            
+            # Normalize casing/whitespace onto a known column; unknown statuses keep their text
+            status = known_statuses.get(str(status).strip().lower(), status)
+
             # Build order object
             order = {
                 'ord_id': ord_id,
@@ -1740,9 +1747,12 @@ def admin_dashboard():
                 'status': status
             }
             
-            # Add to appropriate status group
-            if status in orders_by_status:
+            # Add to appropriate status group; never drop an order the board doesn't recognize
+            if status in known_statuses.values():
                 orders_by_status[status].append(order)
+            else:
+                print(f"Admin dashboard: order {ord_id} has unrecognized status {status!r}; showing under Other")
+                orders_by_status['Other'].append(order)
         
         # Sort orders within each status group by ord_id descending (already sorted from query)
         # But let's ensure it's explicit
@@ -1826,6 +1836,9 @@ def admin_dashboard():
         total_pages=total_pages,
         total_tickets=total_tickets
     )
+
+# Blank line between appended staff replies in Ticket.response
+TICKET_RESPONSE_SEPARATOR = "\n\n"
 
 @app.route('/admin/update_ticket_status', methods=['POST'])
 def admin_update_ticket_status():
@@ -1914,11 +1927,17 @@ def admin_update_ticket_status():
         
         # Update ticket status and response
         if response_text:
-            # Update both status and response
+            # Append the reply as a timestamped entry instead of overwriting earlier replies.
+            # Done in one statement so two staff replying at once can't lose either reply.
+            entry = f"[{datetime.now().strftime('%Y-%m-%d %H:%M')}] {str(response_text).strip()}"
             execute_query(
-                conn, 
-                'UPDATE Ticket SET status = ?, response = ? WHERE ticket_id = ?', 
-                (final_status, response_text, ticket_id)
+                conn,
+                '''UPDATE Ticket
+                   SET status = ?,
+                       response = CASE WHEN response IS NULL OR response = '' THEN ?
+                                       ELSE response || ? END
+                   WHERE ticket_id = ?''',
+                (final_status, entry, TICKET_RESPONSE_SEPARATOR + entry, ticket_id)
             )
         else:
             # Update only status

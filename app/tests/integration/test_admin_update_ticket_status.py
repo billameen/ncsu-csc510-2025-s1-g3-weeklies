@@ -5,8 +5,12 @@ Tests the POST /admin/update_ticket_status route which allows administrators
 to update ticket statuses and add responses through the admin dashboard.
 """
 import json
+import re
 import pytest
 from sqlQueries import create_connection, close_connection, execute_query, fetch_one
+
+# Each staff reply is stored as "[YYYY-MM-DD HH:MM] text"; replies are separated by a blank line.
+ENTRY = re.compile(r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}\] (?P<text>.*)$", re.S)
 
 
 def test_update_ticket_status_success(client, temp_db_path, seed_minimal_data, admin_session):
@@ -98,7 +102,7 @@ def test_update_ticket_status_with_response(client, temp_db_path, seed_minimal_d
     try:
         row = fetch_one(conn, 'SELECT status, response FROM Ticket WHERE ticket_id = ?', (ticket_id,))
         assert row[0] == "Resolved"
-        assert row[1] == response_text
+        assert ENTRY.match(row[1]).group("text") == response_text
     finally:
         close_connection(conn)
 
@@ -148,7 +152,7 @@ def test_update_ticket_auto_status_on_response(client, temp_db_path, seed_minima
     try:
         row = fetch_one(conn, 'SELECT status, response FROM Ticket WHERE ticket_id = ?', (ticket_id,))
         assert row[0] == "In Progress"
-        assert row[1] == response_text
+        assert ENTRY.match(row[1]).group("text") == response_text
     finally:
         close_connection(conn)
 
@@ -333,3 +337,59 @@ def test_update_ticket_timestamp_updated(client, temp_db_path, seed_minimal_data
         assert final_updated >= initial_updated  # updated_at should be updated
     finally:
         close_connection(conn)
+
+
+def test_follow_up_responses_are_appended_not_overwritten(client, temp_db_path, seed_minimal_data, admin_session):
+    """Each staff reply is appended as a timestamped entry, so earlier replies are kept."""
+    conn = create_connection(temp_db_path)
+    try:
+        execute_query(conn, '''
+            INSERT INTO "Order" (rtr_id, usr_id, details, status)
+            VALUES (?, ?, ?, ?)
+        ''', (seed_minimal_data["rtr_id"], seed_minimal_data["usr_id"], '{"test": "data"}', "Ordered"))
+        ord_id = fetch_one(conn, 'SELECT last_insert_rowid()')[0]
+        execute_query(conn, '''
+            INSERT INTO Ticket (usr_id, ord_id, message, status)
+            VALUES (?, ?, ?, ?)
+        ''', (seed_minimal_data["usr_id"], ord_id, "Where is my refund?", "Open"))
+        ticket_id = fetch_one(conn, 'SELECT last_insert_rowid()')[0]
+    finally:
+        close_connection(conn)
+
+    for status, text in [("In Progress", "We're looking into it"), ("Resolved", "Refund issued")]:
+        response = client.post('/admin/update_ticket_status',
+                               data=json.dumps({"ticket_id": ticket_id, "new_status": status, "response": text}),
+                               content_type='application/json')
+        assert response.status_code == 200
+
+    conn = create_connection(temp_db_path)
+    try:
+        status, stored = fetch_one(conn, 'SELECT status, response FROM Ticket WHERE ticket_id = ?', (ticket_id,))
+    finally:
+        close_connection(conn)
+
+    assert status == "Resolved"
+    entries = stored.split("\n\n")
+    assert [ENTRY.match(e).group("text") for e in entries] == ["We're looking into it", "Refund issued"]
+
+
+def test_admin_board_renders_other_column_and_receipt_links(client, temp_db_path, seed_minimal_data, admin_session):
+    """A Cancelled order appears in the rendered Other column, with a link to its receipt."""
+    from datetime import datetime
+    conn = create_connection(temp_db_path)
+    try:
+        execute_query(conn, '''
+            INSERT INTO "Order" (rtr_id, usr_id, details, status)
+            VALUES (?, ?, ?, ?)
+        ''', (seed_minimal_data["rtr_id"], seed_minimal_data["usr_id"],
+              json.dumps({"placed_at": datetime.now().isoformat(), "charges": {"total": 12.5}}), "Cancelled"))
+        ord_id = fetch_one(conn, 'SELECT last_insert_rowid()')[0]
+    finally:
+        close_connection(conn)
+
+    page = client.get('/admin').get_data(as_text=True)
+
+    other = page[page.index('id="cards-other"'):]
+    assert f'data-ord-id="{ord_id}"' in other
+    assert "Status: Cancelled" in other
+    assert f'/orders/{ord_id}/receipt.pdf' in other

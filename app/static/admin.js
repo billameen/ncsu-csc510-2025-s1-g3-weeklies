@@ -289,7 +289,7 @@ function showErrorNotification(message) {
  * Update the count badges for each order status column
  */
 function updateOrderCounts() {
-  const statuses = ['ordered', 'preparing', 'delivering', 'delivered'];
+  const statuses = ['ordered', 'preparing', 'delivering', 'delivered', 'other'];
   
   statuses.forEach(status => {
     const cards = document.querySelectorAll(`#cards-${status} .order-card`);
