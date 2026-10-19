@@ -6,6 +6,7 @@ import math
 import json
 import calendar
 from enum import Enum
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from io import BytesIO
 from flask import jsonify
 from sqlite3 import IntegrityError
@@ -75,24 +76,66 @@ def _dollars_to_cents(dollars) -> int:
         int: The cent value (0 on failure).
     """
     try:
-        # Use _money to ensure 2 decimal places, then multiply by 100
-        return int(_money(dollars) * 100)
+        # Use _money to ensure 2 decimal places, then round (not truncate) to cents:
+        # e.g. 0.29 * 100 == 28.999999999999996
+        return int(round(_money(dollars) * 100))
     except Exception:
         return 0
+
+def _parse_amount_cents(raw) -> int:
+    """
+    Strictly parse a user-entered dollar amount into cents.
+    Args:
+        raw (str | int | float | None): The amount as entered, e.g. "12.50".
+    Returns:
+        int: The amount in cents, rounded half-up to the nearest cent (may be zero or negative).
+    Raises:
+        ValueError: If the input is not a finite number.
+    """
+    try:
+        d = Decimal(str(raw).strip())
+        if not d.is_finite():
+            raise ValueError(f"invalid amount: {raw!r}")
+        # quantize raises InvalidOperation for absurdly large values like 1e999
+        return int((d * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    except InvalidOperation:
+        raise ValueError(f"invalid amount: {raw!r}")
+
+def _refresh_session_wallet(conn, usr_id) -> int:
+    """
+    Reload the user's wallet balance from the database into the session.
+    Args:
+        conn (sqlite3.Connection): Active database connection.
+        usr_id (int): The user whose balance to load.
+    Returns:
+        int: The current wallet balance in cents.
+    """
+    row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
+    wallet = (row[0] if row else 0) or 0
+    session['Wallet'] = wallet
+    return wallet
 
 def _execute_transaction(conn, queries_and_params: list) -> bool:
     """
     Execute multiple queries in a single, atomic transaction.
     Args:
         conn (sqlite3.Connection): Active database connection.
-        queries_and_params (list): List of (query: str, params: tuple) pairs.
+        queries_and_params (list): List of (query: str, params: tuple) pairs, or
+            (query, params, expected_rowcount) triples. If a statement affects a different
+            number of rows than expected (e.g. a guarded debit matched nothing), the whole
+            transaction is rolled back.
     Returns:
         bool: True on success, False on failure (with automatic rollback).
     """
     try:
         cur = conn.cursor()
-        for query, params in queries_and_params:
+        for entry in queries_and_params:
+            query, params = entry[0], entry[1]
             cur.execute(query, params)
+            if len(entry) > 2 and cur.rowcount != entry[2]:
+                print(f"Transaction aborted, expected {entry[2]} row(s), got {cur.rowcount}: {query}")
+                conn.rollback()
+                return False
         conn.commit()
         return True
     except Exception as e:
@@ -773,26 +816,25 @@ def wallet_topup():
         return redirect(url_for('login'))
 
     try:
-        amount_dollars = _money(request.form.get('amount') or 0)
-        amount_cents = _dollars_to_cents(amount_dollars)
-    except Exception:
+        amount_cents = _parse_amount_cents(request.form.get('amount') or '')
+    except ValueError:
         return redirect(url_for('profile', wallet_error='invalid_amount'))
 
     if amount_cents <= 0:
         return redirect(url_for('profile', wallet_error='zero_amount'))
 
     usr_id = session['usr_id']
-    
+
     conn = create_connection(db_file)
     try:
         # Atomically update the user's wallet balance
         success = _execute_transaction(conn, [
-            ('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, usr_id))
+            ('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, usr_id), 1)
         ])
 
         if success:
-            # Refresh session and redirect
-            session['Wallet'] = session['Wallet'] + amount_cents
+            # Refresh session from the DB (not by arithmetic, which carries forward any staleness)
+            _refresh_session_wallet(conn, usr_id)
             return redirect(url_for('profile', wallet_updated='topup'))
         else:
             return redirect(url_for('profile', wallet_error='db_failed'))
@@ -810,9 +852,8 @@ def wallet_gift():
 
     recipient_email = (request.form.get('recipient_email') or '').strip().lower()
     try:
-        amount_dollars = _money(request.form.get('amount') or 0)
-        amount_cents = _dollars_to_cents(amount_dollars)
-    except Exception:
+        amount_cents = _parse_amount_cents(request.form.get('amount') or '')
+    except ValueError:
         return redirect(url_for('profile', wallet_error='invalid_amount'))
 
     sender_id = session['usr_id']
@@ -839,18 +880,21 @@ def wallet_gift():
 
         # 2. Prepare the atomic transaction (two steps: debit and credit)
         queries_and_params = [
-            # Debit sender
-            ('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ?', (amount_cents, sender_id)),
+            # Debit sender, guarded so a concurrent spend can't overdraw (must hit exactly 1 row)
+            ('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (amount_cents, sender_id, amount_cents), 1),
             # Credit recipient
-            ('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, recipient_id))
+            ('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, recipient_id), 1)
         ]
 
         # 3. Execute the atomic transaction
         if _execute_transaction(conn, queries_and_params):
-            # Refresh sender's session wallet value
-            session['Wallet'] = session['Wallet'] - amount_cents
+            # Refresh sender's session wallet value from the DB
+            _refresh_session_wallet(conn, sender_id)
             return redirect(url_for('profile', wallet_updated='gift'))
         else:
+            # Most likely the guarded debit matched nothing because the balance dropped meanwhile
+            if _refresh_session_wallet(conn, sender_id) < amount_cents:
+                return redirect(url_for('profile', wallet_error='insufficient_funds'))
             return redirect(url_for('profile', wallet_error='db_failed'))
     finally:
         close_connection(conn)
@@ -1040,20 +1084,19 @@ def order():
         total_cents = _dollars_to_cents(total)
         if total_cents <= 0:
             return jsonify({"ok": False, "error": "invalid_total"}), 400
-        user_wallet_cents = session.get('Wallet', 0)
-
-        # Quick check based on session to prevent unnecessary transaction attempt
-        if user_wallet_cents < total_cents:
-            return jsonify({"ok": False, "error": "insufficient_funds"}), 402
-
         # Insert the single order row with status "Ordered" AND debit the wallet atomically
         conn = create_connection(db_file)
         new_ord_id = None
         try:
+            # Quick check against the DB balance (the session copy can be stale, e.g. another device)
+            if _refresh_session_wallet(conn, usr_id) < total_cents:
+                return jsonify({"ok": False, "error": "insufficient_funds"}), 402
+
             # 1. Prepare queries for atomic transaction: Debit wallet AND Insert order
             queries_and_params = [
-                # Debit the wallet, using the WHERE clause as an optimistic check against race conditions
-                ('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (total_cents, usr_id, total_cents)),
+                # Debit the wallet; the WHERE clause guards against races, and the expected rowcount
+                # of 1 aborts the whole transaction (including the insert) if the guard matched nothing
+                ('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (total_cents, usr_id, total_cents), 1),
                 # Insert the new order
                 ('INSERT INTO "Order" (rtr_id, usr_id, details, status) VALUES (?, ?, ?, ?)', (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value))
             ]
@@ -1064,16 +1107,13 @@ def order():
                 row = fetch_one(conn, 'SELECT ord_id FROM "Order" WHERE usr_id = ? ORDER BY ord_id DESC LIMIT 1', (usr_id,))
                 new_ord_id = row[0] if row else None
 
-                # Update session wallet to reflect the debit
-                session['Wallet'] = user_wallet_cents - total_cents
-                
+                # Update session wallet from the DB to reflect the debit
+                _refresh_session_wallet(conn, usr_id)
+
             else:
                 # Transaction failed. Most likely due to the `wallet >= ?` check failing (insufficient funds).
                 # Re-fetch wallet balance to confirm the insufficient funds error.
-                updated_wallet_row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
-                updated_wallet = updated_wallet_row[0] if updated_wallet_row else 0
-                
-                if updated_wallet < total_cents:
+                if _refresh_session_wallet(conn, usr_id) < total_cents:
                     return jsonify({"ok": False, "error": "insufficient_funds"}), 402
                 
                 # Fallback for unexpected DB error during atomic transaction.

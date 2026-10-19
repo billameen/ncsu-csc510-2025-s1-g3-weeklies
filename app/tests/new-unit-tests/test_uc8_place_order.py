@@ -232,3 +232,32 @@ def test_an_invalid_item_id_alongside_a_valid_one_is_rejected(client, temp_db_pa
 
 
 # This proves a payload mixing a valid item with a zero, negative, non-numeric or missing id returns invalid_item instead of crashing.
+
+
+def test_a_stale_session_wallet_cannot_buy_an_order_the_database_balance_cannot_cover(client, temp_db_path):
+    """The affordability check used to trust ``session['Wallet']``, and the guarded
+    debit (``WHERE wallet >= ?``) silently matched zero rows while the order insert
+    still committed -- so a stale session (e.g. funds spent on another device) got
+    free food. The check now reads the database, and the debit must hit exactly one
+    row or the whole transaction rolls back.
+    """
+    usr_id = _make_user(temp_db_path, "uc8-stale@example.test", wallet_cents=0)
+    rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, "UC8 Stale Cafe", price_cents=1000)
+    _login(client, "uc8-stale@example.test")
+    with client.session_transaction() as sess:
+        sess["Wallet"] = 100_000
+
+    response = client.post(
+        "/order",
+        json={"restaurant_id": rtr_id, "items": [{"itm_id": itm_id, "qty": 1}]},
+    )
+
+    assert response.status_code == 402
+    assert response.get_json() == {"ok": False, "error": "insufficient_funds"}
+    assert _latest_order(temp_db_path, usr_id) is None
+    assert _wallet_cents(temp_db_path, usr_id) == 0
+    with client.session_transaction() as sess:
+        assert sess["Wallet"] == 0
+
+
+# This proves an order is charged against the database balance, not a stale session copy, and the session is corrected.
