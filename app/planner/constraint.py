@@ -26,6 +26,7 @@ if TYPE_CHECKING:  # imported for type hints only, so loading a rule never loads
     from planner.context import PlanContext
     from planner.menu import MenuItem
     from planner.request import PlanRequest, Slot
+    from planner.scope import MealScope
 
 
 class Kind(StrEnum):
@@ -119,6 +120,30 @@ class ItemFilter(Constraint):
             for item in ctx.candidates(slot):
                 if not self.allows(item, slot, ctx):
                     ctx.forbid(slot, item, self)
+
+
+class ScopedItemFilter(ItemFilter):
+    """
+    An ItemFilter that only applies to some meals, e.g. "vegetarian on Thursday". Plan edits
+    are built from these. ``allows`` is asked only for slots inside ``scope``; every other
+    meal is left alone. Off by default: they exist to be added to a plan, not configured.
+    """
+
+    order: ClassVar[int] = 14
+    enabled_by_default: ClassVar[bool] = False
+
+    def __init__(self, scope: "MealScope | None" = None):
+        from planner.scope import EVERY_MEAL
+
+        self.scope = scope or EVERY_MEAL
+
+    def apply(self, ctx: "PlanContext") -> None:
+        """Forbid what `allows` rejects, in the slots the scope covers."""
+        for slot in ctx.slots:
+            if self.scope.covers(slot):
+                for item in ctx.candidates(slot):
+                    if not self.allows(item, slot, ctx):
+                        ctx.forbid(slot, item, self)
 
 
 class SoftConstraint(Constraint):
