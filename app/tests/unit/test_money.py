@@ -86,7 +86,11 @@ def test_parse_known_values(text, cents):
 @pytest.mark.parametrize("bad", [
     None, "", "   ", "abc", "1.2.3", "12abc", "$", "--5", "+-5", "NaN", "nan",
     "Infinity", "-inf", True, False, float("nan"), float("inf"),
-    "1e5", "1E+2", "1_000", "\u0661\u0662", "9" * 33, "9" * 5_000_000, "0x10", "1 000",
+    "1e5", "1E+2", "1_000", "\u0661\u0662", "0x10", "1 000",
+    # Long inputs get short ids: pytest puts the test id in an environment
+    # variable, and Windows limits those to 32,767 characters.
+    pytest.param("9" * 33, id="33-digits"),
+    pytest.param("9" * 5_000_000, id="5-million-digits"),
 ])
 def test_non_numeric_input_is_rejected(bad):
     with pytest.raises(InvalidAmount):
@@ -168,7 +172,8 @@ def test_a_29_cent_gift_moves_exactly_29_cents(client, temp_db_path):
 
 @pytest.mark.parametrize("amount,error", [
     ("abc", "invalid_amount"), ("", "invalid_amount"), ("1e300", "invalid_amount"),
-    ("9" * 100_000, "invalid_amount"), ("5000000", "invalid_amount"),
+    pytest.param("9" * 100_000, "invalid_amount", id="100k-digits-invalid_amount"),
+    ("5000000", "invalid_amount"),
     ("0", "zero_amount"), ("-5", "zero_amount"),
 ])
 def test_top_up_rejects_bad_amounts_without_touching_the_wallet(client, temp_db_path, amount, error):
