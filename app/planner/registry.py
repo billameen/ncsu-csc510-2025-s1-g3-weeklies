@@ -53,13 +53,20 @@ def register(cls: type[Constraint]) -> type[Constraint]:
     if not isinstance(cls.order, int):
         raise PluginError(f"{label}.order must be an int")
     existing = _rules.get(cls.name)
-    if existing is not None and existing.__qualname__ != cls.__qualname__:
+    # The same class registering again (its module re-imported) is fine. Anything else with
+    # this name, even a class with the same name in another module, would silently replace
+    # a rule, possibly a hard one, so it is refused.
+    if existing is not None and _origin(existing) != _origin(cls):
         raise PluginError(
             f"rule name {cls.name!r} is already taken by {existing.__module__}."
             f"{existing.__qualname__}"
         )
     _rules[cls.name] = cls
     return cls
+
+
+def _origin(cls: type) -> tuple[str, str]:
+    return cls.__module__, cls.__qualname__
 
 
 def unregister(name: str) -> None:

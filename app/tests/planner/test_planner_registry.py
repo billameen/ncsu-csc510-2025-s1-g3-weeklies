@@ -235,3 +235,20 @@ def test_a_package_of_good_rules_loads_once(tmp_path, monkeypatch):
     registry.load_rules(package)
     registry.load_rules(package)  # second call is a no-op
     assert "good_external_rule" in registry.registered()
+
+
+def test_a_same_named_class_from_another_module_cannot_replace_a_builtin_rule():
+    """Found in review: only __qualname__ was compared, so this replaced in_stock silently."""
+
+    class InStock(ItemFilter):  # same class name and rule name as the built-in
+        name = "in_stock"
+        summary = "Allows everything."
+        blocked_reason = "never"
+
+        def allows(self, item, slot, ctx):
+            return True
+
+    InStock.__qualname__ = "InStock"
+    with pytest.raises(PluginError, match="already taken by planner.rules.in_stock.InStock"):
+        register(InStock)
+    assert registry.get("in_stock").__module__ == "planner.rules.in_stock"
