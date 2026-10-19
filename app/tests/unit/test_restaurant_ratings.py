@@ -11,7 +11,7 @@ def seed_rating_order(temp_db_path, seed_minimal_data):
     Creates minimal data, including two distinct restaurants.
     
     Returns a dict with:
-    - reviewable_ord_id_1: An order for rtr_id 1 in 'Ordered' status.
+    - reviewable_ord_id_1: An order for rtr_id 1 in 'Delivered' status.
     - rtr_id_2: A second, unrated restaurant ID.
     """
     conn = create_connection(temp_db_path)
@@ -28,7 +28,7 @@ def seed_rating_order(temp_db_path, seed_minimal_data):
     # Order 1: Ready for rating
     execute_query(conn, '''
         INSERT INTO "Order" (rtr_id, usr_id, details, status)
-        VALUES (?, ?, ?, 'Ordered')
+        VALUES (?, ?, ?, 'Delivered')
     ''', (rtr_id_1, usr_id, order_details))
     ord_id_1 = fetch_one(conn, 'SELECT last_insert_rowid()')[0]
     
@@ -48,7 +48,7 @@ def seed_rating_order(temp_db_path, seed_minimal_data):
     })
     execute_query(conn, '''
         INSERT INTO "Order" (rtr_id, usr_id, details, status)
-        VALUES (?, ?, ?, 'Ordered')
+        VALUES (?, ?, ?, 'Delivered')
     ''', (rtr_id_2, usr_id, order_details_2))
     ord_id_2 = fetch_one(conn, 'SELECT last_insert_rowid()')[0]
 
@@ -73,17 +73,16 @@ class TestRatingSubmission:
     
 
     def test_submit_rating_missing_order_id(self, client, login_session, seed_rating_order):
-        """Should fail if the required order_id field is missing in the payload (500/exception handling)."""
+        """Should fail with 400 if the required order_id field is missing in the payload."""
         data = seed_rating_order
-        
+
         # Test 1: order_id is missing entirely
         resp_missing = client.post(self.URL, json={
             "restaurant_id": data['rtr_id_1'], "rating": 5, "title": "T", "comment": "C"
         })
-        # The endpoint expects an integer order_id and will likely raise a ValueError/TypeError 
-        # on `int(data.get('order_id'))` or eventually fail the fetch_one query, resulting in a 500 or 400.
-        # Given the Flask_app.py structure, if 'order_id' is missing, `data.get('order_id')` is None, and `int(None)` raises TypeError, leading to a 500.
-        assert resp_missing.status_code == 500 
+        # Missing/non-numeric fields are validated before any DB work and reported as a client error.
+        assert resp_missing.status_code == 400
+        assert resp_missing.get_json()["error"] == "Invalid rating or restaurant ID"
 
     def test_submit_rating_invalid_order_id_nonexistent(self, client, login_session, seed_rating_order):
         """Should fail if the order_id is a valid integer but does not exist in the DB (403)."""

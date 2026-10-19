@@ -38,7 +38,27 @@ python migrations/add_admin_column.py
 - Password: `admin123`
 - ⚠️ **Change the password after first login!**
 
-### 3. `add_wallet_ledger.py`
+### 3. `add_plan_targets.py`
+Adds the weekly planner's targets to the User table.
+
+**What it does:**
+- Adds `daily_calorie_target` (INTEGER, calories per day) to `User`
+- Adds `weekly_budget_cents` (INTEGER, most a planned week may cost with tax and fees) to `User`
+- Leaves both NULL for existing users ("not set yet"); users set them on Edit Profile
+
+**Run:**
+```bash
+cd app
+python migrations/add_plan_targets.py
+```
+
+`db/seed.sql` and the test schema in `tests/conftest.py` already include these columns.
+
+**Run `add_admin_column.py` first.** Login reads `User` by column position and expects `is_admin`
+at index 10. This migration refuses to run until `is_admin` exists, because adding its columns
+first would put `daily_calorie_target` at index 10 and make users with a calorie target admins.
+
+### 4. `add_wallet_ledger.py`
 Moves wallet balances from the old `User.wallet` column into the double-entry wallet ledger (M2).
 
 **What it does:**
@@ -64,6 +84,7 @@ Migrations are idempotent - they can be run multiple times safely. If a migratio
 # From the app directory
 python migrations/add_ticket_table.py
 python migrations/add_admin_column.py
+python migrations/add_plan_targets.py
 python migrations/add_wallet_ledger.py
 ```
 
@@ -71,11 +92,9 @@ python migrations/add_wallet_ledger.py
 
 If running all migrations from scratch:
 1. `add_ticket_table.py` - Can run independently
-2. `add_admin_column.py` - Can run independently
-
-3. `add_wallet_ledger.py` - Can run independently (needs only the `User` table)
-
-They can be run in any order as they modify different tables/columns.
+2. `add_admin_column.py` - Must run before `add_plan_targets.py`
+3. `add_plan_targets.py` - Refuses to run until `add_admin_column.py` has
+4. `add_wallet_ledger.py` - Can run independently (needs only the `User` table)
 
 ## Verifying Migrations
 

@@ -20,6 +20,9 @@ markdown>=3.10
 black==24.8.0
 ruff==0.6.9
 
+# --- Meal planner (CP-SAT constraint solver) ---
+ortools==9.15.6755
+
 # --- LLM Modules ---
 pandas==2.3.3
 torch==2.9.0

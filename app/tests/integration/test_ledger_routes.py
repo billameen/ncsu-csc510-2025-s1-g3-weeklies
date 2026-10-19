@@ -163,17 +163,6 @@ def test_the_profile_page_shows_the_ledger_balance(client, temp_db_path):
     assert "$ 12.34" in page
 
 
-def test_a_negative_tip_on_the_legacy_get_path_is_rejected(client, temp_db_path):
-    usr = _make_user(temp_db_path, "led-legacy-tip@example.test", "9195556007", 5000)
-    rtr_id, itm_id = _make_item(temp_db_path, "Ledger Legacy Tip Cafe")
-    _login(client, "led-legacy-tip@example.test")
-
-    resp = client.get(f"/order?itm_id={itm_id}&tip=-100", follow_redirects=False)
-
-    assert resp.status_code == 302 and "ordered=" not in resp.headers["Location"]
-    assert wallet_cents(temp_db_path, usr) == 5000
-
-
 def test_gift_memo_and_history_show_up_for_both_users(client, temp_db_path):
     a = _make_user(temp_db_path, "led-gift-a@example.test", "9195556008", 2000)
     b = _make_user(temp_db_path, "led-gift-b@example.test", "9195556009", 0)

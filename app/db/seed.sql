@@ -15,25 +15,179 @@ CREATE TABLE IF NOT EXISTS "Restaurant" (
 	"status"	TEXT,
 	PRIMARY KEY("rtr_id" AUTOINCREMENT)
 );
-INSERT INTO Restaurant VALUES(1,'Bida Manda','Laotian and Vietnamese cuisine with a lively atmosphere.','(919) 615-0253','rpassie0@paypal.com','scrypt:32768:8:1$x7c3MHE3IuIe3S8y$3eb2804388d265cf6149106f4d57e2b02714d39e411ee035c4cf8615debcd4a7991909331c39114f04efc360bab2bb0b279c58b06e1cc860a7c8a7dc224ca702','222 S Wilmington St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [1700, 2100],\u000d\u000a  "Wed": [1700, 2100],\u000d\u000a  "Thu": [1700, 2100],\u000d\u000a  "Fri": [1700, 2200],\u000d\u000a  "Sat": [1700, 2200],\u000d\u000a  "Sun": [1100, 1400]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(2,'Poole''side Pies','Award-winning wood-fired pizza with a focus on local ingredients.','(919) 271-2221','cfeathersby1@virginia.edu','scrypt:32768:8:1$Q86UGXWmz3rcvPzq$f337b68b5ef85d1803fbf4069074d76ddfadc8de156f18d69b15330363276fa7c6f1a256bf73064fa879b7a6767f636dd8faeb49f781bd7e0f74a24b7ee68672','103 S Wilmington St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [1600, 2200],\u000d\u000a  "Tue": [1600, 2200],\u000d\u000a  "Wed": [1600, 2200],\u000d\u000a  "Thu": [1600, 2200],\u000d\u000a  "Fri": [1600, 2200],\u000d\u000a  "Sat": [1600, 2200],\u000d\u000a  "Sun": [1100, 1500]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(3,'Morgan Street Food Hall','Diverse collection of food vendors under one roof.','(919) 428-5080','mjakubowski2@sciencedirect.com','scrypt:32768:8:1$MA9jyVoTqvicplin$3100cdd91a81163d1adba5b6bb5fa5023798f202f7de151b890fc2864ac36e4b4fe1f1ce35fa7d84ea06c95eed383fb973d0ecd7ce433fd4ec5addf27b6423ff','411 W Morgan St','Raleigh','NC',27603,unistr('{\u000d\u000a  "Mon": [1100, 2200],\u000d\u000a  "Tue": [1100, 2200],\u000d\u000a  "Wed": [1100, 2200],\u000d\u000a  "Thu": [1100, 2200],\u000d\u000a  "Fri": [1100, 2200],\u000d\u000a  "Sat": [1100, 2200],\u000d\u000a  "Sun": [1100, 2200]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(4,'Beasley''s Chicken + Honey','Southern comfort food specializing in fried chicken.','(919) 272-0334','rbentke3@live.com','scrypt:32768:8:1$E4w97Z3kvg2NzKcQ$6f1766040e5f8883e42e1b60ee09ca8cfaf1d90c1fc30689ae376d61af20bbd5221c67b4169d65918193d537c9bbe1537ad515542660c80955082a998bc623bc','237 S Wilmington St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [1700, 2100],\u000d\u000a  "Wed": [1700, 2100],\u000d\u000a  "Thu": [1700, 2100],\u000d\u000a  "Fri": [1700, 2200],\u000d\u000a  "Sat": [1700, 2200],\u000d\u000a  "Sun": [1100, 1400]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(5,'Death & Co','Upscale cocktail bar with a small plates menu.','(919) 272-1304','wmoxom4@booking.com','scrypt:32768:8:1$sHl4q6gmv7PCRQPM$fd0b62904c29a61526cadd6cf12887e86e0475bf715e3f38d0731b875abfb4226a3667a08664c3381fbca8befb535462824fcfd9926b752eb4ab7ec1191ae4c2','658 B Broad St','Raleigh','NC',27603,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [],\u000d\u000a  "Wed": [1800, 2400],\u000d\u000a  "Thu": [1800, 2400],\u000d\u000a  "Fri": [1800, 2400],\u000d\u000a  "Sat": [1800, 2400],\u000d\u000a  "Sun": []\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(7,'The Pit','Authentic North Carolina-style BBQ.','(919) 971-5555','lbassam6@jugem.jp','scrypt:32768:8:1$ri9ThnzE7AclfmMp$d94d0cb6aa182d1dcab991513b65958ddf4242d59970a094977fff18934c34a994411dd64bd015bf85383b0d2382e225b9578e47555d350f8fc5e12cf2caf1bd','328 W Davie St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [1100, 2100],\u000d\u000a  "Wed": [1100, 2100],\u000d\u000a  "Thu": [1100, 2100],\u000d\u000a  "Fri": [1100, 2100],\u000d\u000a  "Sat": [1100, 2100],\u000d\u000a  "Sun": [1100, 1500]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(8,'Sorella''s','Italian cuisine with a focus on pasta and seafood.','(919) 271-0460','gschimek7@webmd.com','scrypt:32768:8:1$R1FmASXzQiiR53EJ$a9ca365f88b7a0cb24de5dd3bbdc7eb740ed23a79dcdc2f01cd0fb53dc6313b9491546b97be978c97ebee08bc7da48d0c7f793b2048c2f735b03e59730f510f0','2900 Garrett Rd Ste 101','Raleigh','NC',27609,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [1700, 2100],\u000d\u000a  "Wed": [1700, 2100],\u000d\u000a  "Thu": [1700, 2100],\u000d\u000a  "Fri": [1700, 2100],\u000d\u000a  "Sat": [1700, 2100],\u000d\u000a  "Sun": [1700, 2100]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(9,'lucettegrace','Contemporary American cuisine with a creative menu.','(919) 881-4686','tphythien8@artisteer.com','scrypt:32768:8:1$iAvp0ddzU4cCn9HV$fe67a9d5228a7be1a1f85cd4ae9d82e0d48dfa07cb60d30caf9ba37d126fc4fd8ca9c514fb2e28cb9513ac318330e32fcdb2fe911b77220e5b81de6bba304546','101 Peace St','Raleigh','NC',27604,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [],\u000d\u000a  "Wed": [1700, 2200],\u000d\u000a  "Thu": [1700, 2200],\u000d\u000a  "Fri": [1700, 2200],\u000d\u000a  "Sat": [1700, 2200],\u000d\u000a  "Sun": [1100, 1500]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(10,'Irregardless Cafe','Eclectic and globally-inspired cuisine in a unique setting.','(919) 977-2020','nsimononsky9@usnews.com','scrypt:32768:8:1$qDJM9EcEqsXOyj8P$cc6ae62eb234695bd2fe8a0cee95d5f2b4c5054010338dcce1ca9357ff75d0c791756307cb7ffcfb65f0377442b85dfc1f99910c028a8f6e00effcce16caed96','402 W Chaves St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [1100, 2100],\u000d\u000a  "Tue": [1100, 2100],\u000d\u000a  "Wed": [1100, 2100],\u000d\u000a  "Thu": [1100, 2100],\u000d\u000a  "Fri": [1100, 2100],\u000d\u000a  "Sat": [1100, 2100],\u000d\u000a  "Sun": [1100, 1500]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(11,'Happy Dappy','Asian Fusion','(919) 231-6144','hcrocka@mozilla.com','scrypt:32768:8:1$h0VGNYZ1n8K0iaWs$6798f70671029159f3e60652f104b76dba849b543cddece48d7e8f101c371baf324d0214e70c711dc934a754cffdca7d3717050ca0109d91221a84da624b3efb','241 S Wilmington St Suite 100','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [1700, 2200],\u000d\u000a  "Tue": [1700, 2200],\u000d\u000a  "Wed": [1700, 2200],\u000d\u000a  "Thu": [1700, 2300],\u000d\u000a  "Fri": [1700, 2300],\u000d\u000a  "Sat": [1700, 2300],\u000d\u000a  "Sun": [1700, 2200]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(12,'A Place at the Table','Pay-what-you-can restaurant focusing on community and accessible dining.','(919) 615-5329','hgallehawkb@youtube.com','scrypt:32768:8:1$tWCYf711zvlepuHr$97130fa1c4ff49db23ae1ce8b260c5bd07453a6fbb73ba4b4efbb04ff9f806b6236a670c800d9f626cf0add000e26b664b70f655ea3949b2b9824b7e06b631c0','420 W Peace St','Raleigh','NC',27603,unistr('{\u000d\u000a  "Mon": [1100, 1400],\u000d\u000a  "Tue": [1100, 1400],\u000d\u000a  "Wed": [1100, 1400],\u000d\u000a  "Thu": [1100, 1400],\u000d\u000a  "Fri": [1100, 1400],\u000d\u000a  "Sat": [1700, 2100],\u000d\u000a  "Sun": []\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(13,'Ruckus Seafood Co.','Seafood restaurant with a focus on fresh local ingredients.','(919) 102-4065','ccomiskeyc@is.gd','scrypt:32768:8:1$VTdXjVbjy9V5mGvf$7afa5b92a92db117448b849e354c141c8124fa634fc55b58545614250f74962cf8f87eb28d141f72f6d11dc1f05c980e3630760b40cb4fdc56017b27fb8e604c','707 Gateway St','Raleigh','NC',27603,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [1700, 2200],\u000d\u000a  "Wed": [1700, 2200],\u000d\u000a  "Thu": [1700, 2200],\u000d\u000a  "Fri": [1700, 2200],\u000d\u000a  "Sat": [1700, 2200],\u000d\u000a  "Sun": [1100, 1400]\u000d\u000a}\u000d\u000a'),'Open');
-INSERT INTO Restaurant VALUES(14,'Caffè D''Roma','Classic Italian restaurant with a large menu.','(919) 615-0518','chuygensd@plala.or.jp','scrypt:32768:8:1$8ReVkGe7TdzAkgFg$f02ac9ce0208ed2dce8bb0e3c9dd707ab7480efa7f6fb2fe6ea91b47182babf07aa5ed712590988df982a5a03cadf8dacd0f1ae6099db3b4445a2bc72225286a','1893 Village Mall Dr','Raleigh','NC',27615,unistr('{\u000d\u000a  "Mon": [1100, 2130],\u000d\u000a  "Tue": [1100, 2130],\u000d\u000a  "Wed": [1100, 2130],\u000d\u000a  "Thu": [1100, 2130],\u000d\u000a  "Fri": [1100, 2130],\u000d\u000a  "Sat": [1100, 2130],\u000d\u000a  "Sun": [1000, 1500]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(15,'Basil''s','Mediterranean and American cuisine.','(919) 615-7779','cfrugiere@a8.net','scrypt:32768:8:1$jFWIociwHMMx6yhM$0cdd3b53f2723e7bf33f2876754a83f495e646636e870f66b09e1798011e85077e5b138083bffd3748cfe8e50dcb889cc81f23fafc341c6a54f199dcca96b06e','4423 Six Forks Rd','Raleigh','NC',27609,unistr('{\u000d\u000a  "Mon": [1100, 2100],\u000d\u000a  "Tue": [1100, 2100],\u000d\u000a  "Wed": [1100, 2100],\u000d\u000a  "Thu": [1100, 2100],\u000d\u000a  "Fri": [1100, 2100],\u000d\u000a  "Sat": [1100, 2100],\u000d\u000a  "Sun": [1100, 1500]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(16,'Taverna Agora','Greek restaurant with a large selection of wines.','(919) 446-9690','mgeevef@blogspot.com','scrypt:32768:8:1$lmSfFasdMIVWklPG$be47977b5486eb9dc9c38abe23478a2ee8fe2edb3ae038d9db2b4bbea28b8491e26d3ddec29b7da151e28dedb3ce831e12aa27bd3bbef0cef4261cacdbf7565f','412 W Chapel Hill St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [],\u000d\u000a  "Tue": [1700, 2200],\u000d\u000a  "Wed": [1700, 2200],\u000d\u000a  "Thu": [1700, 2200],\u000d\u000a  "Fri": [1700, 2200],\u000d\u000a  "Sat": [1700, 2200],\u000d\u000a  "Sun": [1100, 1500]\u000d\u000a}\u000d\u000a'),'Open');
-INSERT INTO Restaurant VALUES(17,'Golden Corral','Buffet style restaurant','(919) 143-4411','ggametg@godaddy.com','scrypt:32768:8:1$B7ZpQnwphxIZ05kx$b4ad5c511731594948a36664d3f7f860f3571f02b47fc8ea51686081da8cbe3e88326d08a40e06782b03c056c0bf60bd4328c0cbc1630aba2a284f825bad9aef','4601 Duraleigh Rd','Raleigh','NC',27612,unistr('{\u000d\u000a  "Mon": [600, 2200],\u000d\u000a  "Tue": [600, 2200],\u000d\u000a  "Wed": [600, 2200],\u000d\u000a  "Thu": [600, 2200],\u000d\u000a  "Fri": [600, 2200],\u000d\u000a  "Sat": [600, 2200],\u000d\u000a  "Sun": [600, 2200]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(18,'Cowpers','American Restaurant','(919) 256-3033','dblincoeh@spotify.com','scrypt:32768:8:1$zQzPrLkDhQ4K7Q1z$c3fa9b4f85b3dac62b5bd884288d98bf8540803660d89706e1a6902723ef2f899ddd32fd87b3c14fcd004960a784c8dded9e3862a5e80da42cd3c8e0190e5bc7','308 S Estes St','Raleigh','NC',27601,unistr('{\u000d\u000a  "Mon": [1100, 2100],\u000d\u000a  "Tue": [1100, 2100],\u000d\u000a  "Wed": [1100, 2100],\u000d\u000a  "Thu": [1100, 2100],\u000d\u000a  "Fri": [1100, 2100],\u000d\u000a  "Sat": [1100, 2100],\u000d\u000a  "Sun": []\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(19,'The Flying Biscuit Cafe','Branch of a laid-back chain known for Southern food & all-day breakfast selections','(919) 833-6924','grapes@cheese.org','scrypt:32768:8:1$B7ZpQnwphxIZ05kx$b4ad5c511731594948a36664d3f7f860f3571f02b47fc8ea51686081da8cbe3e88326d08a40e06782b03c056c0bf60bd4328c0cbc1630aba2a284f825bad9aef','2016 Clark Ave','Raleigh','NC',27605,unistr('{\u000d\u000a  "Mon": [700, 2100],\u000d\u000a  "Tue": [700, 2100],\u000d\u000a  "Wed": [700, 2100],\u000d\u000a  "Thu": [700, 2100],\u000d\u000a  "Fri": [700, 2100],\u000d\u000a  "Sat": [700, 2100],\u000d\u000a  "Sun": [700, 1600]\u000d\u000a}'),'Open');
-INSERT INTO Restaurant VALUES(20,'Brecotea','Chic bakeshop with an airy, garden-style interior and a terrace, plus varied sweet and savory bites','(919) 234-1555','broccoli@wraps.net','scrypt:32768:8:1$B7ZpQnwphxIZ05kx$b4ad5c511731594948a36664d3f7f860f3571f02b47fc8ea51686081da8cbe3e88326d08a40e06782b03c056c0bf60bd4328c0cbc1630aba2a284f825bad9aef','1144 Kildair Farm Rd','Cary','NC',27511,unistr('{\u000d\u000a  "Mon": [1000, 2130],\u000d\u000a  "Tue": [1000, 2130],\u000d\u000a  "Wed": [1000, 2130],\u000d\u000a  "Thu": [1000, 2130],\u000d\u000a  "Fri": [1000, 2130],\u000d\u000a  "Sat": [1000, 2230],\u000d\u000a  "Sun": [1000, 2230]\u000d\u000a}'),'Open');
+INSERT INTO Restaurant VALUES(1,'Bida Manda','Laotian and Vietnamese cuisine with a lively atmosphere.','(919) 615-0253','rpassie0@paypal.com','scrypt:32768:8:1$x7c3MHE3IuIe3S8y$3eb2804388d265cf6149106f4d57e2b02714d39e411ee035c4cf8615debcd4a7991909331c39114f04efc360bab2bb0b279c58b06e1cc860a7c8a7dc224ca702','222 S Wilmington St','Raleigh','NC',27601,'{
+  "Mon": [],
+  "Tue": [1700, 2100],
+  "Wed": [1700, 2100],
+  "Thu": [1700, 2100],
+  "Fri": [1700, 2200],
+  "Sat": [1700, 2200],
+  "Sun": [1100, 1400]
+}','Open');
+INSERT INTO Restaurant VALUES(2,'Poole''side Pies','Award-winning wood-fired pizza with a focus on local ingredients.','(919) 271-2221','cfeathersby1@virginia.edu','scrypt:32768:8:1$Q86UGXWmz3rcvPzq$f337b68b5ef85d1803fbf4069074d76ddfadc8de156f18d69b15330363276fa7c6f1a256bf73064fa879b7a6767f636dd8faeb49f781bd7e0f74a24b7ee68672','103 S Wilmington St','Raleigh','NC',27601,'{
+  "Mon": [1600, 2200],
+  "Tue": [1600, 2200],
+  "Wed": [1600, 2200],
+  "Thu": [1600, 2200],
+  "Fri": [1600, 2200],
+  "Sat": [1600, 2200],
+  "Sun": [1100, 1500]
+}','Open');
+INSERT INTO Restaurant VALUES(3,'Morgan Street Food Hall','Diverse collection of food vendors under one roof.','(919) 428-5080','mjakubowski2@sciencedirect.com','scrypt:32768:8:1$MA9jyVoTqvicplin$3100cdd91a81163d1adba5b6bb5fa5023798f202f7de151b890fc2864ac36e4b4fe1f1ce35fa7d84ea06c95eed383fb973d0ecd7ce433fd4ec5addf27b6423ff','411 W Morgan St','Raleigh','NC',27603,'{
+  "Mon": [1100, 2200],
+  "Tue": [1100, 2200],
+  "Wed": [1100, 2200],
+  "Thu": [1100, 2200],
+  "Fri": [1100, 2200],
+  "Sat": [1100, 2200],
+  "Sun": [1100, 2200]
+}','Open');
+INSERT INTO Restaurant VALUES(4,'Beasley''s Chicken + Honey','Southern comfort food specializing in fried chicken.','(919) 272-0334','rbentke3@live.com','scrypt:32768:8:1$E4w97Z3kvg2NzKcQ$6f1766040e5f8883e42e1b60ee09ca8cfaf1d90c1fc30689ae376d61af20bbd5221c67b4169d65918193d537c9bbe1537ad515542660c80955082a998bc623bc','237 S Wilmington St','Raleigh','NC',27601,'{
+  "Mon": [],
+  "Tue": [1700, 2100],
+  "Wed": [1700, 2100],
+  "Thu": [1700, 2100],
+  "Fri": [1700, 2200],
+  "Sat": [1700, 2200],
+  "Sun": [1100, 1400]
+}','Open');
+INSERT INTO Restaurant VALUES(5,'Death & Co','Upscale cocktail bar with a small plates menu.','(919) 272-1304','wmoxom4@booking.com','scrypt:32768:8:1$sHl4q6gmv7PCRQPM$fd0b62904c29a61526cadd6cf12887e86e0475bf715e3f38d0731b875abfb4226a3667a08664c3381fbca8befb535462824fcfd9926b752eb4ab7ec1191ae4c2','658 B Broad St','Raleigh','NC',27603,'{
+  "Mon": [],
+  "Tue": [],
+  "Wed": [1800, 2400],
+  "Thu": [1800, 2400],
+  "Fri": [1800, 2400],
+  "Sat": [1800, 2400],
+  "Sun": []
+}','Open');
+INSERT INTO Restaurant VALUES(7,'The Pit','Authentic North Carolina-style BBQ.','(919) 971-5555','lbassam6@jugem.jp','scrypt:32768:8:1$ri9ThnzE7AclfmMp$d94d0cb6aa182d1dcab991513b65958ddf4242d59970a094977fff18934c34a994411dd64bd015bf85383b0d2382e225b9578e47555d350f8fc5e12cf2caf1bd','328 W Davie St','Raleigh','NC',27601,'{
+  "Mon": [],
+  "Tue": [1100, 2100],
+  "Wed": [1100, 2100],
+  "Thu": [1100, 2100],
+  "Fri": [1100, 2100],
+  "Sat": [1100, 2100],
+  "Sun": [1100, 1500]
+}','Open');
+INSERT INTO Restaurant VALUES(8,'Sorella''s','Italian cuisine with a focus on pasta and seafood.','(919) 271-0460','gschimek7@webmd.com','scrypt:32768:8:1$R1FmASXzQiiR53EJ$a9ca365f88b7a0cb24de5dd3bbdc7eb740ed23a79dcdc2f01cd0fb53dc6313b9491546b97be978c97ebee08bc7da48d0c7f793b2048c2f735b03e59730f510f0','2900 Garrett Rd Ste 101','Raleigh','NC',27609,'{
+  "Mon": [],
+  "Tue": [1700, 2100],
+  "Wed": [1700, 2100],
+  "Thu": [1700, 2100],
+  "Fri": [1700, 2100],
+  "Sat": [1700, 2100],
+  "Sun": [1700, 2100]
+}','Open');
+INSERT INTO Restaurant VALUES(9,'lucettegrace','Contemporary American cuisine with a creative menu.','(919) 881-4686','tphythien8@artisteer.com','scrypt:32768:8:1$iAvp0ddzU4cCn9HV$fe67a9d5228a7be1a1f85cd4ae9d82e0d48dfa07cb60d30caf9ba37d126fc4fd8ca9c514fb2e28cb9513ac318330e32fcdb2fe911b77220e5b81de6bba304546','101 Peace St','Raleigh','NC',27604,'{
+  "Mon": [],
+  "Tue": [],
+  "Wed": [1700, 2200],
+  "Thu": [1700, 2200],
+  "Fri": [1700, 2200],
+  "Sat": [1700, 2200],
+  "Sun": [1100, 1500]
+}','Open');
+INSERT INTO Restaurant VALUES(10,'Irregardless Cafe','Eclectic and globally-inspired cuisine in a unique setting.','(919) 977-2020','nsimononsky9@usnews.com','scrypt:32768:8:1$qDJM9EcEqsXOyj8P$cc6ae62eb234695bd2fe8a0cee95d5f2b4c5054010338dcce1ca9357ff75d0c791756307cb7ffcfb65f0377442b85dfc1f99910c028a8f6e00effcce16caed96','402 W Chaves St','Raleigh','NC',27601,'{
+  "Mon": [1100, 2100],
+  "Tue": [1100, 2100],
+  "Wed": [1100, 2100],
+  "Thu": [1100, 2100],
+  "Fri": [1100, 2100],
+  "Sat": [1100, 2100],
+  "Sun": [1100, 1500]
+}','Open');
+INSERT INTO Restaurant VALUES(11,'Happy Dappy','Asian Fusion','(919) 231-6144','hcrocka@mozilla.com','scrypt:32768:8:1$h0VGNYZ1n8K0iaWs$6798f70671029159f3e60652f104b76dba849b543cddece48d7e8f101c371baf324d0214e70c711dc934a754cffdca7d3717050ca0109d91221a84da624b3efb','241 S Wilmington St Suite 100','Raleigh','NC',27601,'{
+  "Mon": [1700, 2200],
+  "Tue": [1700, 2200],
+  "Wed": [1700, 2200],
+  "Thu": [1700, 2300],
+  "Fri": [1700, 2300],
+  "Sat": [1700, 2300],
+  "Sun": [1700, 2200]
+}','Open');
+INSERT INTO Restaurant VALUES(12,'A Place at the Table','Pay-what-you-can restaurant focusing on community and accessible dining.','(919) 615-5329','hgallehawkb@youtube.com','scrypt:32768:8:1$tWCYf711zvlepuHr$97130fa1c4ff49db23ae1ce8b260c5bd07453a6fbb73ba4b4efbb04ff9f806b6236a670c800d9f626cf0add000e26b664b70f655ea3949b2b9824b7e06b631c0','420 W Peace St','Raleigh','NC',27603,'{
+  "Mon": [1100, 1400],
+  "Tue": [1100, 1400],
+  "Wed": [1100, 1400],
+  "Thu": [1100, 1400],
+  "Fri": [1100, 1400],
+  "Sat": [1700, 2100],
+  "Sun": []
+}','Open');
+INSERT INTO Restaurant VALUES(13,'Ruckus Seafood Co.','Seafood restaurant with a focus on fresh local ingredients.','(919) 102-4065','ccomiskeyc@is.gd','scrypt:32768:8:1$VTdXjVbjy9V5mGvf$7afa5b92a92db117448b849e354c141c8124fa634fc55b58545614250f74962cf8f87eb28d141f72f6d11dc1f05c980e3630760b40cb4fdc56017b27fb8e604c','707 Gateway St','Raleigh','NC',27603,'{
+  "Mon": [],
+  "Tue": [1700, 2200],
+  "Wed": [1700, 2200],
+  "Thu": [1700, 2200],
+  "Fri": [1700, 2200],
+  "Sat": [1700, 2200],
+  "Sun": [1100, 1400]
+}
+','Open');
+INSERT INTO Restaurant VALUES(14,'Caffè D''Roma','Classic Italian restaurant with a large menu.','(919) 615-0518','chuygensd@plala.or.jp','scrypt:32768:8:1$8ReVkGe7TdzAkgFg$f02ac9ce0208ed2dce8bb0e3c9dd707ab7480efa7f6fb2fe6ea91b47182babf07aa5ed712590988df982a5a03cadf8dacd0f1ae6099db3b4445a2bc72225286a','1893 Village Mall Dr','Raleigh','NC',27615,'{
+  "Mon": [1100, 2130],
+  "Tue": [1100, 2130],
+  "Wed": [1100, 2130],
+  "Thu": [1100, 2130],
+  "Fri": [1100, 2130],
+  "Sat": [1100, 2130],
+  "Sun": [1000, 1500]
+}','Open');
+INSERT INTO Restaurant VALUES(15,'Basil''s','Mediterranean and American cuisine.','(919) 615-7779','cfrugiere@a8.net','scrypt:32768:8:1$jFWIociwHMMx6yhM$0cdd3b53f2723e7bf33f2876754a83f495e646636e870f66b09e1798011e85077e5b138083bffd3748cfe8e50dcb889cc81f23fafc341c6a54f199dcca96b06e','4423 Six Forks Rd','Raleigh','NC',27609,'{
+  "Mon": [1100, 2100],
+  "Tue": [1100, 2100],
+  "Wed": [1100, 2100],
+  "Thu": [1100, 2100],
+  "Fri": [1100, 2100],
+  "Sat": [1100, 2100],
+  "Sun": [1100, 1500]
+}','Open');
+INSERT INTO Restaurant VALUES(16,'Taverna Agora','Greek restaurant with a large selection of wines.','(919) 446-9690','mgeevef@blogspot.com','scrypt:32768:8:1$lmSfFasdMIVWklPG$be47977b5486eb9dc9c38abe23478a2ee8fe2edb3ae038d9db2b4bbea28b8491e26d3ddec29b7da151e28dedb3ce831e12aa27bd3bbef0cef4261cacdbf7565f','412 W Chapel Hill St','Raleigh','NC',27601,'{
+  "Mon": [],
+  "Tue": [1700, 2200],
+  "Wed": [1700, 2200],
+  "Thu": [1700, 2200],
+  "Fri": [1700, 2200],
+  "Sat": [1700, 2200],
+  "Sun": [1100, 1500]
+}
+','Open');
+INSERT INTO Restaurant VALUES(17,'Golden Corral','Buffet style restaurant','(919) 143-4411','ggametg@godaddy.com','scrypt:32768:8:1$B7ZpQnwphxIZ05kx$b4ad5c511731594948a36664d3f7f860f3571f02b47fc8ea51686081da8cbe3e88326d08a40e06782b03c056c0bf60bd4328c0cbc1630aba2a284f825bad9aef','4601 Duraleigh Rd','Raleigh','NC',27612,'{
+  "Mon": [600, 2200],
+  "Tue": [600, 2200],
+  "Wed": [600, 2200],
+  "Thu": [600, 2200],
+  "Fri": [600, 2200],
+  "Sat": [600, 2200],
+  "Sun": [600, 2200]
+}','Open');
+INSERT INTO Restaurant VALUES(18,'Cowpers','American Restaurant','(919) 256-3033','dblincoeh@spotify.com','scrypt:32768:8:1$zQzPrLkDhQ4K7Q1z$c3fa9b4f85b3dac62b5bd884288d98bf8540803660d89706e1a6902723ef2f899ddd32fd87b3c14fcd004960a784c8dded9e3862a5e80da42cd3c8e0190e5bc7','308 S Estes St','Raleigh','NC',27601,'{
+  "Mon": [1100, 2100],
+  "Tue": [1100, 2100],
+  "Wed": [1100, 2100],
+  "Thu": [1100, 2100],
+  "Fri": [1100, 2100],
+  "Sat": [1100, 2100],
+  "Sun": []
+}','Open');
+INSERT INTO Restaurant VALUES(19,'The Flying Biscuit Cafe','Branch of a laid-back chain known for Southern food & all-day breakfast selections','(919) 833-6924','grapes@cheese.org','scrypt:32768:8:1$B7ZpQnwphxIZ05kx$b4ad5c511731594948a36664d3f7f860f3571f02b47fc8ea51686081da8cbe3e88326d08a40e06782b03c056c0bf60bd4328c0cbc1630aba2a284f825bad9aef','2016 Clark Ave','Raleigh','NC',27605,'{
+  "Mon": [700, 2100],
+  "Tue": [700, 2100],
+  "Wed": [700, 2100],
+  "Thu": [700, 2100],
+  "Fri": [700, 2100],
+  "Sat": [700, 2100],
+  "Sun": [700, 1600]
+}','Open');
+INSERT INTO Restaurant VALUES(20,'Brecotea','Chic bakeshop with an airy, garden-style interior and a terrace, plus varied sweet and savory bites','(919) 234-1555','broccoli@wraps.net','scrypt:32768:8:1$B7ZpQnwphxIZ05kx$b4ad5c511731594948a36664d3f7f860f3571f02b47fc8ea51686081da8cbe3e88326d08a40e06782b03c056c0bf60bd4328c0cbc1630aba2a284f825bad9aef','1144 Kildair Farm Rd','Cary','NC',27511,'{
+  "Mon": [1000, 2130],
+  "Tue": [1000, 2130],
+  "Wed": [1000, 2130],
+  "Thu": [1000, 2130],
+  "Fri": [1000, 2130],
+  "Sat": [1000, 2230],
+  "Sun": [1000, 2230]
+}','Open');
 CREATE TABLE IF NOT EXISTS "Order" (
 	"ord_id"	INTEGER NOT NULL UNIQUE,
 	"rtr_id"	INTEGER NOT NULL,
@@ -44,18 +198,236 @@ CREATE TABLE IF NOT EXISTS "Order" (
 	FOREIGN KEY("rtr_id") REFERENCES "Restaurant"("rtr_id"),
 	FOREIGN KEY("usr_id") REFERENCES "User"("usr_id")
 );
-INSERT INTO "Order" VALUES(125,2,101,unistr('{\u000a  "placed_at": "2025-10-18T18:22:00-04:00",\u000a  "restaurant_id": 2,\u000a  "items": [\u000a    {"itm_id":25,"name":"Margherita Pizza","qty":1,"unit_price":16.00,"line_total":16.00},\u000a    {"itm_id":26,"name":"Pepperoni Pizza","qty":1,"unit_price":18.00,"line_total":18.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 34.00,\u000a    "tax": 2.47,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.00,\u000a    "total": 46.95\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 40,\u000a  "notes": "Extra napkins, cut into squares"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(126,1,101,unistr('{\u000a  "placed_at": "2025-10-19T12:05:00-04:00",\u000a  "restaurant_id": 1,\u000a  "items": [\u000a    {"itm_id":22,"name":"Drunken Noodles","qty":1,"unit_price":16.00,"line_total":16.00},\u000a    {"itm_id":23,"name":"Green Papaya Salad","qty":1,"unit_price":14.00,"line_total":14.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 30.00,\u000a    "tax": 2.18,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.29,\u000a    "tip": 4.00,\u000a    "total": 40.46\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 35,\u000a  "notes": "No peanuts on salad"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(127,7,101,unistr('{\u000a  "placed_at": "2025-10-19T18:41:00-04:00",\u000a  "restaurant_id": 7,\u000a  "items": [\u000a    {"itm_id":17,"name":"Pulled Pork Plate","qty":2,"unit_price":16.00,"line_total":32.00},\u000a    {"itm_id":18,"name":"Brisket Plate","qty":1,"unit_price":18.00,"line_total":18.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 50.00,\u000a    "tax": 3.63,\u000a    "delivery_fee": 4.49,\u000a    "service_fee": 1.99,\u000a    "tip": 6.00,\u000a    "total": 66.11\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 50,\u000a  "notes": "Sauce on the side"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(128,10,101,unistr('{\u000a  "placed_at": "2025-10-20T19:12:00-04:00",\u000a  "restaurant_id": 10,\u000a  "items": [\u000a    {"itm_id":8,"name":"Roasted Beet Salad","qty":1,"unit_price":16.00,"line_total":16.00},\u000a    {"itm_id":9,"name":"Pan Seared Duck Breast","qty":1,"unit_price":32.00,"line_total":32.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 48.00,\u000a    "tax": 3.48,\u000a    "delivery_fee": 3.49,\u000a    "service_fee": 1.49,\u000a    "tip": 6.00,\u000a    "total": 62.46\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 45,\u000a  "notes": "Dressing on the side"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(129,4,101,unistr('{\u000a  "placed_at": "2025-10-20T12:37:00-04:00",\u000a  "restaurant_id": 4,\u000a  "items": [\u000a    {"itm_id":12,"name":"Fried Chicken","qty":1,"unit_price":20.00,"line_total":20.00},\u000a    {"itm_id":13,"name":"Mac & Cheese","qty":1,"unit_price":12.00,"line_total":12.00},\u000a    {"itm_id":14,"name":"Collard Greens","qty":1,"unit_price":10.00,"line_total":10.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 42.00,\u000a    "tax": 3.05,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.00,\u000a    "total": 54.53\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 32,\u000a  "notes": "Honey on the side"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(130,5,101,unistr('{\u000a  "placed_at": "2025-10-20T21:05:00-04:00",\u000a  "restaurant_id": 5,\u000a  "items": [\u000a    {"itm_id":15,"name":"Charcuterie Board","qty":1,"unit_price":25.00,"line_total":25.00},\u000a    {"itm_id":16,"name":"Roasted Cauliflower","qty":1,"unit_price":14.00,"line_total":14.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 39.00,\u000a    "tax": 2.83,\u000a    "delivery_fee": 0.00,\u000a    "service_fee": 0.00,\u000a    "tip": 0.00,\u000a    "total": 41.83\u000a  },\u000a  "delivery_type": "pickup",\u000a  "eta_minutes": 20,\u000a  "notes": "Pickup under name Taylor"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(131,11,101,unistr('{\u000a  "placed_at": "2025-10-21T18:01:00-04:00",\u000a  "restaurant_id": 11,\u000a  "items": [\u000a    {"itm_id":10,"name":"Pad Thai","qty":1,"unit_price":18.00,"line_total":18.00},\u000a    {"itm_id":11,"name":"Sushi Roll","qty":2,"unit_price":12.00,"line_total":24.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 42.00,\u000a    "tax": 3.05,\u000a    "delivery_fee": 3.49,\u000a    "service_fee": 1.49,\u000a    "tip": 5.00,\u000a    "total": 55.03\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 38,\u000a  "notes": "No peanut topping on Pad Thai"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(132,9,101,unistr('{\u000a  "placed_at": "2025-10-21T20:14:00-04:00",\u000a  "restaurant_id": 9,\u000a  "items": [\u000a    {"itm_id":33,"name":"Seared Scallops with Cauliflower Puree","qty":1,"unit_price":32.00,"line_total":32.00},\u000a    {"itm_id":37,"name":"Chocolate Lava Cake","qty":1,"unit_price":15.00,"line_total":15.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 47.00,\u000a    "tax": 3.41,\u000a    "delivery_fee": 4.99,\u000a    "service_fee": 2.49,\u000a    "tip": 7.00,\u000a    "total": 64.89\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 52,\u000a  "notes": "Dessert first ;)"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(133,3,101,unistr('{\u000a  "placed_at": "2025-10-22T11:48:00-04:00",\u000a  "restaurant_id": 3,\u000a  "items": [\u000a    {"itm_id":29,"name":"Smokehouse Q BBQ Pulled Pork Sandwich","qty":2,"unit_price":14.00,"line_total":28.00},\u000a    {"itm_id":31,"name":"A&M Dairy Bar Milkshake","qty":1,"unit_price":7.00,"line_total":7.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 35.00,\u000a    "tax": 2.54,\u000a    "delivery_fee": 2.49,\u000a    "service_fee": 1.29,\u000a    "tip": 4.00,\u000a    "total": 45.32\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 28,\u000a  "notes": "Strawberry milkshake"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(134,2,101,unistr('{\u000a  "placed_at": "2025-10-22T13:06:00-04:00",\u000a  "restaurant_id": 2,\u000a  "items": [\u000a    {"itm_id":28,"name":"Veggie Supreme","qty":1,"unit_price":20.00,"line_total":20.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 20.00,\u000a    "tax": 1.45,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.29,\u000a    "tip": 3.00,\u000a    "total": 28.73\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 30,\u000a  "notes": "Light cheese"\u000a}'),'Preparing');
-INSERT INTO "Order" VALUES(135,1,101,unistr('{\u000a  "placed_at": "2025-10-16T19:30:00-04:00",\u000a  "restaurant_id": 1,\u000a  "items": [\u000a    {"itm_id":24,"name":"Coconut Curry Soup","qty":2,"unit_price":15.00,"line_total":30.00},\u000a    {"itm_id":21,"name":"Lemongrass Beef Stir-Fry","qty":1,"unit_price":17.00,"line_total":17.00}\u000a  ],\u000a  "charges_planned": {\u000a    "subtotal": 47.00,\u000a    "tax": 3.41,\u000a    "delivery_fee": 3.49,\u000a    "service_fee": 1.49,\u000a    "tip": 0.00,\u000a    "would_total": 55.39\u000a  },\u000a  "refund": {"refunded": true, "total_refund": 55.39, "reason": "Restaurant outage"},\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": null,\u000a  "notes": "Cancelled before prep"\u000a}'),'Cancelled');
-INSERT INTO "Order" VALUES(136,17,101,unistr('{\u000a  "placed_at": "2025-10-15T18:03:00-04:00",\u000a  "restaurant_id": 17,\u000a  "items": [\u000a    {"itm_id":1,"name":"Fried Chicken","qty":4,"unit_price":7.00,"line_total":28.00},\u000a    {"itm_id":2,"name":"Macaroni and Cheese","qty":2,"unit_price":5.00,"line_total":10.00},\u000a    {"itm_id":3,"name":"Steak","qty":1,"unit_price":10.00,"line_total":10.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 48.00,\u000a    "tax": 3.48,\u000a    "delivery_fee": 5.99,\u000a    "service_fee": 2.49,\u000a    "tip": 6.00,\u000a    "total": 65.96\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 55,\u000a  "notes": "Family share pack"\u000a}'),'Delivered');
+INSERT INTO "Order" VALUES(125,2,101,'{
+  "placed_at": "2025-10-18T18:22:00-04:00",
+  "restaurant_id": 2,
+  "items": [
+    {"itm_id":25,"name":"Margherita Pizza","qty":1,"unit_price":16.00,"line_total":16.00},
+    {"itm_id":26,"name":"Pepperoni Pizza","qty":1,"unit_price":18.00,"line_total":18.00}
+  ],
+  "charges": {
+    "subtotal": 34.00,
+    "tax": 2.47,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 5.00,
+    "total": 46.95
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 40,
+  "notes": "Extra napkins, cut into squares"
+}','Delivered');
+INSERT INTO "Order" VALUES(126,1,101,'{
+  "placed_at": "2025-10-19T12:05:00-04:00",
+  "restaurant_id": 1,
+  "items": [
+    {"itm_id":22,"name":"Drunken Noodles","qty":1,"unit_price":16.00,"line_total":16.00},
+    {"itm_id":23,"name":"Green Papaya Salad","qty":1,"unit_price":14.00,"line_total":14.00}
+  ],
+  "charges": {
+    "subtotal": 30.00,
+    "tax": 2.18,
+    "delivery_fee": 2.99,
+    "service_fee": 1.29,
+    "tip": 4.00,
+    "total": 40.46
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 35,
+  "notes": "No peanuts on salad"
+}','Delivered');
+INSERT INTO "Order" VALUES(127,7,101,'{
+  "placed_at": "2025-10-19T18:41:00-04:00",
+  "restaurant_id": 7,
+  "items": [
+    {"itm_id":17,"name":"Pulled Pork Plate","qty":2,"unit_price":16.00,"line_total":32.00},
+    {"itm_id":18,"name":"Brisket Plate","qty":1,"unit_price":18.00,"line_total":18.00}
+  ],
+  "charges": {
+    "subtotal": 50.00,
+    "tax": 3.63,
+    "delivery_fee": 4.49,
+    "service_fee": 1.99,
+    "tip": 6.00,
+    "total": 66.11
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 50,
+  "notes": "Sauce on the side"
+}','Delivered');
+INSERT INTO "Order" VALUES(128,10,101,'{
+  "placed_at": "2025-10-20T19:12:00-04:00",
+  "restaurant_id": 10,
+  "items": [
+    {"itm_id":8,"name":"Roasted Beet Salad","qty":1,"unit_price":16.00,"line_total":16.00},
+    {"itm_id":9,"name":"Pan Seared Duck Breast","qty":1,"unit_price":32.00,"line_total":32.00}
+  ],
+  "charges": {
+    "subtotal": 48.00,
+    "tax": 3.48,
+    "delivery_fee": 3.49,
+    "service_fee": 1.49,
+    "tip": 6.00,
+    "total": 62.46
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 45,
+  "notes": "Dressing on the side"
+}','Delivered');
+INSERT INTO "Order" VALUES(129,4,101,'{
+  "placed_at": "2025-10-20T12:37:00-04:00",
+  "restaurant_id": 4,
+  "items": [
+    {"itm_id":12,"name":"Fried Chicken","qty":1,"unit_price":20.00,"line_total":20.00},
+    {"itm_id":13,"name":"Mac & Cheese","qty":1,"unit_price":12.00,"line_total":12.00},
+    {"itm_id":14,"name":"Collard Greens","qty":1,"unit_price":10.00,"line_total":10.00}
+  ],
+  "charges": {
+    "subtotal": 42.00,
+    "tax": 3.05,
+    "delivery_fee": 2.99,
+    "service_fee": 1.49,
+    "tip": 5.00,
+    "total": 54.53
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 32,
+  "notes": "Honey on the side"
+}','Delivered');
+INSERT INTO "Order" VALUES(130,5,101,'{
+  "placed_at": "2025-10-20T21:05:00-04:00",
+  "restaurant_id": 5,
+  "items": [
+    {"itm_id":15,"name":"Charcuterie Board","qty":1,"unit_price":25.00,"line_total":25.00},
+    {"itm_id":16,"name":"Roasted Cauliflower","qty":1,"unit_price":14.00,"line_total":14.00}
+  ],
+  "charges": {
+    "subtotal": 39.00,
+    "tax": 2.83,
+    "delivery_fee": 0.00,
+    "service_fee": 0.00,
+    "tip": 0.00,
+    "total": 41.83
+  },
+  "delivery_type": "pickup",
+  "eta_minutes": 20,
+  "notes": "Pickup under name Taylor"
+}','Delivered');
+INSERT INTO "Order" VALUES(131,11,101,'{
+  "placed_at": "2025-10-21T18:01:00-04:00",
+  "restaurant_id": 11,
+  "items": [
+    {"itm_id":10,"name":"Pad Thai","qty":1,"unit_price":18.00,"line_total":18.00},
+    {"itm_id":11,"name":"Sushi Roll","qty":2,"unit_price":12.00,"line_total":24.00}
+  ],
+  "charges": {
+    "subtotal": 42.00,
+    "tax": 3.05,
+    "delivery_fee": 3.49,
+    "service_fee": 1.49,
+    "tip": 5.00,
+    "total": 55.03
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 38,
+  "notes": "No peanut topping on Pad Thai"
+}','Delivered');
+INSERT INTO "Order" VALUES(132,9,101,'{
+  "placed_at": "2025-10-21T20:14:00-04:00",
+  "restaurant_id": 9,
+  "items": [
+    {"itm_id":33,"name":"Seared Scallops with Cauliflower Puree","qty":1,"unit_price":32.00,"line_total":32.00},
+    {"itm_id":37,"name":"Chocolate Lava Cake","qty":1,"unit_price":15.00,"line_total":15.00}
+  ],
+  "charges": {
+    "subtotal": 47.00,
+    "tax": 3.41,
+    "delivery_fee": 4.99,
+    "service_fee": 2.49,
+    "tip": 7.00,
+    "total": 64.89
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 52,
+  "notes": "Dessert first ;)"
+}','Delivered');
+INSERT INTO "Order" VALUES(133,3,101,'{
+  "placed_at": "2025-10-22T11:48:00-04:00",
+  "restaurant_id": 3,
+  "items": [
+    {"itm_id":29,"name":"Smokehouse Q BBQ Pulled Pork Sandwich","qty":2,"unit_price":14.00,"line_total":28.00},
+    {"itm_id":31,"name":"A&M Dairy Bar Milkshake","qty":1,"unit_price":7.00,"line_total":7.00}
+  ],
+  "charges": {
+    "subtotal": 35.00,
+    "tax": 2.54,
+    "delivery_fee": 2.49,
+    "service_fee": 1.29,
+    "tip": 4.00,
+    "total": 45.32
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 28,
+  "notes": "Strawberry milkshake"
+}','Delivered');
+INSERT INTO "Order" VALUES(134,2,101,'{
+  "placed_at": "2025-10-22T13:06:00-04:00",
+  "restaurant_id": 2,
+  "items": [
+    {"itm_id":28,"name":"Veggie Supreme","qty":1,"unit_price":20.00,"line_total":20.00}
+  ],
+  "charges": {
+    "subtotal": 20.00,
+    "tax": 1.45,
+    "delivery_fee": 2.99,
+    "service_fee": 1.29,
+    "tip": 3.00,
+    "total": 28.73
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 30,
+  "notes": "Light cheese"
+}','Preparing');
+INSERT INTO "Order" VALUES(135,1,101,'{
+  "placed_at": "2025-10-16T19:30:00-04:00",
+  "restaurant_id": 1,
+  "items": [
+    {"itm_id":24,"name":"Coconut Curry Soup","qty":2,"unit_price":15.00,"line_total":30.00},
+    {"itm_id":21,"name":"Lemongrass Beef Stir-Fry","qty":1,"unit_price":17.00,"line_total":17.00}
+  ],
+  "charges_planned": {
+    "subtotal": 47.00,
+    "tax": 3.41,
+    "delivery_fee": 3.49,
+    "service_fee": 1.49,
+    "tip": 0.00,
+    "would_total": 55.39
+  },
+  "refund": {"refunded": true, "total_refund": 55.39, "reason": "Restaurant outage"},
+  "delivery_type": "delivery",
+  "eta_minutes": null,
+  "notes": "Cancelled before prep"
+}','Cancelled');
+INSERT INTO "Order" VALUES(136,17,101,'{
+  "placed_at": "2025-10-15T18:03:00-04:00",
+  "restaurant_id": 17,
+  "items": [
+    {"itm_id":1,"name":"Fried Chicken","qty":4,"unit_price":7.00,"line_total":28.00},
+    {"itm_id":2,"name":"Macaroni and Cheese","qty":2,"unit_price":5.00,"line_total":10.00},
+    {"itm_id":3,"name":"Steak","qty":1,"unit_price":10.00,"line_total":10.00}
+  ],
+  "charges": {
+    "subtotal": 48.00,
+    "tax": 3.48,
+    "delivery_fee": 5.99,
+    "service_fee": 2.49,
+    "tip": 6.00,
+    "total": 65.96
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 55,
+  "notes": "Family share pack"
+}','Delivered');
 INSERT INTO "Order" VALUES(143,1,101,'{"placed_at": "2025-10-23T03:03:30.863776-04:00", "restaurant_id": 1, "items": [{"itm_id": 21, "name": "Lemongrass Beef Stir-Fry", "qty": 2, "unit_price": 17.0, "line_total": 34.0}], "charges": {"subtotal": 34.0, "tax": 2.47, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 41.95}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-10-23", "meal": 3}','Ordered');
 INSERT INTO "Order" VALUES(144,3,101,'{"placed_at": "2025-10-23T03:03:55.273639-04:00", "restaurant_id": 3, "items": [{"itm_id": 31, "name": "A&M Dairy Bar Milkshake", "qty": 1, "unit_price": 7.0, "line_total": 7.0}, {"itm_id": 32, "name": "Pierro\u2019s Italian Kitchen Pasta", "qty": 1, "unit_price": 18.0, "line_total": 18.0}], "charges": {"subtotal": 25.0, "tax": 1.81, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 32.29}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-10-23", "meal": 3}','Ordered');
 INSERT INTO "Order" VALUES(145,17,101,'{"placed_at": "2025-10-23T03:04:04.885729-04:00", "restaurant_id": 17, "items": [{"itm_id": 3, "name": "Steak", "qty": 1, "unit_price": 10.0, "line_total": 10.0}], "charges": {"subtotal": 10.0, "tax": 0.73, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 16.21}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-10-23", "meal": 3}','Ordered');
@@ -63,25 +435,402 @@ INSERT INTO "Order" VALUES(146,8,101,'{"placed_at": "2025-10-27T14:14:43.085067-
 INSERT INTO "Order" VALUES(147,2,101,'{"placed_at": "2025-10-27T17:27:11.565075-04:00", "restaurant_id": 2, "items": [{"itm_id": 16, "name": "Margherita Classic", "qty": 1, "unit_price": 13.0, "line_total": 13.0}], "charges": {"subtotal": 13.0, "tax": 0.94, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 19.42}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-10-20", "meal": 2}','Ordered');
 INSERT INTO "Order" VALUES(148,5,103,'{"placed_at": "2025-12-02T10:17:52.542080-05:00", "restaurant_id": 5, "items": [{"itm_id": 57, "name": "Roasted Cauliflower with Harissa", "qty": 1, "unit_price": 16.0, "line_total": 16.0}], "charges": {"subtotal": 16.0, "tax": 1.16, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 22.64}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-12-02", "meal": 3}','Preparing');
 INSERT INTO "Order" VALUES(149,18,103,'{"placed_at": "2025-12-02T10:18:43.308906-05:00", "restaurant_id": 18, "items": [{"itm_id": 233, "name": "Seared Chicken Breast", "qty": 1, "unit_price": 20.0, "line_total": 20.0}], "charges": {"subtotal": 20.0, "tax": 1.45, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 26.93}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-12-02", "meal": 3}','Ordered');
-INSERT INTO "Order" VALUES(150,1,104,unistr('{\u000a  "placed_at": "2025-12-05T13:34:22-05:00",\u000a  "restaurant_id": 1,\u000a  "restaurant_name": "Bida Manda",\u000a  "items": [\u000a    {\u000a      "itm_id": 100,\u000a      "name": "Test Item 1",\u000a      "qty": 1,\u000a      "unit_price": 15.0,\u000a      "line_total": 15.0\u000a    },\u000a    {\u000a      "itm_id": 200,\u000a      "name": "Test Item 2",\u000a      "qty": 2,\u000a      "unit_price": 10.0,\u000a      "line_total": 20.0\u000a    }\u000a  ],\u000a  "charges": {\u000a    "subtotal": 35.0,\u000a    "tax": 2.54,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.0,\u000a    "total": 48.02\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 30,\u000a  "notes": "Test order 1"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(151,2,104,unistr('{\u000a  "placed_at": "2025-12-04T13:34:22-05:00",\u000a  "restaurant_id": 2,\u000a  "restaurant_name": "Poole''side Pies",\u000a  "items": [\u000a    {\u000a      "itm_id": 101,\u000a      "name": "Test Item 2",\u000a      "qty": 1,\u000a      "unit_price": 16.0,\u000a      "line_total": 16.0\u000a    },\u000a    {\u000a      "itm_id": 201,\u000a      "name": "Test Item 3",\u000a      "qty": 2,\u000a      "unit_price": 10.0,\u000a      "line_total": 20.0\u000a    }\u000a  ],\u000a  "charges": {\u000a    "subtotal": 36.0,\u000a    "tax": 2.61,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.0,\u000a    "total": 49.09\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 35,\u000a  "notes": "Test order 2"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(152,3,104,unistr('{\u000a  "placed_at": "2025-12-03T13:34:22-05:00",\u000a  "restaurant_id": 3,\u000a  "restaurant_name": "Morgan Street Food Hall",\u000a  "items": [\u000a    {\u000a      "itm_id": 102,\u000a      "name": "Test Item 3",\u000a      "qty": 1,\u000a      "unit_price": 17.0,\u000a      "line_total": 17.0\u000a    },\u000a    {\u000a      "itm_id": 202,\u000a      "name": "Test Item 4",\u000a      "qty": 2,\u000a      "unit_price": 10.0,\u000a      "line_total": 20.0\u000a    }\u000a  ],\u000a  "charges": {\u000a    "subtotal": 37.0,\u000a    "tax": 2.68,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.0,\u000a    "total": 50.16\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 40,\u000a  "notes": "Test order 3"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(153,4,104,unistr('{\u000a  "placed_at": "2025-12-02T13:34:22-05:00",\u000a  "restaurant_id": 4,\u000a  "restaurant_name": "Beasley''s Chicken + Honey",\u000a  "items": [\u000a    {\u000a      "itm_id": 103,\u000a      "name": "Test Item 4",\u000a      "qty": 1,\u000a      "unit_price": 18.0,\u000a      "line_total": 18.0\u000a    },\u000a    {\u000a      "itm_id": 203,\u000a      "name": "Test Item 5",\u000a      "qty": 2,\u000a      "unit_price": 10.0,\u000a      "line_total": 20.0\u000a    }\u000a  ],\u000a  "charges": {\u000a    "subtotal": 38.0,\u000a    "tax": 2.75,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.0,\u000a    "total": 51.24\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 45,\u000a  "notes": "Test order 4"\u000a}'),'Ordered');
+INSERT INTO "Order" VALUES(150,1,104,'{
+  "placed_at": "2025-12-05T13:34:22-05:00",
+  "restaurant_id": 1,
+  "restaurant_name": "Bida Manda",
+  "items": [
+    {
+      "itm_id": 100,
+      "name": "Test Item 1",
+      "qty": 1,
+      "unit_price": 15.0,
+      "line_total": 15.0
+    },
+    {
+      "itm_id": 200,
+      "name": "Test Item 2",
+      "qty": 2,
+      "unit_price": 10.0,
+      "line_total": 20.0
+    }
+  ],
+  "charges": {
+    "subtotal": 35.0,
+    "tax": 2.54,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 5.0,
+    "total": 48.02
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 30,
+  "notes": "Test order 1"
+}','Delivered');
+INSERT INTO "Order" VALUES(151,2,104,'{
+  "placed_at": "2025-12-04T13:34:22-05:00",
+  "restaurant_id": 2,
+  "restaurant_name": "Poole''side Pies",
+  "items": [
+    {
+      "itm_id": 101,
+      "name": "Test Item 2",
+      "qty": 1,
+      "unit_price": 16.0,
+      "line_total": 16.0
+    },
+    {
+      "itm_id": 201,
+      "name": "Test Item 3",
+      "qty": 2,
+      "unit_price": 10.0,
+      "line_total": 20.0
+    }
+  ],
+  "charges": {
+    "subtotal": 36.0,
+    "tax": 2.61,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 5.0,
+    "total": 49.09
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 35,
+  "notes": "Test order 2"
+}','Delivered');
+INSERT INTO "Order" VALUES(152,3,104,'{
+  "placed_at": "2025-12-03T13:34:22-05:00",
+  "restaurant_id": 3,
+  "restaurant_name": "Morgan Street Food Hall",
+  "items": [
+    {
+      "itm_id": 102,
+      "name": "Test Item 3",
+      "qty": 1,
+      "unit_price": 17.0,
+      "line_total": 17.0
+    },
+    {
+      "itm_id": 202,
+      "name": "Test Item 4",
+      "qty": 2,
+      "unit_price": 10.0,
+      "line_total": 20.0
+    }
+  ],
+  "charges": {
+    "subtotal": 37.0,
+    "tax": 2.68,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 5.0,
+    "total": 50.16
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 40,
+  "notes": "Test order 3"
+}','Delivered');
+INSERT INTO "Order" VALUES(153,4,104,'{
+  "placed_at": "2025-12-02T13:34:22-05:00",
+  "restaurant_id": 4,
+  "restaurant_name": "Beasley''s Chicken + Honey",
+  "items": [
+    {
+      "itm_id": 103,
+      "name": "Test Item 4",
+      "qty": 1,
+      "unit_price": 18.0,
+      "line_total": 18.0
+    },
+    {
+      "itm_id": 203,
+      "name": "Test Item 5",
+      "qty": 2,
+      "unit_price": 10.0,
+      "line_total": 20.0
+    }
+  ],
+  "charges": {
+    "subtotal": 38.0,
+    "tax": 2.75,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 5.0,
+    "total": 51.24
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 45,
+  "notes": "Test order 4"
+}','Ordered');
 INSERT INTO "Order" VALUES(154,17,105,'{"placed_at": "2025-12-07T00:47:24.092329-05:00", "restaurant_id": 17, "items": [{"itm_id": 218, "name": "Pancakes", "qty": 1, "unit_price": 3.0, "line_total": 3.0}], "charges": {"subtotal": 3.0, "tax": 0.22, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 8.7}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-12-08", "meal": 1}','Ordered');
-INSERT INTO "Order" VALUES(155,2,101,unistr('{\u000a  "placed_at": "2025-10-18T18:22:00-04:00",\u000a  "restaurant_id": 2,\u000a  "items": [\u000a    {"itm_id":25,"name":"Margherita Pizza","qty":1,"unit_price":16.00,"line_total":16.00},\u000a    {"itm_id":26,"name":"Pepperoni Pizza","qty":1,"unit_price":18.00,"line_total":18.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 34.00,\u000a    "tax": 2.47,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.00,\u000a    "total": 46.95\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 40,\u000a  "notes": "Extra napkins, cut into squares"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(156,1,101,unistr('{\u000a  "placed_at": "2025-10-19T12:05:00-04:00",\u000a  "restaurant_id": 1,\u000a  "items": [\u000a    {"itm_id":22,"name":"Drunken Noodles","qty":1,"unit_price":16.00,"line_total":16.00},\u000a    {"itm_id":23,"name":"Green Papaya Salad","qty":1,"unit_price":14.00,"line_total":14.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 30.00,\u000a    "tax": 2.18,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.29,\u000a    "tip": 4.00,\u000a    "total": 40.46\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 35,\u000a  "notes": "No peanuts on salad"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(157,7,101,unistr('{\u000a  "placed_at": "2025-10-19T18:41:00-04:00",\u000a  "restaurant_id": 7,\u000a  "items": [\u000a    {"itm_id":17,"name":"Pulled Pork Plate","qty":2,"unit_price":16.00,"line_total":32.00},\u000a    {"itm_id":18,"name":"Brisket Plate","qty":1,"unit_price":18.00,"line_total":18.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 50.00,\u000a    "tax": 3.63,\u000a    "delivery_fee": 4.49,\u000a    "service_fee": 1.99,\u000a    "tip": 6.00,\u000a    "total": 66.11\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 50,\u000a  "notes": "Sauce on the side"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(158,10,101,unistr('{\u000a  "placed_at": "2025-10-20T19:12:00-04:00",\u000a  "restaurant_id": 10,\u000a  "items": [\u000a    {"itm_id":8,"name":"Roasted Beet Salad","qty":1,"unit_price":16.00,"line_total":16.00},\u000a    {"itm_id":9,"name":"Pan Seared Duck Breast","qty":1,"unit_price":32.00,"line_total":32.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 48.00,\u000a    "tax": 3.48,\u000a    "delivery_fee": 3.49,\u000a    "service_fee": 1.49,\u000a    "tip": 6.00,\u000a    "total": 62.46\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 45,\u000a  "notes": "Dressing on the side"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(159,4,101,unistr('{\u000a  "placed_at": "2025-10-20T12:37:00-04:00",\u000a  "restaurant_id": 4,\u000a  "items": [\u000a    {"itm_id":12,"name":"Fried Chicken","qty":1,"unit_price":20.00,"line_total":20.00},\u000a    {"itm_id":13,"name":"Mac & Cheese","qty":1,"unit_price":12.00,"line_total":12.00},\u000a    {"itm_id":14,"name":"Collard Greens","qty":1,"unit_price":10.00,"line_total":10.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 42.00,\u000a    "tax": 3.05,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.49,\u000a    "tip": 5.00,\u000a    "total": 54.53\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 32,\u000a  "notes": "Honey on the side"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(160,5,101,unistr('{\u000a  "placed_at": "2025-10-20T21:05:00-04:00",\u000a  "restaurant_id": 5,\u000a  "items": [\u000a    {"itm_id":15,"name":"Charcuterie Board","qty":1,"unit_price":25.00,"line_total":25.00},\u000a    {"itm_id":16,"name":"Roasted Cauliflower","qty":1,"unit_price":14.00,"line_total":14.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 39.00,\u000a    "tax": 2.83,\u000a    "delivery_fee": 0.00,\u000a    "service_fee": 0.00,\u000a    "tip": 0.00,\u000a    "total": 41.83\u000a  },\u000a  "delivery_type": "pickup",\u000a  "eta_minutes": 20,\u000a  "notes": "Pickup under name Taylor"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(161,11,101,unistr('{\u000a  "placed_at": "2025-10-21T18:01:00-04:00",\u000a  "restaurant_id": 11,\u000a  "items": [\u000a    {"itm_id":10,"name":"Pad Thai","qty":1,"unit_price":18.00,"line_total":18.00},\u000a    {"itm_id":11,"name":"Sushi Roll","qty":2,"unit_price":12.00,"line_total":24.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 42.00,\u000a    "tax": 3.05,\u000a    "delivery_fee": 3.49,\u000a    "service_fee": 1.49,\u000a    "tip": 5.00,\u000a    "total": 55.03\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 38,\u000a  "notes": "No peanut topping on Pad Thai"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(162,9,101,unistr('{\u000a  "placed_at": "2025-10-21T20:14:00-04:00",\u000a  "restaurant_id": 9,\u000a  "items": [\u000a    {"itm_id":33,"name":"Seared Scallops with Cauliflower Puree","qty":1,"unit_price":32.00,"line_total":32.00},\u000a    {"itm_id":37,"name":"Chocolate Lava Cake","qty":1,"unit_price":15.00,"line_total":15.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 47.00,\u000a    "tax": 3.41,\u000a    "delivery_fee": 4.99,\u000a    "service_fee": 2.49,\u000a    "tip": 7.00,\u000a    "total": 64.89\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 52,\u000a  "notes": "Dessert first ;)"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(163,3,101,unistr('{\u000a  "placed_at": "2025-10-22T11:48:00-04:00",\u000a  "restaurant_id": 3,\u000a  "items": [\u000a    {"itm_id":29,"name":"Smokehouse Q BBQ Pulled Pork Sandwich","qty":2,"unit_price":14.00,"line_total":28.00},\u000a    {"itm_id":31,"name":"A&M Dairy Bar Milkshake","qty":1,"unit_price":7.00,"line_total":7.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 35.00,\u000a    "tax": 2.54,\u000a    "delivery_fee": 2.49,\u000a    "service_fee": 1.29,\u000a    "tip": 4.00,\u000a    "total": 45.32\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 28,\u000a  "notes": "Strawberry milkshake"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(164,2,101,unistr('{\u000a  "placed_at": "2025-10-22T13:06:00-04:00",\u000a  "restaurant_id": 2,\u000a  "items": [\u000a    {"itm_id":28,"name":"Veggie Supreme","qty":1,"unit_price":20.00,"line_total":20.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 20.00,\u000a    "tax": 1.45,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.29,\u000a    "tip": 3.00,\u000a    "total": 28.73\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 30,\u000a  "notes": "Light cheese"\u000a}'),'Preparing');
-INSERT INTO "Order" VALUES(165,1,101,unistr('{\u000a  "placed_at": "2025-10-16T19:30:00-04:00",\u000a  "restaurant_id": 1,\u000a  "items": [\u000a    {"itm_id":24,"name":"Coconut Curry Soup","qty":2,"unit_price":15.00,"line_total":30.00},\u000a    {"itm_id":21,"name":"Lemongrass Beef Stir-Fry","qty":1,"unit_price":17.00,"line_total":17.00}\u000a  ],\u000a  "charges_planned": {\u000a    "subtotal": 47.00,\u000a    "tax": 3.41,\u000a    "delivery_fee": 3.49,\u000a    "service_fee": 1.49,\u000a    "tip": 0.00,\u000a    "would_total": 55.39\u000a  },\u000a  "refund": {"refunded": true, "total_refund": 55.39, "reason": "Restaurant outage"},\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": null,\u000a  "notes": "Cancelled before prep"\u000a}'),'Cancelled');
-INSERT INTO "Order" VALUES(166,17,101,unistr('{\u000a  "placed_at": "2025-10-15T18:03:00-04:00",\u000a  "restaurant_id": 17,\u000a  "items": [\u000a    {"itm_id":1,"name":"Fried Chicken","qty":4,"unit_price":7.00,"line_total":28.00},\u000a    {"itm_id":2,"name":"Macaroni and Cheese","qty":2,"unit_price":5.00,"line_total":10.00},\u000a    {"itm_id":3,"name":"Steak","qty":1,"unit_price":10.00,"line_total":10.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 48.00,\u000a    "tax": 3.48,\u000a    "delivery_fee": 5.99,\u000a    "service_fee": 2.49,\u000a    "tip": 6.00,\u000a    "total": 65.96\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 55,\u000a  "notes": "Family share pack"\u000a}'),'Delivered');
-INSERT INTO "Order" VALUES(167,8,101,unistr('{\u000a  "placed_at": "2025-10-22T17:45:00-04:00",\u000a  "restaurant_id": 8,\u000a  "items": [\u000a    {"itm_id":6,"name":"Spaghetti Carbonara","qty":1,"unit_price":22.00,"line_total":22.00},\u000a    {"itm_id":7,"name":"Lobster Ravioli","qty":1,"unit_price":28.00,"line_total":28.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 50.00,\u000a    "tax": 3.63,\u000a    "delivery_fee": 3.99,\u000a    "service_fee": 1.49,\u000a    "tip": 6.00,\u000a    "total": 65.11\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 55,\u000a  "notes": "Fresh pasta, no extra parmesan"\u000a}'),'Ordered');
-INSERT INTO "Order" VALUES(168,16,101,unistr('{\u000a  "placed_at": "2025-10-22T18:10:00-04:00",\u000a  "restaurant_id": 16,\u000a  "items": [\u000a    {"itm_id":0,"name":"Greek Platter Special","qty":1,"unit_price":24.00,"line_total":24.00}\u000a  ],\u000a  "charges": {\u000a    "subtotal": 24.00,\u000a    "tax": 1.74,\u000a    "delivery_fee": 2.99,\u000a    "service_fee": 1.29,\u000a    "tip": 4.00,\u000a    "total": 34.02\u000a  },\u000a  "delivery_type": "delivery",\u000a  "eta_minutes": 45,\u000a  "notes": "Extra pita bread"\u000a}'),'Ordered');
+INSERT INTO "Order" VALUES(155,2,101,'{
+  "placed_at": "2025-10-18T18:22:00-04:00",
+  "restaurant_id": 2,
+  "items": [
+    {"itm_id":25,"name":"Margherita Pizza","qty":1,"unit_price":16.00,"line_total":16.00},
+    {"itm_id":26,"name":"Pepperoni Pizza","qty":1,"unit_price":18.00,"line_total":18.00}
+  ],
+  "charges": {
+    "subtotal": 34.00,
+    "tax": 2.47,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 5.00,
+    "total": 46.95
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 40,
+  "notes": "Extra napkins, cut into squares"
+}','Delivered');
+INSERT INTO "Order" VALUES(156,1,101,'{
+  "placed_at": "2025-10-19T12:05:00-04:00",
+  "restaurant_id": 1,
+  "items": [
+    {"itm_id":22,"name":"Drunken Noodles","qty":1,"unit_price":16.00,"line_total":16.00},
+    {"itm_id":23,"name":"Green Papaya Salad","qty":1,"unit_price":14.00,"line_total":14.00}
+  ],
+  "charges": {
+    "subtotal": 30.00,
+    "tax": 2.18,
+    "delivery_fee": 2.99,
+    "service_fee": 1.29,
+    "tip": 4.00,
+    "total": 40.46
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 35,
+  "notes": "No peanuts on salad"
+}','Delivered');
+INSERT INTO "Order" VALUES(157,7,101,'{
+  "placed_at": "2025-10-19T18:41:00-04:00",
+  "restaurant_id": 7,
+  "items": [
+    {"itm_id":17,"name":"Pulled Pork Plate","qty":2,"unit_price":16.00,"line_total":32.00},
+    {"itm_id":18,"name":"Brisket Plate","qty":1,"unit_price":18.00,"line_total":18.00}
+  ],
+  "charges": {
+    "subtotal": 50.00,
+    "tax": 3.63,
+    "delivery_fee": 4.49,
+    "service_fee": 1.99,
+    "tip": 6.00,
+    "total": 66.11
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 50,
+  "notes": "Sauce on the side"
+}','Delivered');
+INSERT INTO "Order" VALUES(158,10,101,'{
+  "placed_at": "2025-10-20T19:12:00-04:00",
+  "restaurant_id": 10,
+  "items": [
+    {"itm_id":8,"name":"Roasted Beet Salad","qty":1,"unit_price":16.00,"line_total":16.00},
+    {"itm_id":9,"name":"Pan Seared Duck Breast","qty":1,"unit_price":32.00,"line_total":32.00}
+  ],
+  "charges": {
+    "subtotal": 48.00,
+    "tax": 3.48,
+    "delivery_fee": 3.49,
+    "service_fee": 1.49,
+    "tip": 6.00,
+    "total": 62.46
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 45,
+  "notes": "Dressing on the side"
+}','Delivered');
+INSERT INTO "Order" VALUES(159,4,101,'{
+  "placed_at": "2025-10-20T12:37:00-04:00",
+  "restaurant_id": 4,
+  "items": [
+    {"itm_id":12,"name":"Fried Chicken","qty":1,"unit_price":20.00,"line_total":20.00},
+    {"itm_id":13,"name":"Mac & Cheese","qty":1,"unit_price":12.00,"line_total":12.00},
+    {"itm_id":14,"name":"Collard Greens","qty":1,"unit_price":10.00,"line_total":10.00}
+  ],
+  "charges": {
+    "subtotal": 42.00,
+    "tax": 3.05,
+    "delivery_fee": 2.99,
+    "service_fee": 1.49,
+    "tip": 5.00,
+    "total": 54.53
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 32,
+  "notes": "Honey on the side"
+}','Delivered');
+INSERT INTO "Order" VALUES(160,5,101,'{
+  "placed_at": "2025-10-20T21:05:00-04:00",
+  "restaurant_id": 5,
+  "items": [
+    {"itm_id":15,"name":"Charcuterie Board","qty":1,"unit_price":25.00,"line_total":25.00},
+    {"itm_id":16,"name":"Roasted Cauliflower","qty":1,"unit_price":14.00,"line_total":14.00}
+  ],
+  "charges": {
+    "subtotal": 39.00,
+    "tax": 2.83,
+    "delivery_fee": 0.00,
+    "service_fee": 0.00,
+    "tip": 0.00,
+    "total": 41.83
+  },
+  "delivery_type": "pickup",
+  "eta_minutes": 20,
+  "notes": "Pickup under name Taylor"
+}','Delivered');
+INSERT INTO "Order" VALUES(161,11,101,'{
+  "placed_at": "2025-10-21T18:01:00-04:00",
+  "restaurant_id": 11,
+  "items": [
+    {"itm_id":10,"name":"Pad Thai","qty":1,"unit_price":18.00,"line_total":18.00},
+    {"itm_id":11,"name":"Sushi Roll","qty":2,"unit_price":12.00,"line_total":24.00}
+  ],
+  "charges": {
+    "subtotal": 42.00,
+    "tax": 3.05,
+    "delivery_fee": 3.49,
+    "service_fee": 1.49,
+    "tip": 5.00,
+    "total": 55.03
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 38,
+  "notes": "No peanut topping on Pad Thai"
+}','Delivered');
+INSERT INTO "Order" VALUES(162,9,101,'{
+  "placed_at": "2025-10-21T20:14:00-04:00",
+  "restaurant_id": 9,
+  "items": [
+    {"itm_id":33,"name":"Seared Scallops with Cauliflower Puree","qty":1,"unit_price":32.00,"line_total":32.00},
+    {"itm_id":37,"name":"Chocolate Lava Cake","qty":1,"unit_price":15.00,"line_total":15.00}
+  ],
+  "charges": {
+    "subtotal": 47.00,
+    "tax": 3.41,
+    "delivery_fee": 4.99,
+    "service_fee": 2.49,
+    "tip": 7.00,
+    "total": 64.89
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 52,
+  "notes": "Dessert first ;)"
+}','Delivered');
+INSERT INTO "Order" VALUES(163,3,101,'{
+  "placed_at": "2025-10-22T11:48:00-04:00",
+  "restaurant_id": 3,
+  "items": [
+    {"itm_id":29,"name":"Smokehouse Q BBQ Pulled Pork Sandwich","qty":2,"unit_price":14.00,"line_total":28.00},
+    {"itm_id":31,"name":"A&M Dairy Bar Milkshake","qty":1,"unit_price":7.00,"line_total":7.00}
+  ],
+  "charges": {
+    "subtotal": 35.00,
+    "tax": 2.54,
+    "delivery_fee": 2.49,
+    "service_fee": 1.29,
+    "tip": 4.00,
+    "total": 45.32
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 28,
+  "notes": "Strawberry milkshake"
+}','Delivered');
+INSERT INTO "Order" VALUES(164,2,101,'{
+  "placed_at": "2025-10-22T13:06:00-04:00",
+  "restaurant_id": 2,
+  "items": [
+    {"itm_id":28,"name":"Veggie Supreme","qty":1,"unit_price":20.00,"line_total":20.00}
+  ],
+  "charges": {
+    "subtotal": 20.00,
+    "tax": 1.45,
+    "delivery_fee": 2.99,
+    "service_fee": 1.29,
+    "tip": 3.00,
+    "total": 28.73
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 30,
+  "notes": "Light cheese"
+}','Preparing');
+INSERT INTO "Order" VALUES(165,1,101,'{
+  "placed_at": "2025-10-16T19:30:00-04:00",
+  "restaurant_id": 1,
+  "items": [
+    {"itm_id":24,"name":"Coconut Curry Soup","qty":2,"unit_price":15.00,"line_total":30.00},
+    {"itm_id":21,"name":"Lemongrass Beef Stir-Fry","qty":1,"unit_price":17.00,"line_total":17.00}
+  ],
+  "charges_planned": {
+    "subtotal": 47.00,
+    "tax": 3.41,
+    "delivery_fee": 3.49,
+    "service_fee": 1.49,
+    "tip": 0.00,
+    "would_total": 55.39
+  },
+  "refund": {"refunded": true, "total_refund": 55.39, "reason": "Restaurant outage"},
+  "delivery_type": "delivery",
+  "eta_minutes": null,
+  "notes": "Cancelled before prep"
+}','Cancelled');
+INSERT INTO "Order" VALUES(166,17,101,'{
+  "placed_at": "2025-10-15T18:03:00-04:00",
+  "restaurant_id": 17,
+  "items": [
+    {"itm_id":1,"name":"Fried Chicken","qty":4,"unit_price":7.00,"line_total":28.00},
+    {"itm_id":2,"name":"Macaroni and Cheese","qty":2,"unit_price":5.00,"line_total":10.00},
+    {"itm_id":3,"name":"Steak","qty":1,"unit_price":10.00,"line_total":10.00}
+  ],
+  "charges": {
+    "subtotal": 48.00,
+    "tax": 3.48,
+    "delivery_fee": 5.99,
+    "service_fee": 2.49,
+    "tip": 6.00,
+    "total": 65.96
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 55,
+  "notes": "Family share pack"
+}','Delivered');
+INSERT INTO "Order" VALUES(167,8,101,'{
+  "placed_at": "2025-10-22T17:45:00-04:00",
+  "restaurant_id": 8,
+  "items": [
+    {"itm_id":6,"name":"Spaghetti Carbonara","qty":1,"unit_price":22.00,"line_total":22.00},
+    {"itm_id":7,"name":"Lobster Ravioli","qty":1,"unit_price":28.00,"line_total":28.00}
+  ],
+  "charges": {
+    "subtotal": 50.00,
+    "tax": 3.63,
+    "delivery_fee": 3.99,
+    "service_fee": 1.49,
+    "tip": 6.00,
+    "total": 65.11
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 55,
+  "notes": "Fresh pasta, no extra parmesan"
+}','Ordered');
+INSERT INTO "Order" VALUES(168,16,101,'{
+  "placed_at": "2025-10-22T18:10:00-04:00",
+  "restaurant_id": 16,
+  "items": [
+    {"itm_id":0,"name":"Greek Platter Special","qty":1,"unit_price":24.00,"line_total":24.00}
+  ],
+  "charges": {
+    "subtotal": 24.00,
+    "tax": 1.74,
+    "delivery_fee": 2.99,
+    "service_fee": 1.29,
+    "tip": 4.00,
+    "total": 34.02
+  },
+  "delivery_type": "delivery",
+  "eta_minutes": 45,
+  "notes": "Extra pita bread"
+}','Ordered');
 INSERT INTO "Order" VALUES(169,7,108,'{"placed_at": "2025-12-07T19:48:57.071720-05:00", "restaurant_id": 7, "items": [{"itm_id": 68, "name": "Baked Beans", "qty": 1, "unit_price": 6.5, "line_total": 6.5}], "charges": {"subtotal": 6.5, "tax": 0.47, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 12.45}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-12-08", "meal": 3}','Ordered');
 INSERT INTO "Order" VALUES(170,17,108,'{"placed_at": "2025-12-07T19:51:22.806403-05:00", "restaurant_id": 17, "items": [{"itm_id": 215, "name": "Salad Bar (Mixed Greens)", "qty": 1, "unit_price": 4.0, "line_total": 4.0}], "charges": {"subtotal": 4.0, "tax": 0.29, "delivery_fee": 3.99, "service_fee": 1.49, "tip": 0.0, "total": 9.77}, "delivery_type": "delivery", "eta_minutes": 40, "date": "2025-12-09", "meal": 1}','Delivered');
 CREATE TABLE IF NOT EXISTS "Review" (
@@ -157,117 +906,117 @@ CREATE TABLE IF NOT EXISTS "User" (
 	"wallet"	INTEGER NOT NULL,
 	"preferences"	TEXT,
 	"allergies"	TEXT,
-	"generated_menu"	TEXT, is_admin INTEGER DEFAULT 0,
+	"generated_menu"	TEXT, is_admin INTEGER DEFAULT 0, daily_calorie_target INTEGER, weekly_budget_cents INTEGER,
 	PRIMARY KEY("usr_id" AUTOINCREMENT)
 );
-INSERT INTO User VALUES(1,'Loralyn','Kernermann','lkernermann0@rambler.ru','367-980-5515','scrypt:32768:8:1$63Pcv02vKP17RPKz$f83faf20ea0ea030058537d155e8788ce14e73c93f2a4814e2f6fa589363500a89b9d9f285c914c9b8d082a00a0d15b5285f87a9e90b698e17c21c55fa8b1fa5',7816,'adipiscing',NULL,NULL,1);
-INSERT INTO User VALUES(2,'Sybille','Leggett','sleggett1@xing.com','329-412-7253','scrypt:32768:8:1$nJrlcE23zJ4yPfVe$e1df34e3ef7cc16f08a19544b7003f516af6917b88d9a6f5ea69ad0e63f425381da62fa86e84d640e33ec72aa8b2989479457ac5ddae8fc4205953d7e05825d9',8944,'Lorem',NULL,NULL,0);
-INSERT INTO User VALUES(3,'Carlota','Tassaker','ctassaker2@wikispaces.com','513-295-6072','scrypt:32768:8:1$kIpXQhOAWII2bOiG$b25cde17b4a430d374fc72cebc0c7082d2976cd9d2b069af62dc2e6eb0d5561fe22c2b70aa8fe94964ac53d985e5e237405cb82b50266b765dce77fa65164ed0',5707,'incididunt',NULL,NULL,0);
-INSERT INTO User VALUES(4,'Moina','Dupoy','mdupoy3@techcrunch.com','808-557-9233','scrypt:32768:8:1$7DDllahGdJWQaPQy$620a27628efad795554fd76729f998a7b4679b8c670a8852b85dcaa4955db455caf7f57fb0064b2b117065b3c5da351ba085c230aed5964e411283ff21cdd142',6367,'magna',NULL,NULL,0);
-INSERT INTO User VALUES(5,'Meredith','Tavener','mtavener4@businessweek.com','291-684-0249','scrypt:32768:8:1$7rqfrbAqjWizVKSI$0e8147a52b23ce504a82edfd4ebaaee774a5ba8c31c5dc586e77915f92d2c1a5db6e19943afd218aedb8920d8cc14aa0c52f175c9ee22ca9566b7b761d222bc1',5519,'aliqua',NULL,NULL,0);
-INSERT INTO User VALUES(6,'Felix','Daniaud','fdaniaud5@examiner.com','857-772-1924','scrypt:32768:8:1$0XptgrVVnzETRQfO$efefc186489989dd45657a1eaae21d2f3e591d0039262580fc7c0d415a2ec5e64432750eefbaf1a7c3e6e9df5bf9c1a8c92f6311755572381caaaaa583fda98f',5653,'ipsum',NULL,NULL,0);
-INSERT INTO User VALUES(7,'Washington','Tarbett','wtarbett6@cdbaby.com','739-270-9105','scrypt:32768:8:1$L7EnJ7Y9Ac4C2xyY$0a82a38641fccf7e5e8b387bd9d3c4c1adc09642096f9ded06e6857c5d50a8128e27c6bfc247af459002c3b69a13cd6c9db73272cf31cad147d00f4158837d37',4912,'aliqua',NULL,NULL,0);
-INSERT INTO User VALUES(8,'Alvan','Garbar','agarbar7@facebook.com','239-779-2254','scrypt:32768:8:1$IkMXDZr8gR24PHAO$097fc005eb6f59b7d12b61c5e9b73fee47aca9848105dae76faa8b8590c6ed167c8eeb272c91673347033e2dd443dab4ef9fbe9a31d451d9979609d74f439623',8805,'consectetur',NULL,NULL,0);
-INSERT INTO User VALUES(9,'Carce','O''dell','codell8@google.com.br','496-654-1179','scrypt:32768:8:1$mvN0mHlpYGVcREVb$e4ed209bdc90525c849914e7abda6ad4ca8954bbf42e45c02e0578df3d49113c0acfdbbba8ba973f73a1f8f795f45262a30414419cef95baccc5e23abe279f08',712,'do',NULL,NULL,0);
-INSERT INTO User VALUES(10,'Monika','Bellwood','mbellwood9@msn.com','403-753-9115','scrypt:32768:8:1$ebT0H07DCpNmxaL5$8b5f6689c956ecd965518ff85b4477cee29db2547617cd8d31e969249c6b6f7eed67d2ff59ffeaa0007c92f94f75781dd27d4df7b43d952e7d1b278ebcf9efbe',3118,'Lorem',NULL,NULL,0);
-INSERT INTO User VALUES(11,'Rebe','Colebeck','rcolebecka@nih.gov','417-837-8183','scrypt:32768:8:1$32OZLxMW9woApZzx$0aa77e76247fb7caebcbba785bbd34b71620e62b73b512906a9a19af2d239f31a161e219d21db32922759843f519c50867617eceb108497d20e2aa2ead5e7b27',6740,'adipiscing',NULL,NULL,0);
-INSERT INTO User VALUES(12,'Glenn','Smitheram','gsmitheramb@thetimes.co.uk','553-858-4002','scrypt:32768:8:1$1A9sZ0r7FZVp10YK$fc27d3e3163a525840d83f24c415adb2e35215517b6b4c5c2e82e3766d2eca94497a3979c28f5d36f52e6bd5d543e0637750a55588433609b611a10993ac4d47',4865,'adipiscing',NULL,NULL,0);
-INSERT INTO User VALUES(13,'Helaine','Statersfield','hstatersfieldc@deviantart.com','261-760-3442','scrypt:32768:8:1$UvVGj9j3CedxVp7i$ecbab5d6577e2fa1f0509e84550f889a151965a943922fe207f6f8e717da2241cce23e448b7a96222d3c226829f655c30c6813288ea6e491b084da542be9b3ff',7148,'magna',NULL,NULL,0);
-INSERT INTO User VALUES(14,'Lew','De Benedetti','ldebenedettid@google.it','514-995-4156','scrypt:32768:8:1$fiMVedzIybOHX3LY$d1fb1fae6bec49f274996712d0f39efc948e75b88ab0b6d252e4861dda514d82ccf5bd80901ba27e68b9741345eebc3d80d35093aa4d2290b2b23768f00907bd',9744,'dolor',NULL,NULL,0);
-INSERT INTO User VALUES(15,'Lotty','Schuster','lschustere@feedburner.com','217-443-1448','scrypt:32768:8:1$s0avP8F5mE2NY0NX$c0e97bc8f598ff12f716d97c4ef7cbb789f744256ff65812a7d8ac3dc05ee857e6851920b463934f221aaab46e8c34435e7eecf99d6a6f631d39e02dde30e36e',4972,'elit',NULL,NULL,0);
-INSERT INTO User VALUES(16,'Dal','Aronstein','daronsteinf@un.org','703-218-7499','scrypt:32768:8:1$IGNvoOI192sRPCP4$c2f655860bd1db3f8453c2b7ef39a1f2f5944bdff8a973e8a3927f469a0c08759cdd8751cd67a8cf2ad74d2a204ce47ae202991ed08cc216e8be7831c718259a',97,'et',NULL,NULL,0);
-INSERT INTO User VALUES(17,'Harley','Selcraig','hselcraigg@bandcamp.com','715-935-3847','scrypt:32768:8:1$fbCQmxxxDeyCv6Xh$59bdec794a94ac351f50eb6a1713e19025278d96649c3f773eabdd9fc8371a24218fb778b2a797dc15c2fc894ee26d03c36bc516f611d7df249ce9e025863b40',6894,'consectetur',NULL,NULL,0);
-INSERT INTO User VALUES(18,'Felicle','McArt','fmcarth@yahoo.com','572-702-9472','scrypt:32768:8:1$zWCSSFWf6vuwArnE$4061575d95dbed68f467103fc2b0954a2c113da9d1a1dddaa30bccbcd93c0b37e212e82c7ebb9e792df2e64c0ed62e361c2af8ba6a790df0836b99156657417e',6977,'consectetur',NULL,NULL,0);
-INSERT INTO User VALUES(19,'Phaidra','Carbin','pcarbini@diigo.com','924-941-6296','scrypt:32768:8:1$vt2LokFjpmmIWVtv$5d98a5eb60c1855fe0b16a4c7bf834be1410bf627adfbb9583bed0b97cff7fbd675372417a552809895206d5d1a24de28f7df54e3dc72e1d8a307c00725776bc',5994,'elit',NULL,NULL,0);
-INSERT INTO User VALUES(20,'Elbertine','Jarmyn','ejarmynj@prlog.org','624-695-5660','scrypt:32768:8:1$2eefKAWzQisT2saA$d53d1c0dfb6d16a09bb474fd823527672cf69853c9c184a5f2fbfd2cd866120857d63bb84931590b2c2e822976b9fc6d36ad8e09f39db961ad7e765bcf55a2ea',2303,'ut',NULL,NULL,0);
-INSERT INTO User VALUES(21,'Nonah','Arnaudet','narnaudetk@ftc.gov','376-303-1531','scrypt:32768:8:1$ZM5aoZEuWTX1QrC9$1c16a943945411f1f639f632ec5f67647d22d4984f95f49f12f8715852f45cb77c72726d879f16fbc3fb9482b874966995720c362ded01d1406028a5f135fd98',3814,'ut',NULL,NULL,0);
-INSERT INTO User VALUES(22,'Artemus','Zanuciolii','azanucioliil@go.com','941-345-7803','scrypt:32768:8:1$el3VsRmp6HWOgJen$ad0ebe88feccdcf84103389caa71aeaa52e695332aceaa0a65bbc8cf7ed762915396ca3cbb8e10fe6ea42308cd09cd5c72c42b3a0447e7801f8a6c3ae71022a9',5120,'adipiscing',NULL,NULL,0);
-INSERT INTO User VALUES(23,'Winn','Newark','wnewarkm@icq.com','756-732-2099','scrypt:32768:8:1$P7G3JvPBn3ihDU3L$dc54dc320f59cf3aa41a49664e289f57cc245f0aa879c73a748071adc08c362570ecc761302a4e9ffd91893389af1e468f692a44a0c4ba6c336dcea426cf8984',8199,'incididunt',NULL,NULL,0);
-INSERT INTO User VALUES(24,'Rene','Samart','rsamartn@blogger.com','419-562-4323','scrypt:32768:8:1$A4hFI0OA9VdKJI4Y$31ad8b5d4e2dc5ce96ef5ceb775841d3ef9c15b60a187b73d5c895deb4a686116e3f13f84e029394195b920afaca56b8a89dba12349158d6bbf0acf622a6fb18',8907,'sed',NULL,NULL,0);
-INSERT INTO User VALUES(25,'Fairfax','Lingfoot','flingfooto@cnn.com','644-633-0837','scrypt:32768:8:1$r3MdPiNhty5E9rGW$0bdde95932bd562d312c22b1b09da6eefe7099bd92679c83b55222937eea2ad1458ba5f9a766020ea32a2203f93085dc40620457c3e77bb0879efd9b310f7fc5',2148,'elit',NULL,NULL,0);
-INSERT INTO User VALUES(26,'Aharon','Aldrin','aaldrinp@flickr.com','166-294-0179','scrypt:32768:8:1$VrIlEea4q9FhePNG$8f81afd3d64e25994030e9843049a59fab45730bc902ed3e98b21e35df849b38d0348dd8fa354044594b0d56c5aece520099b624c0a25bcf283614ddc4727601',4326,'elit',NULL,NULL,0);
-INSERT INTO User VALUES(27,'Adolphus','Pavelka','apavelkaq@youtu.be','517-976-6944','scrypt:32768:8:1$8UpytzgFVrDKFhvW$cb4bd3e27632efecd7a8f0aaf76f7d8d7084de84da66fd4735920b04d49f4e9680f95d00fdea64df6393afbb07bed2b0b740f57cfa5f991064965df0c39ac39e',5575,'ipsum',NULL,NULL,0);
-INSERT INTO User VALUES(28,'Glenda','Butten','gbuttenr@tamu.edu','654-787-8172','scrypt:32768:8:1$lFCn5tV2mDWmOOLa$aadd7e595212a2f41946971d0ba5b90d37ae71915e2b0f89a0720714f8b85f679c5462cebca1df52bdeed175271797be6fb04cefb8f6ba4ddf39ebe4b91e5720',9344,'labore',NULL,NULL,0);
-INSERT INTO User VALUES(29,'Barbara-anne','Fatharly','bfatharlys@latimes.com','516-235-4204','scrypt:32768:8:1$hnrb7yGHe9QJnlbh$b5b128504e5a2cfd6ddec2ce3447ac3566297c2e0c26ab922f5fff0853458ea09cfe8a8af0fd29e04775d6544612e9e29e3b192c7276d52eafcba17b695af2de',4175,'dolor',NULL,NULL,0);
-INSERT INTO User VALUES(30,'Isacco','Stealey','istealeyt@umn.edu','887-843-4493','scrypt:32768:8:1$R8h01Aab7m55yJ7W$4742eb425063afcf4d08da31a7924374b5840057c5ec2eec8a3d65fcc8e7d777c1cc52b9782a3de9df59d73f1cecca888adde698785eb9ef30c6e6c67edb6334',2705,'consectetur',NULL,NULL,0);
-INSERT INTO User VALUES(31,'Eli','Cornfoot','ecornfootu@jugem.jp','222-899-2186','scrypt:32768:8:1$AMBLu9Arg3sZMfLc$2690a682765e2ff8b667c5e049513054b8219f1911fafa0c9fea6805b17a83a8f4657164f2e7be70f016717dfcc7738a33197bf769d5a93a74f62595f80c2deb',3253,'sit',NULL,NULL,0);
-INSERT INTO User VALUES(32,'Noelani','Whittlesea','nwhittleseav@aboutads.info','786-106-1916','scrypt:32768:8:1$swxenBvKGiS6KADz$b0775906cf5a9be9e970bc44295540b887c1d1e807f604188a4ebef0e65614946c37d18570128b57a7e94fcabca4ba4a27d4298cc785ad403f46a0e09f46cece',8951,'sed',NULL,NULL,0);
-INSERT INTO User VALUES(33,'Amye','Crosi','acrosiw@canalblog.com','482-499-5206','scrypt:32768:8:1$K8dkdIdjn3bUZzxX$bc9cae072b8d7c19411ab317b7410d53c3d2e01963c6de70b2483b91232e0707cb6879d6716bd21339d8b229c539177709da1989aa966c97cacd8e0b7d4797b8',9181,'incididunt',NULL,NULL,0);
-INSERT INTO User VALUES(34,'Shana','Wedlake','swedlakex@pagesperso-orange.fr','900-100-0784','scrypt:32768:8:1$RCSUjlHKFm3c8P52$bbee4138a25183bdde93ee03be99179aedf785f8f97dd6eae3d7f878e4f6f75b7c73770e2f1800747a62038e4ddee00049b8d05394934d5d290ce31c0109d9bc',1347,'elit',NULL,NULL,0);
-INSERT INTO User VALUES(35,'Charmaine','Siggers','csiggersy@mayoclinic.com','273-619-4827','scrypt:32768:8:1$U2W8Ks6jlF8sCdoW$064aab7fe91ca53f46515b444e29008ac5309179eac25f719d524d48f7ea0f924c175acd3a4a5d4bfed8bd480d119832f231075ba64af0cbd37f8aaffda72d76',7434,'Lorem',NULL,NULL,0);
-INSERT INTO User VALUES(36,'Peter','Shoemark','pshoemarkz@answers.com','567-655-6511','scrypt:32768:8:1$OpD8gAr5CyM9vDqR$5c10279cff10c404ca75d145ff36d33badf72d1913e0995a06ca27367f58583a6399b568df6afdb31647a1dc82a1f17ca384c63a851b5d32659989ccb89242b4',3216,'adipiscing',NULL,NULL,0);
-INSERT INTO User VALUES(37,'Darnell','Stitson','dstitson10@digg.com','415-270-3358','scrypt:32768:8:1$czMkSoS6bj5FK9iD$ef56195f613f8c970b6c6babe529b2cc3d4bafda075c750c63d8cfa0898cdf9fe93d0f8ff4db1cf8709dcb0099429c6f1c966893ea0b687b9f2bb3aa5e71d11c',232,'sit',NULL,NULL,0);
-INSERT INTO User VALUES(38,'Jasmine','Phillimore','jphillimore11@boston.com','800-539-1446','scrypt:32768:8:1$9GyQCMo6X0mFobhU$31e1f521c0ad1b5f05a8b7d9c3f9556fbdc802bc7f32bba0b70be500b477a015e76ea4f27f2030f5f1ec9eb51dc527b4d62064e615a58514582fd3b5afcac42a',7612,'sed',NULL,NULL,0);
-INSERT INTO User VALUES(39,'Arty','Tookey','atookey12@a8.net','366-331-2513','scrypt:32768:8:1$iEoz2owLk5nIJ7ul$933f05a74e6898a603da1d8b6a571ff7246e22d4f53b07200b517ab719f76f7356bbcf3aa8d26476380c2f00df3389cea75c774bef25f3e5bbf7b23a0c7d359b',3634,'et',NULL,NULL,0);
-INSERT INTO User VALUES(40,'Orbadiah','Luckings','oluckings13@surveymonkey.com','787-402-1900','scrypt:32768:8:1$PWIxyWTfZGFTzd2y$707c48ea15eafc860d299434ab6152e4f369e97f4c9646a99ff1d3be1971b23e48dce110ddc402381865b0ac4a6c3d9c70db5f3bb9d53cf1c5690659deba37bb',4110,'adipiscing',NULL,NULL,0);
-INSERT INTO User VALUES(41,'Karita','Meldrum','kmeldrum14@homestead.com','753-440-6504','scrypt:32768:8:1$eehOn4f9FLwfZVPV$5caa58e74a35d49121be99fc1027ce25898603746f8e7df025683cd2e7272acff7e3f8f01485793fb7c6ca6c8a9ec3ad08ca85364f5f931106c37be432bfebeb',6070,'magna',NULL,NULL,0);
-INSERT INTO User VALUES(42,'Sherm','MacKeague','smackeague15@vkontakte.ru','311-449-9262','scrypt:32768:8:1$3qR4Di4aJZSvui0L$3e120951acf22ac01eb8064695e66f088412fde4b558224c0738994ee9735be26101dae0e8f528cb85a3afbe1bee890136fa64bec4deeb7b6e49fa32653090e8',7402,'sit',NULL,NULL,0);
-INSERT INTO User VALUES(43,'Sibley','Dohms','sdohms16@theglobeandmail.com','205-527-3770','scrypt:32768:8:1$jwh0DzUaHwUah46g$bcd80d4e54636383ad5afdab2b06ced1468dd95443422248cbb13536a0f63797d3a437ff010acac521201c68d72acfc10bdebcbd86297b353e798d14ea3f5c0c',3033,'tempor',NULL,NULL,0);
-INSERT INTO User VALUES(44,'Tammie','Loyns','tloyns17@aol.com','704-801-8743','scrypt:32768:8:1$E0IB57EIM7m8ZgNE$b5538eb870cbd8343ea099f4d1f540f4382fcf645b208bf57aa10fbac309ce980e563a9777e8135ad3fdf88c9acf906d036e43e4672e18a522a968be13cc8eb9',7526,'dolore',NULL,NULL,0);
-INSERT INTO User VALUES(45,'Kimmi','Brimacombe','kbrimacombe18@devhub.com','355-772-4599','scrypt:32768:8:1$TOQ6xJLcygIBWNGo$e00ccc00ba4de6b67c50cb526fc5aed2bdbf73e74b8c356ce12c92f6b50c3f9af60ca7594f62b5b8b383af8e10b9220ba6f5d91b2701734f983b04e7325f8024',211,'amet',NULL,NULL,0);
-INSERT INTO User VALUES(46,'Daven','Abramow','dabramow19@forbes.com','869-341-9459','scrypt:32768:8:1$DjZXMaMLVoHE7QCU$ec4e2589f919b7d55b69add9f38df55c309e94bda84a902dbb01da16fccba2c29e26899dca95eeb147b5b25ada81d273cde1f577e7f1b9a761122abc5ec72e11',8746,'sit',NULL,NULL,0);
-INSERT INTO User VALUES(47,'Jsandye','Flaherty','jflaherty1a@princeton.edu','536-236-9126','scrypt:32768:8:1$UlMAiI4sqVm0Ke1I$45b5a52a4592e904405881401dd4a387b5fc60e5bec7afca34303567a7bc379562e54336ee885ec1e9f7eb3804293e8b7f8ce44e17492db23a0ff1e57cc3b38e',6659,'Lorem',NULL,NULL,0);
-INSERT INTO User VALUES(48,'Harmonia','Burril','hburril1b@yelp.com','805-540-1687','scrypt:32768:8:1$nzeFIIJbbmmLwBDz$a4b962154665ebec6d54cf5f1d90d6dc8414229cf77ea58c6e8089880f2b705c7283bc27a7ef899849406ff6563a6c473aa350583ed386b118ab6340be8a615e',2988,'tempor',NULL,NULL,0);
-INSERT INTO User VALUES(49,'Linnell','Capewell','lcapewell1c@stanford.edu','674-856-8912','scrypt:32768:8:1$h6z2YGxaXJiphg8Z$dfb24aa4ee498b965e41800c46de0a2da0efd7394f5b1e9e15aae07c9604acccebd3cee7f651af21e9f00e91e2b2a99ebbc2972df92ccc17d0450d44fff8ce64',1814,'consectetur',NULL,NULL,0);
-INSERT INTO User VALUES(50,'Gayle','Pickrill','gpickrill1d@toplist.cz','664-595-4065','scrypt:32768:8:1$EaGILuQfxpIwSc7K$d6a3f850fc4623b7c47f75b1cf61c07eba5c0e92faafdcbe02c539c3882d90d2c182360943dd6591715537c52e6ee8579238d7e67067284f61c79072fa71ed84',6310,'do',NULL,NULL,0);
-INSERT INTO User VALUES(51,'Patsy','Jenton','pjenton1e@craigslist.org','788-487-8507','scrypt:32768:8:1$F5AX3uEPplAceOxo$583e1deb616d037e64e41e640958e8e05060fcf413bf529e75bd47fa4b4a885db915f07b13099e2f87c95107e4b55c032c3adbb0bd239cac527d4806c6f2ec55',2114,'Lorem',NULL,NULL,0);
-INSERT INTO User VALUES(52,'Ryann','Windous','rwindous1f@cmu.edu','695-938-4962','scrypt:32768:8:1$F7yQVETuao8jGBYA$9e7c2032ccc0f36fe486648fcca6e3e5e0f90f5e2e342325548a31db240578a8e1748cc3d24eb9de4c94f346e3d338643b5b85c94b662ce83c333c73b713cf6d',2949,'et',NULL,NULL,0);
-INSERT INTO User VALUES(53,'Audrye','Arangy','aarangy1g@google.co.jp','297-339-2463','scrypt:32768:8:1$Jrc6DRsBl24SfgR2$cfef7f67d2628d222db8ee4daa020151e3a7493aa4701a2845e8b3989a9e8657154e638c1a8772abd1f49e0202e77270ce1aaca9a2928262d2834840be7248cb',9064,'amet',NULL,NULL,0);
-INSERT INTO User VALUES(54,'Paulo','Bony','pbony1h@google.de','768-939-5062','scrypt:32768:8:1$kMfQtm77mHCSuB6P$0cf9c5f85c2271cee51a3cd3d55120312a36a75823385271705a0fdb1b9ee3f7feb6be327907a9307f4bab0acc3595241b858b0af2a9c244b3aac128b944b935',6723,'magna',NULL,NULL,0);
-INSERT INTO User VALUES(55,'Brook','Runacres','brunacres1i@cyberchimps.com','557-234-3799','scrypt:32768:8:1$sVY3kbfqynbyW1kr$34fca6d1d4e56fe49ce5b01b4560b96bfc92d5068d561e23355d7737be700a2f4df8d7a9ff575a10319d075095dbcc9aad6d6b53ab000fb01be04705dff0df8c',982,'dolore',NULL,NULL,0);
-INSERT INTO User VALUES(56,'Minna','Oliveto','moliveto1j@cornell.edu','814-396-9006','scrypt:32768:8:1$KyMRj3Vbp01lLUka$1f3f4e8759578a77027d37eb2e336aa6a0c594c3b54d463591a4ee1165c902bac3ac772ef287d8f14889e52858dfb21d7ce78d60530bf786f062296392d5349b',8883,'elit',NULL,NULL,0);
-INSERT INTO User VALUES(57,'Pamella','Klimkowski','pklimkowski1k@sbwire.com','656-251-2048','scrypt:32768:8:1$aEC8Oym6UN6CSXtX$5dfbf521653f123a12f79933491e09adc554fe7bdecde4a472f0d9b959bb31fb58c39fc0dd7c4276086d0a81383235d15fb112b180d9526f94fd6710e919f41a',7256,'labore',NULL,NULL,0);
-INSERT INTO User VALUES(58,'Luther','Braime','lbraime1l@netscape.com','483-586-9898','scrypt:32768:8:1$jYrV7b9TrGLPkERe$66d1b8314f780fdf6d0b338e4c21f5f63e9b01a2a0c2d1178fdb4a9b68744e30c6aa8740fca3e6e1c9bd194637cff31810763bc916c193449bac311c9b2bbbdf',9432,'ut',NULL,NULL,0);
-INSERT INTO User VALUES(59,'Alic','Greenhalgh','agreenhalgh1m@dyndns.org','536-147-0384','scrypt:32768:8:1$4iWLNyyb4850kA5S$3d82112c23b90549ece9364ccb35165dc9da5ac9274298f5091ec3fb58ace86578f5752c4611c9c7790ca6462b172051653c80bdda3fc1dcddf1210a5e178eb6',9103,'ipsum',NULL,NULL,0);
-INSERT INTO User VALUES(60,'Erika','Lipp','elipp1n@bizjournals.com','684-874-1084','scrypt:32768:8:1$49BRt1n1BssPBbtb$faa34dd1e5ffdd23ad74be58557c6e08a900334920e6a5a7848a8dfcbd52455240a1acc2db4adf28d945e8fab327b56434d8b917bcda818503a969ffc96169ea',5084,'amet',NULL,NULL,0);
-INSERT INTO User VALUES(61,'Torey','Stratiff','tstratiff1o@smugmug.com','615-589-3969','scrypt:32768:8:1$726ZTQxP6Mltr98b$9aeeeedf709677fa71004e4e52ee2c905f3804683c9ce16de304e49d6a97ba735bd28afce5e1740fc1d0bbb25c8cbeddca6bd1b35ddfca73b30e350339d9ec64',9110,'elit',NULL,NULL,0);
-INSERT INTO User VALUES(62,'Jasun','Marcussen','jmarcussen1p@imdb.com','713-877-0434','scrypt:32768:8:1$ej6bnyoDQvGNPOAJ$776ed2589643c8a6855ab40b43b44b68b77592825658ad9cdd80a080528c455a3d399687ffaffbafb806e3925aa2ad52af2386d7548b6e1f3496d8453d1495dd',9391,'consectetur',NULL,NULL,0);
-INSERT INTO User VALUES(63,'Brinna','Sacher','bsacher1q@ameblo.jp','513-435-6893','scrypt:32768:8:1$aSEKxXa3GgNyxvFf$6f362f38fec5558c89ac99725ae8c96056b4e2b5f381a5c14c19f1bb614a36e0ea5c4f1ca3dc0fa53b489cc3d9ef4a344ea816d65ac19352eadd6460d796bca3',3612,'adipiscing',NULL,NULL,0);
-INSERT INTO User VALUES(64,'Lorne','Bagnall','lbagnall1r@wordpress.com','970-521-6477','scrypt:32768:8:1$lxOwxHbs6C3ZP1mf$788e628dc897a96136b900f769d03c3996e769711f256ac7fe727e01d5219aa023bb988045908417206251cee8b06429b20cf429e03fe591a2faf9e374f358f2',4591,'et',NULL,NULL,0);
-INSERT INTO User VALUES(65,'Heindrick','Posthill','hposthill1s@moonfruit.com','274-574-8236','scrypt:32768:8:1$jAcZxkWNT66q5I5Q$bb57c145011150b97ed65f95a0ef5933c32910d7ea31f519a1aa70c54c5764eb56f5764c9256f8ee8044a4daecd01deb28a8cc3a6bc167e2e6ceb1c00173771c',3493,'Lorem',NULL,NULL,0);
-INSERT INTO User VALUES(66,'Ingrid','Ellwell','iellwell1t@a8.net','744-698-6611','scrypt:32768:8:1$c6Kt4OTysfb9NAFb$d71182cb56c815fa885eb647d45946e9ce856dda75d3b44e6b98ae30767e97b5604117560b5cd9075fa6cd11eecbff58b4fe2014d51f9247d723caca300f8855',6164,'et',NULL,NULL,0);
-INSERT INTO User VALUES(67,'Eddie','Maha','emaha1u@g.co','173-698-6081','scrypt:32768:8:1$t7FihH3LadyWfuao$bc3d61b232dd6d19f465982397e34d07b56ae4e77c8d66692b6d3dd35d60547fc8753ea786531730f4817dc228a7a16e74fbe65442bbfd29c02cfff8d06c3950',7646,'sit',NULL,NULL,0);
-INSERT INTO User VALUES(68,'Darill','De Zamudio','ddezamudio1v@google.cn','895-870-7030','scrypt:32768:8:1$BSrpnRuNPBRFlOAe$9514da51198fba014e08179931c247a3258787d7769fc86c683a84495fa7367d1e4ef18b05465d667c2638341b16b1fe3b2ba11a7fe0acdb6c41eb4cbe9876c2',822,'do',NULL,NULL,0);
-INSERT INTO User VALUES(69,'Julio','Scroggins','jscroggins1w@guardian.co.uk','240-339-7660','scrypt:32768:8:1$ks3P4ywfy3uP4B0a$3c0ae0d52d16b360d269b00b580d9c861af2c1fa8980226cdd78a7533d95e25ace32d14166bd7b223895dff25a78f8e16dabcc35a020d513746674f671776d32',4519,'labore',NULL,NULL,0);
-INSERT INTO User VALUES(70,'Lesley','Kaman','lkaman1x@ucoz.ru','106-930-5900','scrypt:32768:8:1$zytlYQaZZoiLQwgo$d8ee0c0d05eafdd2f7284b2cc2b05441161892344242dee0a51883ff66ad8e32867fef916ab7ab2ccb2555e6fee62983878892e311dc51165d6ecedc0de070e1',145,'adipiscing',NULL,NULL,0);
-INSERT INTO User VALUES(71,'Gabbie','Dolan','gdolan1y@economist.com','340-221-2466','scrypt:32768:8:1$J7ALoaHuF1zZDeiI$3337a40a3719acf217fb2663b2dc91ae05b8b3eddee6e85ad609442ae1bc8d4b43c3f4cb33be5e3d8be98452e6a54008a70bf8b920c36405c088bf6505d0de41',1512,'tempor',NULL,NULL,0);
-INSERT INTO User VALUES(72,'Nolan','Keppie','nkeppie1z@uiuc.edu','946-304-9326','scrypt:32768:8:1$P51yVhdrQwAQxeJV$fc7845c106f4bfb839d7f32930c90fe7c84cd147c195d233bc60944cfb923f6fc41529a136a5d43006c803dad3d22b4c62db1453c5cf531b00bf41815daca798',6992,'ut',NULL,NULL,0);
-INSERT INTO User VALUES(73,'Zaccaria','Gauler','zgauler20@nyu.edu','337-224-6295','scrypt:32768:8:1$LP35jEFT5TbmZgYs$5a7aa9cc4c59fd98741d3d8aeea68b62b5be4350537fa6b3b32b3b6fa4d391df05e8e7de6c09e71a5252e9c505dae148bbec9f7ec69210e4e1393d45498b08d5',8317,'consectetur',NULL,NULL,0);
-INSERT INTO User VALUES(74,'Calhoun','Vaulkhard','cvaulkhard21@biblegateway.com','120-471-1142','scrypt:32768:8:1$ZooBLcsJIGa7ooVJ$d84c3b0e64ac710eed68ff307f0764ce9bc699920b8cba98489ae00fb65025e5fcb149d9a55b4605eaab2a7de026cf3176fed2f58128399303f6f84e24c721fc',497,'dolore',NULL,NULL,0);
-INSERT INTO User VALUES(75,'Marnia','Murra','mmurra22@usda.gov','588-533-9906','scrypt:32768:8:1$airY4VtJxVOwuCZZ$ed8f411c72753319776e83dcd8c22b4764f6e057618559fb69cce078594f2f79f75be25eb4c750e774fe54166300c32a2ef51f36e14d07852aa3a0c3e4a02d45',3843,'elit',NULL,NULL,0);
-INSERT INTO User VALUES(76,'Kathye','Jaegar','kjaegar23@cbc.ca','297-804-9322','scrypt:32768:8:1$Xqe5gDlQT60yQSEn$d17d8e328388e27885832425e6de7a1499346d075b5bc250845705145fe7c2662749e2a7c151a26709682a0b2ee2442316ee48101101638c810217683452639b',8867,'magna',NULL,NULL,0);
-INSERT INTO User VALUES(77,'Coreen','Welling','cwelling24@theguardian.com','434-382-9617','scrypt:32768:8:1$vi9jcaNbcHJo2CUy$04f77aa667d9ae5204720aa64e3dd92a42adc193017265f5f591b27c1ec7d4ef76b76327438194523b42e4cff9af8179dd262131add346edcf3d54be3b3fdf26',3663,'et',NULL,NULL,0);
-INSERT INTO User VALUES(78,'Arvy','Bearward','abearward25@umn.edu','810-825-5360','scrypt:32768:8:1$XDgZxWJJtfhuRLS8$69c7f108efffda9989ab7dd1d9c4b7bcbac7b6ea18adbd0ed5e9b2c794ee1529b68e32f9c277212ccdb2ab1890f0282b89cd77b869aeb8bfff17a4879cfad77a',4496,'amet',NULL,NULL,0);
-INSERT INTO User VALUES(79,'Urbain','Shattock','ushattock26@usatoday.com','917-873-9169','scrypt:32768:8:1$iRItHHg8n4nIzuul$3f692db17c0cac299ad852d4494f24d51a4486fa37814b8551b647fd988fd4b8e5ff455b582f9d7c46c4fafb25b0ef4b1399b15d755a6972651a45e48fdafacd',3567,'adipiscing',NULL,NULL,0);
-INSERT INTO User VALUES(80,'Anthony','Hynson','ahynson27@ucoz.com','246-814-9823','scrypt:32768:8:1$inVtbDgzOQ4MjIpN$c3488a80289b3247c51dae9b59765a37d12a7255c1fd1f7b98d6d45020ed9dbd62f288a0aae438fd9c2144a8664f3bf69013d1f3a2fbf77e641aae89e471deb0',3740,'dolor',NULL,NULL,0);
-INSERT INTO User VALUES(81,'Christel','Randlesome','crandlesome28@google.pl','977-139-4188','scrypt:32768:8:1$iL1PkOdqZ2Z7itE3$7c16f7681215f1e7bef4b79e1b44518cd0b7d693e684c99c80fe9fb475d89ef092ca676863bc4654647464b72cc5235ce60039d87dd622576c917261946952a7',4950,'amet',NULL,NULL,0);
-INSERT INTO User VALUES(82,'Camila','Else','celse29@state.tx.us','706-255-7409','scrypt:32768:8:1$Va8JQroEqe6cyLMt$19fcdaab9b8ac11b49bfe89e5b2dbd8b74628e7dde8bd04f15174df8a0988685ad452e6e16f9260db1f0c9fb84687f584e5444a4b52299899a66a74d347f403d',3051,'et',NULL,NULL,0);
-INSERT INTO User VALUES(83,'Etti','Duester','eduester2a@g.co','871-478-8264','scrypt:32768:8:1$U1Ri7mJ3LwkiIcQf$aa2183f3209989b558b6d7f8421a3275c3223a9eb3bad3db6ce81d88f40ac8d30babbb5bc806b9f2a10104d3cbe9e71b958b364e1bb9d0e042cf2f9d8c39fccb',4789,'sit',NULL,NULL,0);
-INSERT INTO User VALUES(84,'Duke','Theml','dtheml2b@hc360.com','503-120-9099','scrypt:32768:8:1$CIwdVy6ZI30BuVMg$9336a25cc088dd0222464a287961b400413ed02f13b54ab2190d8a13bfd919692de20902adb29c62f827819e3f3dd62a4c61bdd397d9c15bcddfa8a5f0b1a69e',7977,'consectetur',NULL,NULL,0);
-INSERT INTO User VALUES(85,'Dasie','Aphale','daphale2c@cnn.com','860-159-6381','scrypt:32768:8:1$kAqoAT9mMVVutwu6$aeb7bba5e65b653af81a58ad674cbf260f9b2508a7f283489d03e064eec17077e173cf0eb22eab7c101c115c72c7ddf853e519ebc04672fd6189995d9fa2c731',526,'elit',NULL,NULL,0);
-INSERT INTO User VALUES(86,'Larisa','Lowdiane','llowdiane2d@symantec.com','476-695-9429','scrypt:32768:8:1$76yz0wKJGNcGxZWP$624cb2aae918521b7a9ca577f4b65c4377943026cd98f7e3f57c3f6649a145d7063168c90a435121b41c563b4398eb30d6c1a0d9344405a761f5cbfc2cf4042e',6980,'ipsum',NULL,NULL,0);
-INSERT INTO User VALUES(87,'Guenevere','Shrimpling','gshrimpling2e@canalblog.com','356-661-9449','scrypt:32768:8:1$MA0XQvHs9u7vsFaY$e53706efbc8a9dc7180e8de5f10aaea58016f6c6e9154a29b24d69e28cee7642e03608a9c406cc9f1332dc89b8f2d436da4a12b44256420e046be06c10d2ad7e',5732,'tempor',NULL,NULL,0);
-INSERT INTO User VALUES(88,'Amie','Balassi','abalassi2f@desdev.cn','789-129-3548','scrypt:32768:8:1$LDiNt0llhfO2ARIQ$7a3836d42c57fa319d2ddb951d5addbe1d5aabfa5ee27e67af60e96674521439049247146f688d6ccebd1bef460960a54d9e4b4f3f8f443ddfd4d13548d1d57d',5395,'consectetur',NULL,NULL,0);
-INSERT INTO User VALUES(89,'Phil','Pochon','ppochon2g@aboutads.info','526-192-3849','scrypt:32768:8:1$cFSGYDMUERD7Cymb$2367040d3a0cfc754aacdefd52674d8610c704b06cf5927fbf63d4ba29a6f3ab5b90ee21bf30a827a1149ea40963f588470abd5f403a2b3e0b64e69b8abbf354',4097,'tempor',NULL,NULL,0);
-INSERT INTO User VALUES(90,'Amabelle','St. Louis','astlouis2h@lulu.com','790-527-9904','scrypt:32768:8:1$CKGBPNUFTMrXWE69$4232a24343621c0adabf785abf967f5f53b3cf3b88627f9554a8654ee7811ad1ec403cafa7ca3a43b3c5aa7d6473d98421c2b03e21827b13748ad5124dc5f09b',5016,'sit',NULL,NULL,0);
-INSERT INTO User VALUES(91,'Theresita','Kelmere','tkelmere2i@canalblog.com','379-150-1682','scrypt:32768:8:1$ADsaRZtAudbzqLse$818a5896840865ea28d548ce0fa166f3820b9ff7cb3052b18df2b01b6414e4b2b288618e6b6df1fd60b92df566a60f9e646afc05059468cbdf94fe6bef18f412',5204,'ipsum',NULL,NULL,0);
-INSERT INTO User VALUES(92,'Trstram','Tolley','ttolley2j@vkontakte.ru','343-117-0807','scrypt:32768:8:1$lSRWU5v5jAfJAikD$d82147e72cd5c75ef0baec3544af899a0c1def821fbfb26dbaf73543ef5a33ade367b9cc80eb042f90329ae104b8e68d05bcebce61ac2db5a3a709221d870b00',3864,'ipsum',NULL,NULL,0);
-INSERT INTO User VALUES(93,'Brigid','Carbonell','bcarbonell2k@flickr.com','505-828-3703','scrypt:32768:8:1$NMDQRASA8wjXFzXw$3def1c85d72abf7bbc769394627088ad85d7cf8f611139383c0222dfbe95734c56c2ed5c46eeb01ac0d550c81b40245f767e46031956e28dae107fc508567368',6687,'tempor',NULL,NULL,0);
-INSERT INTO User VALUES(94,'Carrissa','Lukins','clukins2l@bizjournals.com','275-171-7447','scrypt:32768:8:1$xCJKssuoHohONcu6$2a0edd01aa9d48098350879751ebb6b0a4af5e42b0748f2ec1c7e083e42dd766c320dca1f43499bce729fec149c6da426ad64cabbb61565d40d02df28fe618f9',309,'labore',NULL,NULL,0);
-INSERT INTO User VALUES(95,'Amara','Bogie','abogie2m@nbcnews.com','578-612-7111','scrypt:32768:8:1$wji4cJgciUqLTowa$a4c54dbcabeaca2cc0473bf010cfa91f587d170f4028786d387f4cf5b0a3d4a5b82b860e60134f8db358c1a961fc248ab6d6a1c96c7ada9a2bd0d484adacffde',4099,'consectetur',NULL,NULL,0);
-INSERT INTO User VALUES(96,'Neville','Luty','nluty2n@php.net','587-641-7608','scrypt:32768:8:1$UfBcfZcbeR79PUAq$1d702ce362aaf3f13331b8bb9396ab9a6077858d7f671e47efd2df6ba833ce8e9b794ccc8b8c4b481ed5d5405dbee002bcb091354e9a40a31d080ecb80733413',546,'elit',NULL,NULL,0);
-INSERT INTO User VALUES(97,'Daniel','Whitters','dwhitters2o@soundcloud.com','528-453-8340','scrypt:32768:8:1$PrwzMuzleGbLtk8H$6ab99aec5c5aa32b28122d736b4a84eefabe698e5ceff4cda20cda66f0df369c95095b85813b790d4b54b181637f6c44f9fcad73d90e148458d45dcb8a317058',6419,'adipiscing',NULL,NULL,0);
-INSERT INTO User VALUES(98,'Josey','Barnewille','jbarnewille2p@mashable.com','385-976-9691','scrypt:32768:8:1$KBNZ60cp0lRlt2y7$4c2882b3f35da4bec18d73c0996fbaafbc773fc6c987f0d114fdfd23bb318e14a099be2ab67e289d31061e368ebe8f2c8cbad2b19f8f048780c2c22bdb14eb3b',7187,'ut',NULL,NULL,0);
-INSERT INTO User VALUES(99,'Crystal','Brattan','cbrattan2q@apache.org','458-405-9427','scrypt:32768:8:1$DHcwObbMe2mD3nsy$e177e0b30a6b2610021eea59a0ad50a67c220cad50e1c29189356477e2ef8dd4ff6f06311bb875d36359c65a92101a6be43273dcd45d43b32dd1ad558962d6bc',1419,'ut',NULL,NULL,0);
-INSERT INTO User VALUES(100,'Mariquilla','Schimpke','mschimpke2r@de.vu','541-838-9159','scrypt:32768:8:1$pvhLwefa7MBV3KcU$c08b38da45cfaf6b922d3795763bca9565c946a6fd5dc9b9fd1d357670d8aa38234adfad74a4e6f5a0643e4346b0990188419844e750012545b778fbfafe7bb4',1296,'elit',NULL,NULL,0);
-INSERT INTO User VALUES(101,'Taylor','Brown','taylor.j.brown1996@gmail.com','9168737714','scrypt:32768:8:1$OWjaUS09mUfBcXOG$1e387c8a53d9442bca3090076d8d2f713abb4784c5bb4ee38e73f70f9668359d4cddfd47f2374d00f362af6b4725b1e6d2bd48e6e69b16d06a1bc569b64c3a87',12568,'Spicy,Vegan,Sweet','Peanuts,Fish','[2025-11-03,14,1],[2025-11-03,16,2],[2025-11-03,35,3],[2025-11-04,8,1],[2025-11-04,36,2],[2025-11-04,5,3],[2025-11-05,21,1],[2025-11-05,16,2],[2025-11-05,35,3],[2025-11-06,14,1],[2025-11-06,28,2],[2025-11-06,3,3],[2025-11-07,8,1],[2025-11-07,36,2],[2025-11-07,18,3],[2025-11-08,16,1],[2025-11-08,2,2],[2025-11-08,35,3],[2025-11-09,14,1],[2025-11-09,5,2],[2025-11-09,35,3],[2025-11-10,1,1],[2025-11-10,17,2],[2025-11-10,31,3],[2025-11-11,4,1],[2025-11-11,20,2],[2025-11-11,32,3],[2025-11-12,6,1],[2025-11-12,21,2],[2025-11-12,34,3],[2025-11-13,7,1],[2025-11-13,23,2],[2025-11-13,41,3],[2025-11-14,9,1],[2025-11-14,24,2],[2025-11-14,42,3],[2025-11-15,10,1],[2025-11-15,25,2],[2025-11-15,43,3],[2025-11-16,11,1],[2025-11-16,27,2],[2025-11-16,44,3]',0);
-INSERT INTO User VALUES(102,'test','test','test@test.com','9999999999','scrypt:32768:8:1$BYrRDegRr80zwTFK$917cf918666ea86f4bf97f3586df4053a497725b3041c11d504535346559281547bfeb2bf6aeaec7eed97ff7cb6e901ccbc807660e2ae8a93d3f54499afe9de8',0,'Local,Savory,Spicy','Wheat,Sesame',NULL,0);
-INSERT INTO User VALUES(103,'Aum Yagneshkumar','Pandya','test1@test.com','8849006954','pbkdf2:sha256:600000$TFT7Of6tkUtKS1oM$9af84cbfca1e96ed7204278c29eed6b9eb350304e63efec0b6cc75603b2b4742',5000,'Vegetarian,Vegan,Dairy-Free,Savory,Sweet,Organic,Meal Prep,Gluten-Free,Paleo','Peanuts,Tree Nuts,Eggs,Fish,Gluten','[2025-12-03,222,1],[2025-12-03,145,2],[2025-12-03,101,3],[2025-12-04,222,1],[2025-12-04,215,2],[2025-12-04,92,3],[2025-12-05,249,1],[2025-12-05,142,2],[2025-12-05,57,3],[2025-12-06,222,1],[2025-12-06,222,2],[2025-12-06,101,3],[2025-12-07,249,1],[2025-12-07,215,2],[2025-12-07,215,3],[2025-12-08,249,1],[2025-12-08,142,2],[2025-12-08,221,3],[2025-12-09,222,1],[2025-12-09,142,2],[2025-12-09,221,3]',1);
-INSERT INTO User VALUES(104,'Test','User','testuser@weeklies.com','555-1234','pbkdf2:sha256:600000$x4PAdJnhEtLQ5qxI$e4184e769fe814bb3ec2a6a170c0d7d72880a317eaecf44c2b97f1c36d2d60ec',5000,NULL,NULL,NULL,0);
-INSERT INTO User VALUES(105,'Admin','User','admin@weeklies.com','555-ADMIN','pbkdf2:sha256:600000$TKNib742f94co4TD$3f403a91168795d6c7f11f892fb832b8b2c12f38ec3adeffa8a4b7ee8545c3e2',8631,NULL,NULL,'[2025-12-08,218,1],[2025-12-08,142,2],[2025-12-08,184,3],[2025-12-09,248,1],[2025-12-09,170,2],[2025-12-09,10,3],[2025-12-10,218,1],[2025-12-10,170,2],[2025-12-10,226,3],[2025-12-11,251,1],[2025-12-11,246,2],[2025-12-11,157,3],[2025-12-12,220,1],[2025-12-12,170,2],[2025-12-12,199,3],[2025-12-13,248,1],[2025-12-13,266,2],[2025-12-13,79,3],[2025-12-14,262,1],[2025-12-14,6,2],[2025-12-14,261,3]',1);
-INSERT INTO User VALUES(106,'Aum','Pandya','test2@test.com','1234567890','pbkdf2:sha256:600000$JfvVes1MJN8FgYzm$d25c627e839c439e6e8ccb1af2ea45c95a713013de57d4c2001d717340d55c7b',0,'Vegan,Vegetarian,Budget','Peanuts,Eggs,Wheat,Fish,Shellfish,Gluten','[2025-12-08,249,1],[2025-12-08,249,2],[2025-12-08,221,3],[2025-12-09,222,1],[2025-12-09,215,2],[2025-12-09,215,3],[2025-12-10,222,1],[2025-12-10,145,2],[2025-12-10,221,3],[2025-12-11,215,1],[2025-12-11,215,2],[2025-12-11,57,3],[2025-12-12,215,1],[2025-12-12,215,2],[2025-12-12,249,3],[2025-12-13,215,1],[2025-12-13,215,2],[2025-12-13,57,3],[2025-12-14,222,1],[2025-12-14,215,2],[2025-12-14,221,3]',1);
-INSERT INTO User VALUES(107,'AUM','PANDYA','test3@test.com','2345678901','pbkdf2:sha256:600000$zRJ4LfdbpvYLa7qc$7d04dcc543c18534438c8f676323c1bf0b95023b2021f8afc327991d40e27d6e',22000,'Vegetarian,Organic,Budget','Peanuts,Eggs,Fish,Shellfish,Gluten','[2025-12-08,222,1],[2025-12-08,249,2],[2025-12-08,249,3],[2025-12-09,249,1],[2025-12-09,249,2],[2025-12-09,115,3],[2025-12-10,249,1],[2025-12-10,215,2],[2025-12-10,254,3],[2025-12-11,249,1],[2025-12-11,249,2],[2025-12-11,57,3],[2025-12-12,249,1],[2025-12-12,221,2],[2025-12-12,244,3],[2025-12-13,222,1],[2025-12-13,221,2],[2025-12-13,145,3],[2025-12-14,249,1],[2025-12-14,101,2],[2025-12-14,82,3]',1);
-INSERT INTO User VALUES(108,'AUM YAGNESHKUMAR','PANDYA','test4@test.com','3456789012','pbkdf2:sha256:600000$caldTR8hwkGlj9So$bba0c6e4749e37669ad9883ee6e9837f9a2223f35b169558c3ab7c0636c99078',7778,'Vegan,High Protein,Budget','Peanuts,Eggs,Wheat,Shellfish,Gluten','[2025-12-08,222,1],[2025-12-08,215,2],[2025-12-08,221,3],[2025-12-09,215,1],[2025-12-09,68,2],[2025-12-09,68,3],[2025-12-10,249,1],[2025-12-10,215,2],[2025-12-10,68,3],[2025-12-11,221,1],[2025-12-11,215,2],[2025-12-11,215,3],[2025-12-12,215,1],[2025-12-12,145,2],[2025-12-12,82,3],[2025-12-13,221,1],[2025-12-13,68,2],[2025-12-13,221,3],[2025-12-14,249,1],[2025-12-14,221,2],[2025-12-14,221,3]',1);
+INSERT INTO User VALUES(1,'Loralyn','Kernermann','lkernermann0@rambler.ru','367-980-5515','scrypt:32768:8:1$63Pcv02vKP17RPKz$f83faf20ea0ea030058537d155e8788ce14e73c93f2a4814e2f6fa589363500a89b9d9f285c914c9b8d082a00a0d15b5285f87a9e90b698e17c21c55fa8b1fa5',7816,'adipiscing',NULL,NULL,1,NULL,NULL);
+INSERT INTO User VALUES(2,'Sybille','Leggett','sleggett1@xing.com','329-412-7253','scrypt:32768:8:1$nJrlcE23zJ4yPfVe$e1df34e3ef7cc16f08a19544b7003f516af6917b88d9a6f5ea69ad0e63f425381da62fa86e84d640e33ec72aa8b2989479457ac5ddae8fc4205953d7e05825d9',8944,'Lorem',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(3,'Carlota','Tassaker','ctassaker2@wikispaces.com','513-295-6072','scrypt:32768:8:1$kIpXQhOAWII2bOiG$b25cde17b4a430d374fc72cebc0c7082d2976cd9d2b069af62dc2e6eb0d5561fe22c2b70aa8fe94964ac53d985e5e237405cb82b50266b765dce77fa65164ed0',5707,'incididunt',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(4,'Moina','Dupoy','mdupoy3@techcrunch.com','808-557-9233','scrypt:32768:8:1$7DDllahGdJWQaPQy$620a27628efad795554fd76729f998a7b4679b8c670a8852b85dcaa4955db455caf7f57fb0064b2b117065b3c5da351ba085c230aed5964e411283ff21cdd142',6367,'magna',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(5,'Meredith','Tavener','mtavener4@businessweek.com','291-684-0249','scrypt:32768:8:1$7rqfrbAqjWizVKSI$0e8147a52b23ce504a82edfd4ebaaee774a5ba8c31c5dc586e77915f92d2c1a5db6e19943afd218aedb8920d8cc14aa0c52f175c9ee22ca9566b7b761d222bc1',5519,'aliqua',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(6,'Felix','Daniaud','fdaniaud5@examiner.com','857-772-1924','scrypt:32768:8:1$0XptgrVVnzETRQfO$efefc186489989dd45657a1eaae21d2f3e591d0039262580fc7c0d415a2ec5e64432750eefbaf1a7c3e6e9df5bf9c1a8c92f6311755572381caaaaa583fda98f',5653,'ipsum',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(7,'Washington','Tarbett','wtarbett6@cdbaby.com','739-270-9105','scrypt:32768:8:1$L7EnJ7Y9Ac4C2xyY$0a82a38641fccf7e5e8b387bd9d3c4c1adc09642096f9ded06e6857c5d50a8128e27c6bfc247af459002c3b69a13cd6c9db73272cf31cad147d00f4158837d37',4912,'aliqua',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(8,'Alvan','Garbar','agarbar7@facebook.com','239-779-2254','scrypt:32768:8:1$IkMXDZr8gR24PHAO$097fc005eb6f59b7d12b61c5e9b73fee47aca9848105dae76faa8b8590c6ed167c8eeb272c91673347033e2dd443dab4ef9fbe9a31d451d9979609d74f439623',8805,'consectetur',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(9,'Carce','O''dell','codell8@google.com.br','496-654-1179','scrypt:32768:8:1$mvN0mHlpYGVcREVb$e4ed209bdc90525c849914e7abda6ad4ca8954bbf42e45c02e0578df3d49113c0acfdbbba8ba973f73a1f8f795f45262a30414419cef95baccc5e23abe279f08',712,'do',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(10,'Monika','Bellwood','mbellwood9@msn.com','403-753-9115','scrypt:32768:8:1$ebT0H07DCpNmxaL5$8b5f6689c956ecd965518ff85b4477cee29db2547617cd8d31e969249c6b6f7eed67d2ff59ffeaa0007c92f94f75781dd27d4df7b43d952e7d1b278ebcf9efbe',3118,'Lorem',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(11,'Rebe','Colebeck','rcolebecka@nih.gov','417-837-8183','scrypt:32768:8:1$32OZLxMW9woApZzx$0aa77e76247fb7caebcbba785bbd34b71620e62b73b512906a9a19af2d239f31a161e219d21db32922759843f519c50867617eceb108497d20e2aa2ead5e7b27',6740,'adipiscing',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(12,'Glenn','Smitheram','gsmitheramb@thetimes.co.uk','553-858-4002','scrypt:32768:8:1$1A9sZ0r7FZVp10YK$fc27d3e3163a525840d83f24c415adb2e35215517b6b4c5c2e82e3766d2eca94497a3979c28f5d36f52e6bd5d543e0637750a55588433609b611a10993ac4d47',4865,'adipiscing',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(13,'Helaine','Statersfield','hstatersfieldc@deviantart.com','261-760-3442','scrypt:32768:8:1$UvVGj9j3CedxVp7i$ecbab5d6577e2fa1f0509e84550f889a151965a943922fe207f6f8e717da2241cce23e448b7a96222d3c226829f655c30c6813288ea6e491b084da542be9b3ff',7148,'magna',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(14,'Lew','De Benedetti','ldebenedettid@google.it','514-995-4156','scrypt:32768:8:1$fiMVedzIybOHX3LY$d1fb1fae6bec49f274996712d0f39efc948e75b88ab0b6d252e4861dda514d82ccf5bd80901ba27e68b9741345eebc3d80d35093aa4d2290b2b23768f00907bd',9744,'dolor',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(15,'Lotty','Schuster','lschustere@feedburner.com','217-443-1448','scrypt:32768:8:1$s0avP8F5mE2NY0NX$c0e97bc8f598ff12f716d97c4ef7cbb789f744256ff65812a7d8ac3dc05ee857e6851920b463934f221aaab46e8c34435e7eecf99d6a6f631d39e02dde30e36e',4972,'elit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(16,'Dal','Aronstein','daronsteinf@un.org','703-218-7499','scrypt:32768:8:1$IGNvoOI192sRPCP4$c2f655860bd1db3f8453c2b7ef39a1f2f5944bdff8a973e8a3927f469a0c08759cdd8751cd67a8cf2ad74d2a204ce47ae202991ed08cc216e8be7831c718259a',97,'et',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(17,'Harley','Selcraig','hselcraigg@bandcamp.com','715-935-3847','scrypt:32768:8:1$fbCQmxxxDeyCv6Xh$59bdec794a94ac351f50eb6a1713e19025278d96649c3f773eabdd9fc8371a24218fb778b2a797dc15c2fc894ee26d03c36bc516f611d7df249ce9e025863b40',6894,'consectetur',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(18,'Felicle','McArt','fmcarth@yahoo.com','572-702-9472','scrypt:32768:8:1$zWCSSFWf6vuwArnE$4061575d95dbed68f467103fc2b0954a2c113da9d1a1dddaa30bccbcd93c0b37e212e82c7ebb9e792df2e64c0ed62e361c2af8ba6a790df0836b99156657417e',6977,'consectetur',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(19,'Phaidra','Carbin','pcarbini@diigo.com','924-941-6296','scrypt:32768:8:1$vt2LokFjpmmIWVtv$5d98a5eb60c1855fe0b16a4c7bf834be1410bf627adfbb9583bed0b97cff7fbd675372417a552809895206d5d1a24de28f7df54e3dc72e1d8a307c00725776bc',5994,'elit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(20,'Elbertine','Jarmyn','ejarmynj@prlog.org','624-695-5660','scrypt:32768:8:1$2eefKAWzQisT2saA$d53d1c0dfb6d16a09bb474fd823527672cf69853c9c184a5f2fbfd2cd866120857d63bb84931590b2c2e822976b9fc6d36ad8e09f39db961ad7e765bcf55a2ea',2303,'ut',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(21,'Nonah','Arnaudet','narnaudetk@ftc.gov','376-303-1531','scrypt:32768:8:1$ZM5aoZEuWTX1QrC9$1c16a943945411f1f639f632ec5f67647d22d4984f95f49f12f8715852f45cb77c72726d879f16fbc3fb9482b874966995720c362ded01d1406028a5f135fd98',3814,'ut',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(22,'Artemus','Zanuciolii','azanucioliil@go.com','941-345-7803','scrypt:32768:8:1$el3VsRmp6HWOgJen$ad0ebe88feccdcf84103389caa71aeaa52e695332aceaa0a65bbc8cf7ed762915396ca3cbb8e10fe6ea42308cd09cd5c72c42b3a0447e7801f8a6c3ae71022a9',5120,'adipiscing',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(23,'Winn','Newark','wnewarkm@icq.com','756-732-2099','scrypt:32768:8:1$P7G3JvPBn3ihDU3L$dc54dc320f59cf3aa41a49664e289f57cc245f0aa879c73a748071adc08c362570ecc761302a4e9ffd91893389af1e468f692a44a0c4ba6c336dcea426cf8984',8199,'incididunt',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(24,'Rene','Samart','rsamartn@blogger.com','419-562-4323','scrypt:32768:8:1$A4hFI0OA9VdKJI4Y$31ad8b5d4e2dc5ce96ef5ceb775841d3ef9c15b60a187b73d5c895deb4a686116e3f13f84e029394195b920afaca56b8a89dba12349158d6bbf0acf622a6fb18',8907,'sed',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(25,'Fairfax','Lingfoot','flingfooto@cnn.com','644-633-0837','scrypt:32768:8:1$r3MdPiNhty5E9rGW$0bdde95932bd562d312c22b1b09da6eefe7099bd92679c83b55222937eea2ad1458ba5f9a766020ea32a2203f93085dc40620457c3e77bb0879efd9b310f7fc5',2148,'elit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(26,'Aharon','Aldrin','aaldrinp@flickr.com','166-294-0179','scrypt:32768:8:1$VrIlEea4q9FhePNG$8f81afd3d64e25994030e9843049a59fab45730bc902ed3e98b21e35df849b38d0348dd8fa354044594b0d56c5aece520099b624c0a25bcf283614ddc4727601',4326,'elit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(27,'Adolphus','Pavelka','apavelkaq@youtu.be','517-976-6944','scrypt:32768:8:1$8UpytzgFVrDKFhvW$cb4bd3e27632efecd7a8f0aaf76f7d8d7084de84da66fd4735920b04d49f4e9680f95d00fdea64df6393afbb07bed2b0b740f57cfa5f991064965df0c39ac39e',5575,'ipsum',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(28,'Glenda','Butten','gbuttenr@tamu.edu','654-787-8172','scrypt:32768:8:1$lFCn5tV2mDWmOOLa$aadd7e595212a2f41946971d0ba5b90d37ae71915e2b0f89a0720714f8b85f679c5462cebca1df52bdeed175271797be6fb04cefb8f6ba4ddf39ebe4b91e5720',9344,'labore',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(29,'Barbara-anne','Fatharly','bfatharlys@latimes.com','516-235-4204','scrypt:32768:8:1$hnrb7yGHe9QJnlbh$b5b128504e5a2cfd6ddec2ce3447ac3566297c2e0c26ab922f5fff0853458ea09cfe8a8af0fd29e04775d6544612e9e29e3b192c7276d52eafcba17b695af2de',4175,'dolor',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(30,'Isacco','Stealey','istealeyt@umn.edu','887-843-4493','scrypt:32768:8:1$R8h01Aab7m55yJ7W$4742eb425063afcf4d08da31a7924374b5840057c5ec2eec8a3d65fcc8e7d777c1cc52b9782a3de9df59d73f1cecca888adde698785eb9ef30c6e6c67edb6334',2705,'consectetur',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(31,'Eli','Cornfoot','ecornfootu@jugem.jp','222-899-2186','scrypt:32768:8:1$AMBLu9Arg3sZMfLc$2690a682765e2ff8b667c5e049513054b8219f1911fafa0c9fea6805b17a83a8f4657164f2e7be70f016717dfcc7738a33197bf769d5a93a74f62595f80c2deb',3253,'sit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(32,'Noelani','Whittlesea','nwhittleseav@aboutads.info','786-106-1916','scrypt:32768:8:1$swxenBvKGiS6KADz$b0775906cf5a9be9e970bc44295540b887c1d1e807f604188a4ebef0e65614946c37d18570128b57a7e94fcabca4ba4a27d4298cc785ad403f46a0e09f46cece',8951,'sed',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(33,'Amye','Crosi','acrosiw@canalblog.com','482-499-5206','scrypt:32768:8:1$K8dkdIdjn3bUZzxX$bc9cae072b8d7c19411ab317b7410d53c3d2e01963c6de70b2483b91232e0707cb6879d6716bd21339d8b229c539177709da1989aa966c97cacd8e0b7d4797b8',9181,'incididunt',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(34,'Shana','Wedlake','swedlakex@pagesperso-orange.fr','900-100-0784','scrypt:32768:8:1$RCSUjlHKFm3c8P52$bbee4138a25183bdde93ee03be99179aedf785f8f97dd6eae3d7f878e4f6f75b7c73770e2f1800747a62038e4ddee00049b8d05394934d5d290ce31c0109d9bc',1347,'elit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(35,'Charmaine','Siggers','csiggersy@mayoclinic.com','273-619-4827','scrypt:32768:8:1$U2W8Ks6jlF8sCdoW$064aab7fe91ca53f46515b444e29008ac5309179eac25f719d524d48f7ea0f924c175acd3a4a5d4bfed8bd480d119832f231075ba64af0cbd37f8aaffda72d76',7434,'Lorem',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(36,'Peter','Shoemark','pshoemarkz@answers.com','567-655-6511','scrypt:32768:8:1$OpD8gAr5CyM9vDqR$5c10279cff10c404ca75d145ff36d33badf72d1913e0995a06ca27367f58583a6399b568df6afdb31647a1dc82a1f17ca384c63a851b5d32659989ccb89242b4',3216,'adipiscing',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(37,'Darnell','Stitson','dstitson10@digg.com','415-270-3358','scrypt:32768:8:1$czMkSoS6bj5FK9iD$ef56195f613f8c970b6c6babe529b2cc3d4bafda075c750c63d8cfa0898cdf9fe93d0f8ff4db1cf8709dcb0099429c6f1c966893ea0b687b9f2bb3aa5e71d11c',232,'sit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(38,'Jasmine','Phillimore','jphillimore11@boston.com','800-539-1446','scrypt:32768:8:1$9GyQCMo6X0mFobhU$31e1f521c0ad1b5f05a8b7d9c3f9556fbdc802bc7f32bba0b70be500b477a015e76ea4f27f2030f5f1ec9eb51dc527b4d62064e615a58514582fd3b5afcac42a',7612,'sed',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(39,'Arty','Tookey','atookey12@a8.net','366-331-2513','scrypt:32768:8:1$iEoz2owLk5nIJ7ul$933f05a74e6898a603da1d8b6a571ff7246e22d4f53b07200b517ab719f76f7356bbcf3aa8d26476380c2f00df3389cea75c774bef25f3e5bbf7b23a0c7d359b',3634,'et',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(40,'Orbadiah','Luckings','oluckings13@surveymonkey.com','787-402-1900','scrypt:32768:8:1$PWIxyWTfZGFTzd2y$707c48ea15eafc860d299434ab6152e4f369e97f4c9646a99ff1d3be1971b23e48dce110ddc402381865b0ac4a6c3d9c70db5f3bb9d53cf1c5690659deba37bb',4110,'adipiscing',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(41,'Karita','Meldrum','kmeldrum14@homestead.com','753-440-6504','scrypt:32768:8:1$eehOn4f9FLwfZVPV$5caa58e74a35d49121be99fc1027ce25898603746f8e7df025683cd2e7272acff7e3f8f01485793fb7c6ca6c8a9ec3ad08ca85364f5f931106c37be432bfebeb',6070,'magna',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(42,'Sherm','MacKeague','smackeague15@vkontakte.ru','311-449-9262','scrypt:32768:8:1$3qR4Di4aJZSvui0L$3e120951acf22ac01eb8064695e66f088412fde4b558224c0738994ee9735be26101dae0e8f528cb85a3afbe1bee890136fa64bec4deeb7b6e49fa32653090e8',7402,'sit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(43,'Sibley','Dohms','sdohms16@theglobeandmail.com','205-527-3770','scrypt:32768:8:1$jwh0DzUaHwUah46g$bcd80d4e54636383ad5afdab2b06ced1468dd95443422248cbb13536a0f63797d3a437ff010acac521201c68d72acfc10bdebcbd86297b353e798d14ea3f5c0c',3033,'tempor',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(44,'Tammie','Loyns','tloyns17@aol.com','704-801-8743','scrypt:32768:8:1$E0IB57EIM7m8ZgNE$b5538eb870cbd8343ea099f4d1f540f4382fcf645b208bf57aa10fbac309ce980e563a9777e8135ad3fdf88c9acf906d036e43e4672e18a522a968be13cc8eb9',7526,'dolore',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(45,'Kimmi','Brimacombe','kbrimacombe18@devhub.com','355-772-4599','scrypt:32768:8:1$TOQ6xJLcygIBWNGo$e00ccc00ba4de6b67c50cb526fc5aed2bdbf73e74b8c356ce12c92f6b50c3f9af60ca7594f62b5b8b383af8e10b9220ba6f5d91b2701734f983b04e7325f8024',211,'amet',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(46,'Daven','Abramow','dabramow19@forbes.com','869-341-9459','scrypt:32768:8:1$DjZXMaMLVoHE7QCU$ec4e2589f919b7d55b69add9f38df55c309e94bda84a902dbb01da16fccba2c29e26899dca95eeb147b5b25ada81d273cde1f577e7f1b9a761122abc5ec72e11',8746,'sit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(47,'Jsandye','Flaherty','jflaherty1a@princeton.edu','536-236-9126','scrypt:32768:8:1$UlMAiI4sqVm0Ke1I$45b5a52a4592e904405881401dd4a387b5fc60e5bec7afca34303567a7bc379562e54336ee885ec1e9f7eb3804293e8b7f8ce44e17492db23a0ff1e57cc3b38e',6659,'Lorem',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(48,'Harmonia','Burril','hburril1b@yelp.com','805-540-1687','scrypt:32768:8:1$nzeFIIJbbmmLwBDz$a4b962154665ebec6d54cf5f1d90d6dc8414229cf77ea58c6e8089880f2b705c7283bc27a7ef899849406ff6563a6c473aa350583ed386b118ab6340be8a615e',2988,'tempor',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(49,'Linnell','Capewell','lcapewell1c@stanford.edu','674-856-8912','scrypt:32768:8:1$h6z2YGxaXJiphg8Z$dfb24aa4ee498b965e41800c46de0a2da0efd7394f5b1e9e15aae07c9604acccebd3cee7f651af21e9f00e91e2b2a99ebbc2972df92ccc17d0450d44fff8ce64',1814,'consectetur',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(50,'Gayle','Pickrill','gpickrill1d@toplist.cz','664-595-4065','scrypt:32768:8:1$EaGILuQfxpIwSc7K$d6a3f850fc4623b7c47f75b1cf61c07eba5c0e92faafdcbe02c539c3882d90d2c182360943dd6591715537c52e6ee8579238d7e67067284f61c79072fa71ed84',6310,'do',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(51,'Patsy','Jenton','pjenton1e@craigslist.org','788-487-8507','scrypt:32768:8:1$F5AX3uEPplAceOxo$583e1deb616d037e64e41e640958e8e05060fcf413bf529e75bd47fa4b4a885db915f07b13099e2f87c95107e4b55c032c3adbb0bd239cac527d4806c6f2ec55',2114,'Lorem',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(52,'Ryann','Windous','rwindous1f@cmu.edu','695-938-4962','scrypt:32768:8:1$F7yQVETuao8jGBYA$9e7c2032ccc0f36fe486648fcca6e3e5e0f90f5e2e342325548a31db240578a8e1748cc3d24eb9de4c94f346e3d338643b5b85c94b662ce83c333c73b713cf6d',2949,'et',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(53,'Audrye','Arangy','aarangy1g@google.co.jp','297-339-2463','scrypt:32768:8:1$Jrc6DRsBl24SfgR2$cfef7f67d2628d222db8ee4daa020151e3a7493aa4701a2845e8b3989a9e8657154e638c1a8772abd1f49e0202e77270ce1aaca9a2928262d2834840be7248cb',9064,'amet',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(54,'Paulo','Bony','pbony1h@google.de','768-939-5062','scrypt:32768:8:1$kMfQtm77mHCSuB6P$0cf9c5f85c2271cee51a3cd3d55120312a36a75823385271705a0fdb1b9ee3f7feb6be327907a9307f4bab0acc3595241b858b0af2a9c244b3aac128b944b935',6723,'magna',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(55,'Brook','Runacres','brunacres1i@cyberchimps.com','557-234-3799','scrypt:32768:8:1$sVY3kbfqynbyW1kr$34fca6d1d4e56fe49ce5b01b4560b96bfc92d5068d561e23355d7737be700a2f4df8d7a9ff575a10319d075095dbcc9aad6d6b53ab000fb01be04705dff0df8c',982,'dolore',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(56,'Minna','Oliveto','moliveto1j@cornell.edu','814-396-9006','scrypt:32768:8:1$KyMRj3Vbp01lLUka$1f3f4e8759578a77027d37eb2e336aa6a0c594c3b54d463591a4ee1165c902bac3ac772ef287d8f14889e52858dfb21d7ce78d60530bf786f062296392d5349b',8883,'elit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(57,'Pamella','Klimkowski','pklimkowski1k@sbwire.com','656-251-2048','scrypt:32768:8:1$aEC8Oym6UN6CSXtX$5dfbf521653f123a12f79933491e09adc554fe7bdecde4a472f0d9b959bb31fb58c39fc0dd7c4276086d0a81383235d15fb112b180d9526f94fd6710e919f41a',7256,'labore',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(58,'Luther','Braime','lbraime1l@netscape.com','483-586-9898','scrypt:32768:8:1$jYrV7b9TrGLPkERe$66d1b8314f780fdf6d0b338e4c21f5f63e9b01a2a0c2d1178fdb4a9b68744e30c6aa8740fca3e6e1c9bd194637cff31810763bc916c193449bac311c9b2bbbdf',9432,'ut',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(59,'Alic','Greenhalgh','agreenhalgh1m@dyndns.org','536-147-0384','scrypt:32768:8:1$4iWLNyyb4850kA5S$3d82112c23b90549ece9364ccb35165dc9da5ac9274298f5091ec3fb58ace86578f5752c4611c9c7790ca6462b172051653c80bdda3fc1dcddf1210a5e178eb6',9103,'ipsum',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(60,'Erika','Lipp','elipp1n@bizjournals.com','684-874-1084','scrypt:32768:8:1$49BRt1n1BssPBbtb$faa34dd1e5ffdd23ad74be58557c6e08a900334920e6a5a7848a8dfcbd52455240a1acc2db4adf28d945e8fab327b56434d8b917bcda818503a969ffc96169ea',5084,'amet',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(61,'Torey','Stratiff','tstratiff1o@smugmug.com','615-589-3969','scrypt:32768:8:1$726ZTQxP6Mltr98b$9aeeeedf709677fa71004e4e52ee2c905f3804683c9ce16de304e49d6a97ba735bd28afce5e1740fc1d0bbb25c8cbeddca6bd1b35ddfca73b30e350339d9ec64',9110,'elit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(62,'Jasun','Marcussen','jmarcussen1p@imdb.com','713-877-0434','scrypt:32768:8:1$ej6bnyoDQvGNPOAJ$776ed2589643c8a6855ab40b43b44b68b77592825658ad9cdd80a080528c455a3d399687ffaffbafb806e3925aa2ad52af2386d7548b6e1f3496d8453d1495dd',9391,'consectetur',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(63,'Brinna','Sacher','bsacher1q@ameblo.jp','513-435-6893','scrypt:32768:8:1$aSEKxXa3GgNyxvFf$6f362f38fec5558c89ac99725ae8c96056b4e2b5f381a5c14c19f1bb614a36e0ea5c4f1ca3dc0fa53b489cc3d9ef4a344ea816d65ac19352eadd6460d796bca3',3612,'adipiscing',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(64,'Lorne','Bagnall','lbagnall1r@wordpress.com','970-521-6477','scrypt:32768:8:1$lxOwxHbs6C3ZP1mf$788e628dc897a96136b900f769d03c3996e769711f256ac7fe727e01d5219aa023bb988045908417206251cee8b06429b20cf429e03fe591a2faf9e374f358f2',4591,'et',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(65,'Heindrick','Posthill','hposthill1s@moonfruit.com','274-574-8236','scrypt:32768:8:1$jAcZxkWNT66q5I5Q$bb57c145011150b97ed65f95a0ef5933c32910d7ea31f519a1aa70c54c5764eb56f5764c9256f8ee8044a4daecd01deb28a8cc3a6bc167e2e6ceb1c00173771c',3493,'Lorem',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(66,'Ingrid','Ellwell','iellwell1t@a8.net','744-698-6611','scrypt:32768:8:1$c6Kt4OTysfb9NAFb$d71182cb56c815fa885eb647d45946e9ce856dda75d3b44e6b98ae30767e97b5604117560b5cd9075fa6cd11eecbff58b4fe2014d51f9247d723caca300f8855',6164,'et',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(67,'Eddie','Maha','emaha1u@g.co','173-698-6081','scrypt:32768:8:1$t7FihH3LadyWfuao$bc3d61b232dd6d19f465982397e34d07b56ae4e77c8d66692b6d3dd35d60547fc8753ea786531730f4817dc228a7a16e74fbe65442bbfd29c02cfff8d06c3950',7646,'sit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(68,'Darill','De Zamudio','ddezamudio1v@google.cn','895-870-7030','scrypt:32768:8:1$BSrpnRuNPBRFlOAe$9514da51198fba014e08179931c247a3258787d7769fc86c683a84495fa7367d1e4ef18b05465d667c2638341b16b1fe3b2ba11a7fe0acdb6c41eb4cbe9876c2',822,'do',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(69,'Julio','Scroggins','jscroggins1w@guardian.co.uk','240-339-7660','scrypt:32768:8:1$ks3P4ywfy3uP4B0a$3c0ae0d52d16b360d269b00b580d9c861af2c1fa8980226cdd78a7533d95e25ace32d14166bd7b223895dff25a78f8e16dabcc35a020d513746674f671776d32',4519,'labore',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(70,'Lesley','Kaman','lkaman1x@ucoz.ru','106-930-5900','scrypt:32768:8:1$zytlYQaZZoiLQwgo$d8ee0c0d05eafdd2f7284b2cc2b05441161892344242dee0a51883ff66ad8e32867fef916ab7ab2ccb2555e6fee62983878892e311dc51165d6ecedc0de070e1',145,'adipiscing',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(71,'Gabbie','Dolan','gdolan1y@economist.com','340-221-2466','scrypt:32768:8:1$J7ALoaHuF1zZDeiI$3337a40a3719acf217fb2663b2dc91ae05b8b3eddee6e85ad609442ae1bc8d4b43c3f4cb33be5e3d8be98452e6a54008a70bf8b920c36405c088bf6505d0de41',1512,'tempor',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(72,'Nolan','Keppie','nkeppie1z@uiuc.edu','946-304-9326','scrypt:32768:8:1$P51yVhdrQwAQxeJV$fc7845c106f4bfb839d7f32930c90fe7c84cd147c195d233bc60944cfb923f6fc41529a136a5d43006c803dad3d22b4c62db1453c5cf531b00bf41815daca798',6992,'ut',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(73,'Zaccaria','Gauler','zgauler20@nyu.edu','337-224-6295','scrypt:32768:8:1$LP35jEFT5TbmZgYs$5a7aa9cc4c59fd98741d3d8aeea68b62b5be4350537fa6b3b32b3b6fa4d391df05e8e7de6c09e71a5252e9c505dae148bbec9f7ec69210e4e1393d45498b08d5',8317,'consectetur',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(74,'Calhoun','Vaulkhard','cvaulkhard21@biblegateway.com','120-471-1142','scrypt:32768:8:1$ZooBLcsJIGa7ooVJ$d84c3b0e64ac710eed68ff307f0764ce9bc699920b8cba98489ae00fb65025e5fcb149d9a55b4605eaab2a7de026cf3176fed2f58128399303f6f84e24c721fc',497,'dolore',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(75,'Marnia','Murra','mmurra22@usda.gov','588-533-9906','scrypt:32768:8:1$airY4VtJxVOwuCZZ$ed8f411c72753319776e83dcd8c22b4764f6e057618559fb69cce078594f2f79f75be25eb4c750e774fe54166300c32a2ef51f36e14d07852aa3a0c3e4a02d45',3843,'elit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(76,'Kathye','Jaegar','kjaegar23@cbc.ca','297-804-9322','scrypt:32768:8:1$Xqe5gDlQT60yQSEn$d17d8e328388e27885832425e6de7a1499346d075b5bc250845705145fe7c2662749e2a7c151a26709682a0b2ee2442316ee48101101638c810217683452639b',8867,'magna',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(77,'Coreen','Welling','cwelling24@theguardian.com','434-382-9617','scrypt:32768:8:1$vi9jcaNbcHJo2CUy$04f77aa667d9ae5204720aa64e3dd92a42adc193017265f5f591b27c1ec7d4ef76b76327438194523b42e4cff9af8179dd262131add346edcf3d54be3b3fdf26',3663,'et',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(78,'Arvy','Bearward','abearward25@umn.edu','810-825-5360','scrypt:32768:8:1$XDgZxWJJtfhuRLS8$69c7f108efffda9989ab7dd1d9c4b7bcbac7b6ea18adbd0ed5e9b2c794ee1529b68e32f9c277212ccdb2ab1890f0282b89cd77b869aeb8bfff17a4879cfad77a',4496,'amet',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(79,'Urbain','Shattock','ushattock26@usatoday.com','917-873-9169','scrypt:32768:8:1$iRItHHg8n4nIzuul$3f692db17c0cac299ad852d4494f24d51a4486fa37814b8551b647fd988fd4b8e5ff455b582f9d7c46c4fafb25b0ef4b1399b15d755a6972651a45e48fdafacd',3567,'adipiscing',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(80,'Anthony','Hynson','ahynson27@ucoz.com','246-814-9823','scrypt:32768:8:1$inVtbDgzOQ4MjIpN$c3488a80289b3247c51dae9b59765a37d12a7255c1fd1f7b98d6d45020ed9dbd62f288a0aae438fd9c2144a8664f3bf69013d1f3a2fbf77e641aae89e471deb0',3740,'dolor',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(81,'Christel','Randlesome','crandlesome28@google.pl','977-139-4188','scrypt:32768:8:1$iL1PkOdqZ2Z7itE3$7c16f7681215f1e7bef4b79e1b44518cd0b7d693e684c99c80fe9fb475d89ef092ca676863bc4654647464b72cc5235ce60039d87dd622576c917261946952a7',4950,'amet',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(82,'Camila','Else','celse29@state.tx.us','706-255-7409','scrypt:32768:8:1$Va8JQroEqe6cyLMt$19fcdaab9b8ac11b49bfe89e5b2dbd8b74628e7dde8bd04f15174df8a0988685ad452e6e16f9260db1f0c9fb84687f584e5444a4b52299899a66a74d347f403d',3051,'et',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(83,'Etti','Duester','eduester2a@g.co','871-478-8264','scrypt:32768:8:1$U1Ri7mJ3LwkiIcQf$aa2183f3209989b558b6d7f8421a3275c3223a9eb3bad3db6ce81d88f40ac8d30babbb5bc806b9f2a10104d3cbe9e71b958b364e1bb9d0e042cf2f9d8c39fccb',4789,'sit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(84,'Duke','Theml','dtheml2b@hc360.com','503-120-9099','scrypt:32768:8:1$CIwdVy6ZI30BuVMg$9336a25cc088dd0222464a287961b400413ed02f13b54ab2190d8a13bfd919692de20902adb29c62f827819e3f3dd62a4c61bdd397d9c15bcddfa8a5f0b1a69e',7977,'consectetur',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(85,'Dasie','Aphale','daphale2c@cnn.com','860-159-6381','scrypt:32768:8:1$kAqoAT9mMVVutwu6$aeb7bba5e65b653af81a58ad674cbf260f9b2508a7f283489d03e064eec17077e173cf0eb22eab7c101c115c72c7ddf853e519ebc04672fd6189995d9fa2c731',526,'elit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(86,'Larisa','Lowdiane','llowdiane2d@symantec.com','476-695-9429','scrypt:32768:8:1$76yz0wKJGNcGxZWP$624cb2aae918521b7a9ca577f4b65c4377943026cd98f7e3f57c3f6649a145d7063168c90a435121b41c563b4398eb30d6c1a0d9344405a761f5cbfc2cf4042e',6980,'ipsum',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(87,'Guenevere','Shrimpling','gshrimpling2e@canalblog.com','356-661-9449','scrypt:32768:8:1$MA0XQvHs9u7vsFaY$e53706efbc8a9dc7180e8de5f10aaea58016f6c6e9154a29b24d69e28cee7642e03608a9c406cc9f1332dc89b8f2d436da4a12b44256420e046be06c10d2ad7e',5732,'tempor',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(88,'Amie','Balassi','abalassi2f@desdev.cn','789-129-3548','scrypt:32768:8:1$LDiNt0llhfO2ARIQ$7a3836d42c57fa319d2ddb951d5addbe1d5aabfa5ee27e67af60e96674521439049247146f688d6ccebd1bef460960a54d9e4b4f3f8f443ddfd4d13548d1d57d',5395,'consectetur',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(89,'Phil','Pochon','ppochon2g@aboutads.info','526-192-3849','scrypt:32768:8:1$cFSGYDMUERD7Cymb$2367040d3a0cfc754aacdefd52674d8610c704b06cf5927fbf63d4ba29a6f3ab5b90ee21bf30a827a1149ea40963f588470abd5f403a2b3e0b64e69b8abbf354',4097,'tempor',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(90,'Amabelle','St. Louis','astlouis2h@lulu.com','790-527-9904','scrypt:32768:8:1$CKGBPNUFTMrXWE69$4232a24343621c0adabf785abf967f5f53b3cf3b88627f9554a8654ee7811ad1ec403cafa7ca3a43b3c5aa7d6473d98421c2b03e21827b13748ad5124dc5f09b',5016,'sit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(91,'Theresita','Kelmere','tkelmere2i@canalblog.com','379-150-1682','scrypt:32768:8:1$ADsaRZtAudbzqLse$818a5896840865ea28d548ce0fa166f3820b9ff7cb3052b18df2b01b6414e4b2b288618e6b6df1fd60b92df566a60f9e646afc05059468cbdf94fe6bef18f412',5204,'ipsum',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(92,'Trstram','Tolley','ttolley2j@vkontakte.ru','343-117-0807','scrypt:32768:8:1$lSRWU5v5jAfJAikD$d82147e72cd5c75ef0baec3544af899a0c1def821fbfb26dbaf73543ef5a33ade367b9cc80eb042f90329ae104b8e68d05bcebce61ac2db5a3a709221d870b00',3864,'ipsum',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(93,'Brigid','Carbonell','bcarbonell2k@flickr.com','505-828-3703','scrypt:32768:8:1$NMDQRASA8wjXFzXw$3def1c85d72abf7bbc769394627088ad85d7cf8f611139383c0222dfbe95734c56c2ed5c46eeb01ac0d550c81b40245f767e46031956e28dae107fc508567368',6687,'tempor',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(94,'Carrissa','Lukins','clukins2l@bizjournals.com','275-171-7447','scrypt:32768:8:1$xCJKssuoHohONcu6$2a0edd01aa9d48098350879751ebb6b0a4af5e42b0748f2ec1c7e083e42dd766c320dca1f43499bce729fec149c6da426ad64cabbb61565d40d02df28fe618f9',309,'labore',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(95,'Amara','Bogie','abogie2m@nbcnews.com','578-612-7111','scrypt:32768:8:1$wji4cJgciUqLTowa$a4c54dbcabeaca2cc0473bf010cfa91f587d170f4028786d387f4cf5b0a3d4a5b82b860e60134f8db358c1a961fc248ab6d6a1c96c7ada9a2bd0d484adacffde',4099,'consectetur',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(96,'Neville','Luty','nluty2n@php.net','587-641-7608','scrypt:32768:8:1$UfBcfZcbeR79PUAq$1d702ce362aaf3f13331b8bb9396ab9a6077858d7f671e47efd2df6ba833ce8e9b794ccc8b8c4b481ed5d5405dbee002bcb091354e9a40a31d080ecb80733413',546,'elit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(97,'Daniel','Whitters','dwhitters2o@soundcloud.com','528-453-8340','scrypt:32768:8:1$PrwzMuzleGbLtk8H$6ab99aec5c5aa32b28122d736b4a84eefabe698e5ceff4cda20cda66f0df369c95095b85813b790d4b54b181637f6c44f9fcad73d90e148458d45dcb8a317058',6419,'adipiscing',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(98,'Josey','Barnewille','jbarnewille2p@mashable.com','385-976-9691','scrypt:32768:8:1$KBNZ60cp0lRlt2y7$4c2882b3f35da4bec18d73c0996fbaafbc773fc6c987f0d114fdfd23bb318e14a099be2ab67e289d31061e368ebe8f2c8cbad2b19f8f048780c2c22bdb14eb3b',7187,'ut',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(99,'Crystal','Brattan','cbrattan2q@apache.org','458-405-9427','scrypt:32768:8:1$DHcwObbMe2mD3nsy$e177e0b30a6b2610021eea59a0ad50a67c220cad50e1c29189356477e2ef8dd4ff6f06311bb875d36359c65a92101a6be43273dcd45d43b32dd1ad558962d6bc',1419,'ut',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(100,'Mariquilla','Schimpke','mschimpke2r@de.vu','541-838-9159','scrypt:32768:8:1$pvhLwefa7MBV3KcU$c08b38da45cfaf6b922d3795763bca9565c946a6fd5dc9b9fd1d357670d8aa38234adfad74a4e6f5a0643e4346b0990188419844e750012545b778fbfafe7bb4',1296,'elit',NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(101,'Taylor','Brown','taylor.j.brown1996@gmail.com','9168737714','scrypt:32768:8:1$OWjaUS09mUfBcXOG$1e387c8a53d9442bca3090076d8d2f713abb4784c5bb4ee38e73f70f9668359d4cddfd47f2374d00f362af6b4725b1e6d2bd48e6e69b16d06a1bc569b64c3a87',12568,'Spicy,Vegan,Sweet','Peanuts,Fish','[2025-11-03,14,1],[2025-11-03,16,2],[2025-11-03,35,3],[2025-11-04,8,1],[2025-11-04,36,2],[2025-11-04,5,3],[2025-11-05,21,1],[2025-11-05,16,2],[2025-11-05,35,3],[2025-11-06,14,1],[2025-11-06,28,2],[2025-11-06,3,3],[2025-11-07,8,1],[2025-11-07,36,2],[2025-11-07,18,3],[2025-11-08,16,1],[2025-11-08,2,2],[2025-11-08,35,3],[2025-11-09,14,1],[2025-11-09,5,2],[2025-11-09,35,3],[2025-11-10,1,1],[2025-11-10,17,2],[2025-11-10,31,3],[2025-11-11,4,1],[2025-11-11,20,2],[2025-11-11,32,3],[2025-11-12,6,1],[2025-11-12,21,2],[2025-11-12,34,3],[2025-11-13,7,1],[2025-11-13,23,2],[2025-11-13,41,3],[2025-11-14,9,1],[2025-11-14,24,2],[2025-11-14,42,3],[2025-11-15,10,1],[2025-11-15,25,2],[2025-11-15,43,3],[2025-11-16,11,1],[2025-11-16,27,2],[2025-11-16,44,3]',0,NULL,NULL);
+INSERT INTO User VALUES(102,'test','test','test@test.com','9999999999','scrypt:32768:8:1$BYrRDegRr80zwTFK$917cf918666ea86f4bf97f3586df4053a497725b3041c11d504535346559281547bfeb2bf6aeaec7eed97ff7cb6e901ccbc807660e2ae8a93d3f54499afe9de8',0,'Local,Savory,Spicy','Wheat,Sesame',NULL,0,NULL,NULL);
+INSERT INTO User VALUES(103,'Aum Yagneshkumar','Pandya','test1@test.com','8849006954','pbkdf2:sha256:600000$TFT7Of6tkUtKS1oM$9af84cbfca1e96ed7204278c29eed6b9eb350304e63efec0b6cc75603b2b4742',5000,'Vegetarian,Vegan,Dairy-Free,Savory,Sweet,Organic,Meal Prep,Gluten-Free,Paleo','Peanuts,Tree Nuts,Eggs,Fish,Gluten','[2025-12-03,222,1],[2025-12-03,145,2],[2025-12-03,101,3],[2025-12-04,222,1],[2025-12-04,215,2],[2025-12-04,92,3],[2025-12-05,249,1],[2025-12-05,142,2],[2025-12-05,57,3],[2025-12-06,222,1],[2025-12-06,222,2],[2025-12-06,101,3],[2025-12-07,249,1],[2025-12-07,215,2],[2025-12-07,215,3],[2025-12-08,249,1],[2025-12-08,142,2],[2025-12-08,221,3],[2025-12-09,222,1],[2025-12-09,142,2],[2025-12-09,221,3]',1,NULL,NULL);
+INSERT INTO User VALUES(104,'Test','User','testuser@weeklies.com','555-1234','pbkdf2:sha256:600000$x4PAdJnhEtLQ5qxI$e4184e769fe814bb3ec2a6a170c0d7d72880a317eaecf44c2b97f1c36d2d60ec',5000,NULL,NULL,NULL,0,NULL,NULL);
+INSERT INTO User VALUES(105,'Admin','User','admin@weeklies.com','555-ADMIN','pbkdf2:sha256:600000$TKNib742f94co4TD$3f403a91168795d6c7f11f892fb832b8b2c12f38ec3adeffa8a4b7ee8545c3e2',8631,NULL,NULL,'[2025-12-08,218,1],[2025-12-08,142,2],[2025-12-08,184,3],[2025-12-09,248,1],[2025-12-09,170,2],[2025-12-09,10,3],[2025-12-10,218,1],[2025-12-10,170,2],[2025-12-10,226,3],[2025-12-11,251,1],[2025-12-11,246,2],[2025-12-11,157,3],[2025-12-12,220,1],[2025-12-12,170,2],[2025-12-12,199,3],[2025-12-13,248,1],[2025-12-13,266,2],[2025-12-13,79,3],[2025-12-14,262,1],[2025-12-14,6,2],[2025-12-14,261,3]',1,NULL,NULL);
+INSERT INTO User VALUES(106,'Aum','Pandya','test2@test.com','1234567890','pbkdf2:sha256:600000$JfvVes1MJN8FgYzm$d25c627e839c439e6e8ccb1af2ea45c95a713013de57d4c2001d717340d55c7b',0,'Vegan,Vegetarian,Budget','Peanuts,Eggs,Wheat,Fish,Shellfish,Gluten','[2025-12-08,249,1],[2025-12-08,249,2],[2025-12-08,221,3],[2025-12-09,222,1],[2025-12-09,215,2],[2025-12-09,215,3],[2025-12-10,222,1],[2025-12-10,145,2],[2025-12-10,221,3],[2025-12-11,215,1],[2025-12-11,215,2],[2025-12-11,57,3],[2025-12-12,215,1],[2025-12-12,215,2],[2025-12-12,249,3],[2025-12-13,215,1],[2025-12-13,215,2],[2025-12-13,57,3],[2025-12-14,222,1],[2025-12-14,215,2],[2025-12-14,221,3]',1,NULL,NULL);
+INSERT INTO User VALUES(107,'AUM','PANDYA','test3@test.com','2345678901','pbkdf2:sha256:600000$zRJ4LfdbpvYLa7qc$7d04dcc543c18534438c8f676323c1bf0b95023b2021f8afc327991d40e27d6e',22000,'Vegetarian,Organic,Budget','Peanuts,Eggs,Fish,Shellfish,Gluten','[2025-12-08,222,1],[2025-12-08,249,2],[2025-12-08,249,3],[2025-12-09,249,1],[2025-12-09,249,2],[2025-12-09,115,3],[2025-12-10,249,1],[2025-12-10,215,2],[2025-12-10,254,3],[2025-12-11,249,1],[2025-12-11,249,2],[2025-12-11,57,3],[2025-12-12,249,1],[2025-12-12,221,2],[2025-12-12,244,3],[2025-12-13,222,1],[2025-12-13,221,2],[2025-12-13,145,3],[2025-12-14,249,1],[2025-12-14,101,2],[2025-12-14,82,3]',1,NULL,NULL);
+INSERT INTO User VALUES(108,'AUM YAGNESHKUMAR','PANDYA','test4@test.com','3456789012','pbkdf2:sha256:600000$caldTR8hwkGlj9So$bba0c6e4749e37669ad9883ee6e9837f9a2223f35b169558c3ab7c0636c99078',7778,'Vegan,High Protein,Budget','Peanuts,Eggs,Wheat,Shellfish,Gluten','[2025-12-08,222,1],[2025-12-08,215,2],[2025-12-08,221,3],[2025-12-09,215,1],[2025-12-09,68,2],[2025-12-09,68,3],[2025-12-10,249,1],[2025-12-10,215,2],[2025-12-10,68,3],[2025-12-11,221,1],[2025-12-11,215,2],[2025-12-11,215,3],[2025-12-12,215,1],[2025-12-12,145,2],[2025-12-12,82,3],[2025-12-13,221,1],[2025-12-13,68,2],[2025-12-13,221,3],[2025-12-14,249,1],[2025-12-14,221,2],[2025-12-14,221,3]',1,NULL,NULL);
 CREATE TABLE IF NOT EXISTS "MenuItem" (
 	"itm_id"	INTEGER NOT NULL UNIQUE,
 	"rtr_id"	INTEGER NOT NULL,

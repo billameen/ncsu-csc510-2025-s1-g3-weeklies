@@ -106,7 +106,15 @@
     <div class="calendar-wrap calendar-wide">
       <!-- Unified calendar toolbar -->
       <div class="calendar-toolbar" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin: 8px 0 14px;">
-        <div class="cal-title" style="font-weight:700; font-size:1.25rem;">{{ month_name }} {{ year }}</div>
+        <div>
+          <div class="cal-title" style="font-weight:700; font-size:1.25rem;">{{ month_name }} {{ year }}</div>
+          {% if month_cost_cents %}
+            <div class="cal-summary muted" id="calSummary">
+              Planned this month: <strong>${{ '{:,.2f}'.format(month_cost_cents / 100) }}</strong> with tax &amp; fees
+              · {{ '{:,}'.format(month_avg_kcal) }} kcal/day on average
+            </div>
+          {% endif %}
+        </div>
         <div class="btnrow">
           <a class="btn" href="{{ url_for('index', year=prev_year, month=prev_month) }}">&larr; Prev</a>
           <a class="btn btn-outline" href="{{ url_for('index') }}">Today</a>
@@ -126,6 +134,11 @@
           {% else %}
             <div class="day-cell{% if year==today_year and month==today_month and cell.day==today_day %} today{% endif %}">
               <div class="day-num">{{ cell.day }}</div>
+              {% if cell.meals %}
+                <div class="day-totals" title="Calories and delivered cost (tax and fees included) for this day">
+                  {{ '{:,}'.format(cell.kcal) }} kcal · ${{ '%.2f'|format(cell.cost_cents / 100) }}
+                </div>
+              {% endif %}
 
               {% if cell.meals and cell.meals|length %}
                 <div class="badge-stack" style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
@@ -253,6 +266,8 @@
     box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(91, 140, 255, 0.2);
     border-color: rgba(91, 140, 255, 0.3);
   }
+  .day-totals { font-size: 0.72rem; font-weight: 600; color: var(--muted, #a9afc1); margin-top: 2px; }
+  .cal-summary { font-size: 0.85rem; margin-top: 2px; }
   .day-cell.today {
     border-color: rgba(126, 214, 255, .6);
     box-shadow: 0 0 0 2px rgba(126, 214, 255, .4), 0 8px 24px rgba(126, 214, 255, .2), inset 0 1px 0 rgba(255,255,255,.05);
@@ -424,12 +439,12 @@
 
 <script>
 document.getElementById('btnGenerate').addEventListener('click', async function() {
-    if(!confirm("Generate a 7-day meal plan based on your profile preferences?")) return;
+    if(!confirm("Plan the next 7 days within your calorie target and weekly budget? This replaces any meals already planned for those days.")) return;
 
     const btn = this;
     const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = " AI is thinking...";
+    btn.innerHTML = "Planning your week…";
 
     try {
         const res = await fetch("{{ url_for('generate_plan') }}", {
@@ -441,7 +456,7 @@ document.getElementById('btnGenerate').addEventListener('click', async function(
         if (data.ok) {
             window.location.reload(); // Refresh to show the new meals
         } else {
-            alert("Error: " + (data.error || "Could not generate plan"));
+            alert("Couldn't plan your week: " + (data.error || "Could not generate plan"));
         }
     } catch (e) {
         console.error(e);

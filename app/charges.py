@@ -11,14 +11,18 @@ orders keep displaying correctly.
 
 Tax is ``TAX_RATE`` of the subtotal, rounded half up to the cent, the same
 result the old float code gave (e.g. 7.25% of $10.00 = 72.5 cents -> 73 cents).
+
+The rates themselves live in ``pricing.py`` (shared with the meal planner) and
+are converted exactly to ``Decimal`` / integer cents here, once, at import.
 """
 from decimal import Decimal, ROUND_HALF_UP
 
+import pricing
 from money import MoneyError, parse_cents
 
-TAX_RATE = Decimal("0.0725")
-DELIVERY_FEE_CENTS = 399
-SERVICE_FEE_CENTS = 149
+TAX_RATE = Decimal(str(pricing.TAX_RATE))
+DELIVERY_FEE_CENTS = parse_cents(pricing.DELIVERY_FEE)
+SERVICE_FEE_CENTS = parse_cents(pricing.SERVICE_FEE)
 
 #: The charges every order has, in display order. ``total`` is the sum of the others.
 CHARGE_PARTS = ("subtotal", "tax", "delivery_fee", "service_fee", "tip")

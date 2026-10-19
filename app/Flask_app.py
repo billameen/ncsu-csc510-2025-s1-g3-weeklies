@@ -23,6 +23,20 @@ import ledger
 from charges import compute_charges, order_charges_cents, item_cents
 from collections import Counter, defaultdict
 from menu_generation import MenuGenerator
+from planner.targets import (
+    TargetError,
+    format_budget,
+    parse_daily_calorie_target,
+    parse_weekly_budget,
+)
+from planner.menu import load_menu, meal_cost_cents
+from planner.request import InvalidPlanRequest, PlanRequest
+from planner.solver import plan_week
+
+# Which planner /generate_plan uses: "solver" (CP-SAT, the default) or "llm" (v1, kept as the
+# M0 baseline). Read on every request, so it can be switched without a restart.
+PLANNER_ENV = "PLANNER"
+PLANNERS = ("solver", "llm")
 
 # ----------MANAGE ORDER STATUS--------------
 class OrderStatus(Enum):
@@ -42,6 +56,18 @@ app.config['SECRET_KEY'] = 'your_secret_key_here'
 db_file = os.path.join(os.path.dirname(__file__), 'CSC510_DB.db')
 
 # ---------------------- Helpers ----------------------
+
+def _first_present(d: dict, *keys):
+    """
+    Return the value of the first key in d whose value is not None.
+    Unlike chaining with `or`, falsy values such as 0 / 0.0 count as present.
+    Args:
+        d (dict): The mapping to search.
+        *keys: Keys to try, in order.
+    Returns:
+        The first non-None value, or None if no key has one.
+    """
+    return next((d[k] for k in keys if d.get(k) is not None), None)
 
 def _money(x: float) -> float:
     """
@@ -82,22 +108,32 @@ def _dollars_to_cents(dollars) -> int:
     except MoneyError:
         return 0
 
-class _NoRowsChanged(Exception):
-    """Raised inside a transaction when a ``require_rows`` statement changed nothing."""
+
+def _parse_amount_cents(raw) -> int:
+    """
+    Strictly parse a user-entered dollar amount into cents (see ``money.parse_cents``).
+    Args:
+        raw (str | int | None): The amount as entered, e.g. "12.50".
+    Returns:
+        int: The amount in cents, rounded half-up to the nearest cent (may be zero or negative).
+    Raises:
+        ValueError: If the input is not a plain finite number (``money.MoneyError`` is a ValueError).
+    """
+    return parse_cents(raw)
 
 
 def require_rows(query: str, params: tuple) -> tuple:
     """
-    Mark a statement for ``_execute_transaction`` as one that must change at least one row.
+    Mark a statement for ``_execute_transaction`` as one that must change exactly one row.
     A guarded debit such as ``UPDATE ... WHERE wallet >= ?`` that matches no rows is not
-    a SQL error, so without this marker the rest of the transaction would still commit.
+    a SQL error, so without this the rest of the transaction would still commit.
     Args:
         query (str): SQL statement.
         params (tuple): Parameters for the statement.
     Returns:
-        tuple: ``(query, params, True)`` for use in ``_execute_transaction``.
+        tuple: ``(query, params, 1)`` for use in ``_execute_transaction``.
     """
-    return (query, params, True)
+    return (query, params, 1)
 
 
 def _execute_transaction(conn, queries_and_params: list, result: dict = None) -> bool:
@@ -105,9 +141,10 @@ def _execute_transaction(conn, queries_and_params: list, result: dict = None) ->
     Execute multiple queries in a single, atomic transaction.
     Args:
         conn (sqlite3.Connection): Active database connection.
-        queries_and_params (list): List of (query, params) pairs, or
-            ``require_rows(query, params)`` entries that abort the whole
-            transaction if they change no rows.
+        queries_and_params (list): List of (query: str, params: tuple) pairs, or
+            (query, params, expected_rowcount) triples (``require_rows`` makes one).
+            If a statement affects a different number of rows than expected (e.g. a
+            guarded debit matched nothing), the whole transaction is rolled back.
         result (dict, optional): If given, ``result["lastrowid"]`` is set to the
             ID of the last row inserted by this transaction.
     Returns:
@@ -118,10 +155,11 @@ def _execute_transaction(conn, queries_and_params: list, result: dict = None) ->
         lastrowid = None
         for entry in queries_and_params:
             query, params = entry[0], entry[1]
-            must_change_rows = len(entry) > 2 and entry[2]
             cur.execute(query, params)
-            if must_change_rows and cur.rowcount < 1:
-                raise _NoRowsChanged(query)
+            if len(entry) > 2 and cur.rowcount != entry[2]:
+                print(f"Transaction aborted, expected {entry[2]} row(s), got {cur.rowcount}: {query}")
+                conn.rollback()
+                return False
             if query.lstrip().upper().startswith("INSERT"):
                 lastrowid = cur.lastrowid
         conn.commit()
@@ -451,7 +489,9 @@ def build_calendar_cells(gen_map, year, month, items_by_id):
         month (int): The calendar month (1–12).
         items_by_id (dict): Mapping itm_id -> item detail dict from DB.
     Returns:
-        list: A flat list of calendar cell dicts with day number and a 'meals' list.
+        list: A flat list of calendar cell dicts with day number and a 'meals' list. Days of
+            the month also carry 'kcal' (calories planned that day) and 'cost_cents' (what the
+            day's meals cost delivered, tax and fees included, as the planner counts it).
     """
     def meal_sort_key(e):
         # Breakfast(1) first, then Lunch(2), then Dinner(3)
@@ -481,7 +521,12 @@ def build_calendar_cells(gen_map, year, month, items_by_id):
                     "color": palette.get(itm['itm_id'], "#7aa2f7"),
                 })
 
-            cells.append({"day": d, "meals": meals})
+            cells.append({
+                "day": d,
+                "meals": meals,
+                "kcal": sum(m["item"].get("calories") or 0 for m in meals),
+                "cost_cents": sum(meal_cost_cents(int(m["item"].get("price") or 0)) for m in meals),
+            })
 
     return cells
 
@@ -532,6 +577,9 @@ def index(year, month):
 
     # Build cells for the month
     cells = build_calendar_cells(gen_map, year, month, items_by_id)
+    month_cost_cents = sum(c.get("cost_cents", 0) for c in cells)
+    planned_days = [c for c in cells if c.get("meals")]
+    month_avg_kcal = round(sum(c["kcal"] for c in planned_days) / len(planned_days)) if planned_days else 0
 
     # Build "today_menu" (Breakfast, Lunch, Dinner if present)
     today_iso = f"{today.year:04d}-{today.month:02d}-{today.day:02d}"
@@ -559,6 +607,8 @@ def index(year, month):
         next_month=next_m.month,
         next_year=next_m.year,
         calendar_cells=cells,
+        month_cost_cents=month_cost_cents,
+        month_avg_kcal=month_avg_kcal,
         today_year=today.year,
         today_month=today.month,
         today_day=today.day,
@@ -723,7 +773,7 @@ def profile():
 
     conn = create_connection(db_file)
     try:
-        row = fetch_one(conn, 'SELECT usr_id,first_name,last_name,email,phone,password_HS,wallet,preferences,allergies FROM "User" WHERE email = ?', (email,))
+        row = fetch_one(conn, 'SELECT usr_id,first_name,last_name,email,phone,password_HS,wallet,preferences,allergies,daily_calorie_target,weekly_budget_cents FROM "User" WHERE email = ?', (email,))
         if not row:
             return redirect(url_for('logout'))
 
@@ -737,6 +787,8 @@ def profile():
             "wallet":        cents_to_str(_wallet_cents(conn, row[0])),
             "preferences":   row[7] or "",
             "allergies":     row[8] or "",
+            "daily_calorie_target": row[9],
+            "weekly_budget": format_budget(row[10]),
         }
 
         session['usr_id'] = user["usr_id"]
@@ -778,7 +830,7 @@ def profile():
                     pass
 
             # New logic to determine reviewability (Delivered AND Restaurant not yet reviewed)
-            is_delivered = (status or "").lower() == OrderStatus.ORDERED.get_lowercase()
+            is_delivered = (status or "").lower() == OrderStatus.DELIVERED.get_lowercase()
             is_reviewed = rtr_id in reviewed_rtr_ids
             is_reviewable = is_delivered and not is_reviewed
 
@@ -855,11 +907,14 @@ def profile():
 @app.route('/profile/edit', methods=['GET', 'POST'])
 def edit_profile():
     """
-    Display and process the profile edit form (phone, preferences, allergies).
+    Display and process the profile edit form (phone, preferences, allergies, and the
+    planner's daily calorie target and weekly budget).
     Args:
         None
     Returns:
-        Response: Renders form (GET) or updates and redirects to profile (POST).
+        Response: Renders form (GET) or updates and redirects to profile (POST). A calorie
+        target or budget that fails validation re-renders the form with the error and
+        status 400, and nothing is saved.
     """
     if session.get('Username') is None:
         return redirect(url_for('login'))
@@ -871,7 +926,8 @@ def edit_profile():
     conn = create_connection(db_file)
     try:
         row = fetch_one(conn, '''
-            SELECT usr_id, first_name, last_name, email, phone, wallet, preferences, allergies
+            SELECT usr_id, first_name, last_name, email, phone, wallet, preferences, allergies,
+                   daily_calorie_target, weekly_budget_cents
             FROM "User" WHERE usr_id = ?
         ''', (usr_id,))
         wallet_cents = _wallet_cents(conn, row[0]) if row else 0
@@ -890,6 +946,13 @@ def edit_profile():
         "wallet": cents_to_str(wallet_cents),
         "preferences": row[6] or "",
         "allergies": row[7] or "",
+        "daily_calorie_target": row[8],
+        "weekly_budget_cents": row[9],
+    }
+    # What the target inputs show: the stored values, or on a failed submit what was typed.
+    targets = {
+        "daily_calorie_target": "" if row[8] is None else str(row[8]),
+        "weekly_budget": format_budget(row[9]),
     }
 
     # For now just render an edit form (you can build edit_profile.html)
@@ -900,13 +963,35 @@ def edit_profile():
         new_prefs = request.form.get('preferences') or user['preferences']
         new_allergies = request.form.get('allergies') or user['allergies']
 
+        # Planner targets: a field left out of the form keeps its value; a blank one clears it.
+        new_kcal = user['daily_calorie_target']
+        new_budget_cents = user['weekly_budget_cents']
+        errors = {}
+        if 'daily_calorie_target' in request.form:
+            targets['daily_calorie_target'] = request.form['daily_calorie_target']
+            try:
+                new_kcal = parse_daily_calorie_target(request.form['daily_calorie_target'])
+            except TargetError as e:
+                errors['daily_calorie_target'] = str(e)
+        if 'weekly_budget' in request.form:
+            targets['weekly_budget'] = request.form['weekly_budget']
+            try:
+                new_budget_cents = parse_weekly_budget(request.form['weekly_budget'])
+            except TargetError as e:
+                errors['weekly_budget'] = str(e)
+        if errors:
+            return render_template(
+                "edit_profile.html", user=user, targets=targets, errors=errors
+            ), 400
+
         conn = create_connection(db_file)
         try:
             execute_query(conn, '''
                 UPDATE "User"
-                SET phone = ?, preferences = ?, allergies = ?
+                SET phone = ?, preferences = ?, allergies = ?,
+                    daily_calorie_target = ?, weekly_budget_cents = ?
                 WHERE usr_id = ?
-            ''', (new_phone, new_prefs, new_allergies, usr_id))
+            ''', (new_phone, new_prefs, new_allergies, new_kcal, new_budget_cents, usr_id))
         finally:
             close_connection(conn)
 
@@ -917,7 +1002,7 @@ def edit_profile():
 
         return redirect(url_for('profile'))
 
-    return render_template("edit_profile.html", user=user)
+    return render_template("edit_profile.html", user=user, targets=targets, errors={})
 
 @app.route('/profile/change-password', methods=['POST'])
 def change_password():
@@ -1003,7 +1088,7 @@ def wallet_topup():
         return redirect(url_for('profile', wallet_error='zero_amount'))
 
     usr_id = session['usr_id']
-    
+
     conn = create_connection(db_file)
     try:
         _ledger_ready(conn)
@@ -1091,22 +1176,28 @@ def submit_review():
     if session.get('usr_id') is None:
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
 
+    # Validate the payload before touching the DB: missing/non-numeric fields are a 400, not a 500
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"ok": False, "error": "Invalid rating or restaurant ID"}), 400
+    try:
+        rtr_id = int(data.get('restaurant_id'))
+        rating = int(data.get('rating'))
+        ord_id = int(data.get('order_id')) # Required: the order must be delivered to allow a review
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "Invalid rating or restaurant ID"}), 400
+    title = str(data.get('title') or '').strip()
+    description = str(data.get('comment') or '').strip()
+
+    if not (1 <= rating <= 5) or rtr_id <= 0 or ord_id <= 0:
+        return jsonify({"ok": False, "error": "Invalid rating or restaurant ID"}), 400
+
+    usr_id = session['usr_id']
     conn = create_connection(db_file)
     try:
-        data = request.get_json()
-        usr_id = session['usr_id']
-        rtr_id = int(data.get('restaurant_id')) # New: use restaurant_id
-        rating = int(data.get('rating'))
-        title = (data.get('title') or '').strip()
-        description = (data.get('comment') or '').strip()
-        ord_id = int(data.get('order_id')) # Optional, for context/UI redirection
-
-        if not (1 <= rating <= 5) or rtr_id <= 0:
-            return jsonify({"ok": False, "error": "Invalid rating or restaurant ID"}), 400
-        
         # 1. Verify the order was actually delivered to allow review submission
         order_row = fetch_one(conn, 'SELECT status FROM "Order" WHERE ord_id = ? AND usr_id = ? AND rtr_id = ?', (ord_id, usr_id, rtr_id))
-        if not order_row or (order_row[0] or '').lower() != OrderStatus.ORDERED.get_lowercase():
+        if not order_row or (order_row[0] or '').lower() != OrderStatus.DELIVERED.get_lowercase():
              return jsonify({"ok": False, "error": "Order not delivered or unauthorized"}), 403
 
         # 2. Check for existing review (prevent duplicate reviews for the same restaurant by the same user)
@@ -1131,14 +1222,14 @@ def submit_review():
         close_connection(conn)
 
 # Order route (Calendar "Order" button target)
-@app.route('/order', methods=['GET', 'POST'])
+@app.route('/order', methods=['POST'])
 def order():
     """
-    Place an order via JSON (POST) or handle legacy single-item GET flow.
+    Place an order via JSON POST, debiting the user's wallet atomically.
     Args:
         None
     Returns:
-        Response: JSON with {'ok', 'ord_id'} on POST; redirects/HTML for legacy GET.
+        Response: JSON with {'ok', 'ord_id'} on success, or {'ok': False, 'error'} on failure.
     """
     # Must be logged in
     if session.get("Username") is None:
@@ -1160,7 +1251,10 @@ def order():
     # ---- POST JSON: place a single order containing ALL items in the restaurant group ----
     if request.method == 'POST' and request.is_json:
         payload = request.get_json(silent=True) or {}
-        rtr_id = int(payload.get("restaurant_id") or 0)
+        try:
+            rtr_id = int(payload.get("restaurant_id") or 0)
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "invalid_input"}), 400
         items_in = payload.get("items") or []     # [{itm_id, qty, notes}]
         delivery_type = (payload.get("delivery_type") or "delivery").lower()
         if delivery_type not in ("delivery", "pickup"):
@@ -1168,7 +1262,8 @@ def order():
         try:
             tip_cents = parse_cents(payload.get("tip") or 0)
         except MoneyError:
-            tip_cents = 0   # unreadable tip: treated as no tip, as before
+            return jsonify({"ok": False, "error": "invalid_tip"}), 400
+        # Reject negative tips (would credit the wallet); NaN/inf are rejected by parse_cents
         if tip_cents < 0:
             return jsonify({"ok": False, "error": "invalid_tip"}), 400
         eta_minutes = int(payload.get("eta_minutes") or 40)
@@ -1181,10 +1276,14 @@ def order():
         if rtr_id <= 0 or not items_in:
             return jsonify({"ok": False, "error": "invalid_input"}), 400
 
-        # Look up all items strictly from DB to get authoritative prices/names
-        itm_ids = [int(it.get("itm_id") or 0) for it in items_in if int(it.get("itm_id") or 0) > 0]
-        if not itm_ids:
-            return jsonify({"ok": False, "error": "no_items"}), 400
+        # Look up all items strictly from DB to get authoritative prices/names.
+        # Any malformed or non-positive id rejects the whole request rather than being dropped.
+        try:
+            itm_ids = [int(it.get("itm_id")) for it in items_in]
+        except (AttributeError, TypeError, ValueError):
+            return jsonify({"ok": False, "error": "invalid_item"}), 400
+        if any(i <= 0 for i in itm_ids):
+            return jsonify({"ok": False, "error": "invalid_item"}), 400
 
         conn = create_connection(db_file)
         try:
@@ -1213,9 +1312,11 @@ def order():
         # Build items array for details; compute charges in integer cents (charges.py)
         detail_items = []
         lines = []
-        for it in items_in:
-            iid = int(it.get("itm_id"))
-            qty = int(it.get("qty") or 1)
+        for it, iid in zip(items_in, itm_ids):
+            try:
+                qty = int(it.get("qty") or 1)
+            except (TypeError, ValueError):
+                return jsonify({"ok": False, "error": "invalid_input"}), 400
             if qty <= 0: qty = 1
             meta = dbmap[iid]
             unit_cents = int(meta["price_cents"] or 0)
@@ -1256,79 +1357,7 @@ def order():
             return jsonify({"ok": False, "error": error}), 500
         return jsonify({"ok": True, "ord_id": new_ord_id})
 
-    # ---- (optional) legacy GET single-item path, kept for compatibility ----
-    # If you don't need this anymore, you can remove the whole GET section.
-    # Expect query: itm_id, qty, notes, delivery, tip, eta, date, meal
-    itm_id = int(request.args.get("itm_id") or 0)
-    if itm_id <= 0:
-        return redirect(url_for("orders"))
-
-    try:
-        qty = max(1, int(request.args.get("qty", "1")))
-    except ValueError:
-        qty = 1
-    delivery_type = (request.args.get("delivery") or "delivery").lower()
-    if delivery_type not in ("delivery", "pickup"):
-        delivery_type = "delivery"
-    try:
-        tip_cents = parse_cents(request.args.get("tip") or "0")
-    except MoneyError:
-        tip_cents = 0   # unreadable tip: treated as no tip, as before
-    if tip_cents < 0:
-        return redirect(url_for("orders"))
-    try:
-        eta_minutes = int(request.args.get("eta", "40"))
-    except Exception:
-        eta_minutes = 40
-    iso_date = (request.args.get("date") or datetime.now().date().isoformat())
-    try:
-        meal = int(request.args.get("meal", "3"))
-    except Exception:
-        meal = 3
-    notes = (request.args.get("notes") or "").strip()
-
-    # Look up item & restaurant strictly
-    conn = create_connection(db_file)
-    try:
-        mi = fetch_one(conn, '''
-            SELECT m.itm_id, m.rtr_id, m.name, m.price, r.name
-            FROM "MenuItem" m
-            JOIN "Restaurant" r ON r.rtr_id = m.rtr_id
-            WHERE m.itm_id = ?
-        ''', (itm_id,))
-    finally:
-        close_connection(conn)
-    if not mi:
-        return redirect(url_for("orders"))
-
-    item_id, rtr_id, item_name, price_cents, restaurant_name = mi
-    unit_cents = int(price_cents or 0)
-
-    details = {
-        "placed_at": datetime.now().astimezone().isoformat(),
-        "restaurant_id": int(rtr_id),
-        "items": [{
-            "itm_id": int(item_id),
-            "name": item_name,
-            "qty": int(qty),
-            "unit_price_cents": unit_cents,
-            "line_total_cents": unit_cents * int(qty),
-            **({"notes": notes} if notes else {})
-        }],
-        "charges_cents": compute_charges([(unit_cents, int(qty))], delivery_type, tip_cents),
-        "delivery_type": delivery_type,
-        "eta_minutes": int(eta_minutes),
-        "date": iso_date,
-        "meal": meal
-    }
-
-    # This path used to save the order without charging the wallet at all.
-    new_ord_id, error = _charge_and_save_order(
-        usr_id, rtr_id, restaurant_name, details, client_key=request.args.get("idempotency_key"))
-    if error:
-        return redirect(url_for('profile', wallet_error=error))
-
-    return redirect(url_for("profile") + (f"?ordered={new_ord_id}" if new_ord_id else ""))
+    return jsonify({"ok": False, "error": "invalid_input"}), 400
 
 # Orders route
 @app.route('/orders')
@@ -1350,7 +1379,7 @@ def orders():
         menu_items = fetch_all(conn, '''
             SELECT itm_id, rtr_id, name, price, calories, allergens, description
             FROM "MenuItem"
-            WHERE instock IS NULL OR instock = 1
+            WHERE instock = 1
         ''')
     finally:
         close_connection(conn)
@@ -1418,14 +1447,14 @@ def restaurants():
         menu_items = fetch_all(conn, '''
             SELECT itm_id, rtr_id, name, price, calories, allergens, description
             FROM "MenuItem"
-            WHERE instock IS NULL OR instock = 1
+            WHERE instock = 1
         ''')
         # Fetch all reviews, including the user's name for display
         review_rows = fetch_all(conn, '''
             SELECT 
                 r.rtr_id, r.rating, r.title, r.description, u.first_name, u.last_name
             FROM "Review" r
-            JOIN "User" u ON r.usr_id = u.usr_id
+            LEFT JOIN "User" u ON r.usr_id = u.usr_id
             ORDER BY r.rev_id DESC
         ''')
 
@@ -1437,7 +1466,8 @@ def restaurants():
                 "rating": rating,
                 "title": title,
                 "description": description,
-                "user_name": f"{first_name} {last_name}",
+                # LEFT JOIN keeps reviews whose author was deleted, so they still count toward the rating
+                "user_name": f"{first_name} {last_name}" if first_name is not None else "Former customer",
             })
     finally:
         close_connection(conn)
@@ -1530,12 +1560,18 @@ def db_view():
     Args:
         None
     Returns:
-        Response: HTML page showing rows/columns for a selected table (requires login).
+        Response: HTML page showing rows/columns for a selected table (requires admin).
     """
     if session.get('Username') is None:
         return redirect(url_for('login'))
 
-    allowed_tables = {'User', 'Restaurant', 'MenuItem', 'Order', 'Review'}
+    if not session.get('is_admin'):
+        return render_template("error.html",
+                             error="Access Denied",
+                             message="You do not have permission to view the database."), 403
+
+    allowed_tables = {'User', 'Restaurant', 'MenuItem', 'Order', 'Review', 'Ticket'}
+    hidden_columns = {'password_HS'}
     table = request.args.get('t', 'User')
     if table not in allowed_tables:
         table = 'User'
@@ -1563,6 +1599,11 @@ def db_view():
     finally:
         close_connection(conn)
 
+    # Never expose credential columns, even to admins
+    keep = [i for i, c in enumerate(columns) if c not in hidden_columns]
+    columns = [columns[i] for i in keep]
+    rows = [tuple(row[i] for i in keep) for row in (rows or [])]
+
     start = 0 if total == 0 else offset + 1
     end = min(offset + per_page, total)
 
@@ -1585,11 +1626,106 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--port', type=int, default=5000, help='Port to run the Flask app on')
     return parser.parse_args()
 
+def replace_menu_days(gen_str, days, entries):
+    """
+    Replace whole days of a serialized generated menu.
+    Args:
+        gen_str (str): The current User.generated_menu, "[YYYY-MM-DD,ID,meal],...".
+        days (Iterable[date]): Days whose existing entries are dropped.
+        entries (Iterable[str]): New entries to append, in the same format.
+    Returns:
+        str: The menu with every entry on those days replaced by the new entries. Entries on
+        other days are kept exactly as they were.
+    """
+    drop = {d.isoformat() for d in days}
+    kept = [
+        e for e in re.findall(r'\[[^\]]*\]', gen_str or "")
+        if e[1:].strip()[:10] not in drop
+    ]
+    return ",".join(kept + list(entries))
+
+
 @app.route('/generate_plan', methods=['POST'])
 def generate_plan():
+    """
+    Plan the next 7 days (starting tomorrow) for the logged-in user and save them to their
+    calendar. Uses the planner named by the PLANNER environment variable: "solver" (default)
+    or "llm" (v1).
+    Returns:
+        Response: JSON. With the solver: 200 {"ok": true, "optimal", "total_cost_cents",
+        "kcal_per_day"} on success; 400 if the profile is missing its targets; 422 with
+        "error" (the explanation) and "reasons" when no week fits. 401 if not logged in.
+    """
     if session.get("Username") is None:
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
 
+    planner = os.environ.get(PLANNER_ENV, "solver").strip().lower()
+    if planner == "solver":
+        return _generate_plan_solver()
+    if planner == "llm":
+        return _generate_plan_llm()
+    return jsonify({
+        "ok": False,
+        "error": f"Unknown {PLANNER_ENV}={planner!r}; use one of {', '.join(PLANNERS)}.",
+    }), 500
+
+
+def _generate_plan_solver():
+    """/generate_plan with the CP-SAT solver: the whole week at once, within the user's targets."""
+    conn = create_connection(db_file)
+    try:
+        user = fetch_one(conn, '''
+            SELECT preferences, allergies, generated_menu, daily_calorie_target, weekly_budget_cents
+            FROM "User" WHERE email = ?
+        ''', (session.get("Email"),))
+        if not user:
+            return jsonify({"ok": False, "error": "User not found"}), 404
+        prefs, allergies, current_menu, kcal_target, budget_cents = user
+
+        try:
+            plan_request = PlanRequest.from_profile(
+                daily_calorie_target=kcal_target,
+                weekly_budget_cents=budget_cents,
+                allergies=allergies,
+                preferences=prefs,
+                start=date.today() + timedelta(days=1),
+            )
+        except InvalidPlanRequest as e:
+            return jsonify({"ok": False, "error": str(e), "fix_url": url_for("edit_profile")}), 400
+
+        try:
+            result = plan_week(plan_request, load_menu(db_file))
+        except Exception as e:  # a planner bug or bad data: answer in JSON, the page expects it
+            app.logger.exception("Planner failed")
+            return jsonify({
+                "ok": False,
+                "error": f"The planner could not plan your week because of an internal error ({type(e).__name__}). Please report it.",
+            }), 500
+        if not result.ok:
+            return jsonify({
+                "ok": False,
+                "status": result.status.value,
+                "error": result.explanation,
+                "reasons": list(result.reasons),
+            }), 422
+
+        # The week is planned as a whole (budget, calories), so it replaces those 7 days.
+        new_menu_str = replace_menu_days(current_menu, plan_request.dates(), result.menu_entries())
+        execute_query(conn, 'UPDATE "User" SET generated_menu = ? WHERE email = ?', (new_menu_str, session.get("Email")))
+        session["GeneratedMenu"] = new_menu_str
+        return jsonify({
+            "ok": True,
+            "planner": "solver",
+            "optimal": result.optimal,
+            "total_cost_cents": result.total_cost_cents,
+            "kcal_per_day": {d.isoformat(): kcal for d, kcal in result.kcal_by_day().items()},
+        })
+    finally:
+        close_connection(conn)
+
+
+def _generate_plan_llm():
+    """/generate_plan with the v1 LLM planner (PLANNER=llm), unchanged from v1."""
     # 1. Fetch User Metadata (Preferences & Allergies)
     conn = create_connection(db_file)
     try:
@@ -1886,7 +2022,8 @@ def admin_dashboard():
                         placed_at_display = order_dt.strftime("%Y-%m-%d %H:%M")
                     
                     # Get total from charges (new orders: int cents; old orders: float dollars)
-                    total = order_charges_cents(details)["total"]
+                    if details.get("charges_cents") or details.get("charges"):
+                        total = order_charges_cents(details)["total"]
                     ledger_txn_id = details.get("ledger_txn_id")
                     
                 except Exception as e:
@@ -1902,7 +2039,7 @@ def admin_dashboard():
                 'ord_id': ord_id,
                 'customer_name': f"{first_name} {last_name}",
                 'restaurant_name': restaurant_name,
-                'total': format_cents(total) if total else "N/A",
+                'total': format_cents(total) if total is not None else "N/A",
                 'placed_at': placed_at_display,
                 'status': status,
                 'refunded': ledger_txn_id in refunded_txns,
@@ -2169,7 +2306,8 @@ def support_submit():
     
     # Validate message length (minimum 10 characters)
     if len(message) < 10:
-        return redirect(url_for('profile') + f'?ticket_error=message_too_short&ord_id={ord_id}&message={message}')
+        # url_for URL-encodes each value, so '&', '#', '=' or '%' in the message can't corrupt the query string
+        return redirect(url_for('profile', ticket_error='message_too_short', ord_id=ord_id, message=message))
     
     # Validate order exists and belongs to current user
     conn = create_connection(db_file)

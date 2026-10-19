@@ -154,18 +154,19 @@ class MenuGenerator:
     MenuGenerator class that uses an LLM to generate menu items based on user preferences and restrictions
     """
     
-    def __init__(self, tokens: int = 500):
+    def __init__(self, tokens: int = 500, llm=None):
         """
         Initializes the MenuGenerator with menu items and restaurants from the database and initializes
-        the local LLM.
+        the LLM. Pass llm (anything with generate(system, prompt) -> str) to use it instead of
+        building the real one, e.g. a fake in tests or recorded responses in the evaluation.
         """
         conn = create_connection(db_file)
         # Ensure we only fetch active items
-        self.menu_items = pd.read_sql_query("SELECT * FROM MenuItem WHERE instock = 1 OR instock IS NULL", conn)
+        self.menu_items = pd.read_sql_query("SELECT * FROM MenuItem WHERE instock = 1", conn)
         self.restaurants = pd.read_sql_query("SELECT rtr_id, hours FROM Restaurant WHERE status='Open' OR status IS NULL", conn)
         close_connection(conn)
         
-        self.generator = llm_toolkit.LLM(tokens=tokens)
+        self.generator = llm if llm is not None else llm_toolkit.LLM(tokens=tokens)
 
     def __get_context(self, allergens: str, weekday: str, order_time: int, num_choices: int) -> Tuple[str, List[int]]:
         """
