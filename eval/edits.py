@@ -8,7 +8,8 @@ Evaluate plain-English plan edits (GitHub issue #8, M3).
 
 60 labelled requests (eval/data/edit_requests.json): 40 normal ones with the exact edits
 expected, 10 ambiguous ones that should get a clarifying question and 10 adversarial ones
-that should be refused. Two parsers are scored: the regex baseline (no model, no guard) and
+that should be refused. Three parsers are scored: the regex baseline from the issue (no model,
+no guard), the app's model-free mode (EDIT_PARSER=regex: the guard, then the regex parser) and
 the M3 pipeline (guard + LLM parser), whose model answers come from a recording so CI needs
 no key.
 
@@ -254,12 +255,21 @@ def llm_parse_fn(llm, timeout_s: float):
 def run(requests, menu, catalog, *, replay=None) -> dict:
     """Score the regex baseline and, if a recording is given, the M3 pipeline."""
     current = base_plan(menu)
-    parsers = {"regex": evaluate_parser(regex_parser.parse, requests, menu, catalog, current)}
+    guarded = regex_parser.GuardedRegexParser()
+    parsers = {
+        "regex": evaluate_parser(regex_parser.parse, requests, menu, catalog, current),
+        "guarded_regex": evaluate_parser(
+            lambda text: guarded.parse(text), requests, menu, catalog, current
+        ),
+    }
     model = None
     if replay is not None:
-        guarded = _ReplayGuard(replay)
         parsers["llm"] = evaluate_parser(
-            llm_parse_fn(guarded, timeout_s=LIVE_TIMEOUT_S), requests, menu, catalog, current
+            llm_parse_fn(_ReplayGuard(replay), timeout_s=LIVE_TIMEOUT_S),
+            requests,
+            menu,
+            catalog,
+            current,
         )
         model = getattr(replay, "model", None)
     counts = {
@@ -277,8 +287,12 @@ def run(requests, menu, catalog, *, replay=None) -> dict:
 
 def render_markdown(report: dict) -> str:
     """The M3 results table (m3.md, the CI job summary and the README block)."""
-    names = {"regex": "Regex baseline", "llm": "M3 (guard + LLM)"}
-    cols = [n for n in ("regex", "llm") if n in report["parsers"]]
+    names = {
+        "regex": "Regex baseline",
+        "guarded_regex": "Guard + regex (no model)",
+        "llm": "M3 (guard + LLM)",
+    }
+    cols = [n for n in ("regex", "guarded_regex", "llm") if n in report["parsers"]]
     counts = report["requests"]
     lines = [
         "## M3 plan edits",

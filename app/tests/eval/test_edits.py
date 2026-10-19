@@ -105,6 +105,7 @@ def test_recorded_llm_answers_replay_without_a_model(seed, tmp_path):
     assert (llm["parse_exact_pct"], llm["clarify_pct"], llm["refused_pct"]) == (100, 100, 100)
     assert report["model"] == "oracle"
     assert edits_eval.failures(report) == []
+    assert report["parsers"]["guarded_regex"]["refused_pct"] == 100
     md = edits_eval.render_markdown(report)
     assert "M3 (guard + LLM)" in md and "recorded from `oracle`" in md
 
