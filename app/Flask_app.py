@@ -30,6 +30,7 @@ from planner.targets import (
     parse_weekly_budget,
 )
 from planner.menu import load_menu, meal_cost_cents
+from planner.fees import load_fee_schedule
 from planner.request import InvalidPlanRequest, PlanRequest
 from planner.solver import plan_week
 
@@ -1356,6 +1357,7 @@ def order():
                 JOIN "Restaurant" r ON r.rtr_id = m.rtr_id
                 WHERE m.itm_id IN ({qmarks})
             ''', tuple(itm_ids))
+            fee_schedule = load_fee_schedule(conn)   # this restaurant's own fees (M4)
         finally:
             close_connection(conn)
 
@@ -1398,7 +1400,8 @@ def order():
             "placed_at": placed_iso,
             "restaurant_id": int(rtr_id),
             "items": detail_items,
-            "charges_cents": compute_charges(lines, delivery_type, tip_cents),
+            "charges_cents": compute_charges(lines, delivery_type, tip_cents,
+                                             schedule=fee_schedule, rtr_id=rtr_id),
             "delivery_type": delivery_type,
             "eta_minutes": int(eta_minutes),
             "date": iso_date,

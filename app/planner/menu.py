@@ -8,13 +8,12 @@ itself, on its own.
 
 import json
 import os
-from dataclasses import dataclass
-from decimal import ROUND_HALF_UP, Decimal
+from dataclasses import dataclass, field
 
-from pricing import DELIVERY_FEE, SERVICE_FEE, TAX_RATE
 from sqlQueries import close_connection, create_connection, fetch_all
 
 from planner.allergens import parse_allergens
+from planner.fees import DEFAULT_FEES, FeeSchedule, load_fee_schedule
 
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
@@ -23,9 +22,6 @@ WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 MEAL_NAMES = {1: "breakfast", 2: "lunch", 3: "dinner"}
 MEAL_TIMES = {1: 1000, 2: 1400, 3: 2000}
 
-# Exact decimal copies of the dollar constants; int(4.35 * 100) is 434 in floating point.
-_TAX_RATE = Decimal(str(TAX_RATE))
-_FEES_CENTS = int(Decimal(str(DELIVERY_FEE)) * 100 + Decimal(str(SERVICE_FEE)) * 100)
 
 
 @dataclass(frozen=True)
@@ -43,7 +39,11 @@ class MenuItem:
 
     @property
     def cost_cents(self) -> int:
-        """What ordering this item on its own costs, tax and fees included."""
+        """
+        What ordering this item on its own costs with the default fees, tax included. The
+        planner prices meals with the menu's fee schedule instead (``Menu.fees``), which
+        knows each restaurant's own fees.
+        """
         return meal_cost_cents(self.price_cents)
 
 
@@ -75,16 +75,17 @@ class Menu:
 
     items: dict[int, MenuItem]
     restaurants: dict[int, Restaurant]
+    fees: FeeSchedule = field(default=DEFAULT_FEES)  # tax rate and each restaurant's fees
 
 
-def meal_cost_cents(price_cents: int) -> int:
+def meal_cost_cents(price_cents: int, rtr_id: int | None = None,
+                    fees: FeeSchedule = DEFAULT_FEES) -> int:
     """
     Cost of one meal ordered on its own for delivery: the item price, plus tax rounded half
-    up to the cent, plus the delivery and service fees. This is how checkout and the M0
-    validator charge a meal, and it is what the weekly budget is compared against.
+    up to the cent, plus that restaurant's delivery and service fees (see planner.fees).
+    This is how checkout charges a single-item order.
     """
-    tax = (price_cents * _TAX_RATE).quantize(Decimal(1), rounding=ROUND_HALF_UP)
-    return price_cents + int(tax) + _FEES_CENTS
+    return fees.meal_cost_cents(price_cents, rtr_id)
 
 
 def load_menu(db_path: str | os.PathLike) -> Menu:
@@ -93,7 +94,7 @@ def load_menu(db_path: str | os.PathLike) -> Menu:
     Args:
         db_path: Path to the app's SQLite database.
     Returns:
-        Menu: All items (in stock or not) and all restaurants (open or not).
+        Menu: All items (in stock or not), all restaurants (open or not), and the fees.
     Raises:
         FileNotFoundError: The database file does not exist.
     """
@@ -110,6 +111,7 @@ def load_menu(db_path: str | os.PathLike) -> Menu:
             """SELECT itm_id, rtr_id, name, description, price, calories, allergens, instock
                FROM "MenuItem" ORDER BY itm_id""",
         )
+        fees = load_fee_schedule(conn)
     finally:
         close_connection(conn)
 
@@ -135,7 +137,7 @@ def load_menu(db_path: str | os.PathLike) -> Menu:
         )
         for itm_id, rtr_id, name, description, price, calories, allergens, instock in item_rows
     }
-    return Menu(items=items, restaurants=restaurants)
+    return Menu(items=items, restaurants=restaurants, fees=fees)
 
 
 def parse_hours(raw: str | None) -> dict[str, tuple[int, ...]]:

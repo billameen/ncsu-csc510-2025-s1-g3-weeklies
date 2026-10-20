@@ -3,6 +3,8 @@ Check a planned week against the definition of a valid week in GitHub issue #5.
 
 This module is the spec. It deliberately does not import planner code (menu_generation or
 eval.baselines), so a planner bug cannot also hide in the check that is meant to catch it.
+The one exception is the fee *data*, ``planner.fees``: what each restaurant charges is
+configuration, not planning logic, and checkout reads the same numbers.
 """
 
 from collections.abc import Iterable, Sequence
@@ -11,7 +13,7 @@ from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 
-from pricing import DELIVERY_FEE, SERVICE_FEE, TAX_RATE
+from planner.fees import DEFAULT_FEES, FeeSchedule
 
 from eval.catalog import Catalog, Item
 from eval.profiles import Profile
@@ -25,9 +27,6 @@ WEEK_START = date(2026, 10, 19)
 # 1 breakfast, 2 lunch, 3 dinner.
 MEAL_TIMES = {1: 1000, 2: 1400, 3: 2000}
 
-# Exact decimal copies of the dollar constants; e.g. int(4.35 * 100) is 434 in floating point.
-_TAX_RATE = Decimal(str(TAX_RATE))
-_FEES_CENTS = int(Decimal(str(DELIVERY_FEE)) * 100 + Decimal(str(SERVICE_FEE)) * 100)
 
 # Different spellings of the same allergen in the menu data, after lowercasing.
 _ALLERGEN_ALIASES = {"egg": "eggs", "peanuts": "nuts"}
@@ -134,7 +133,11 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
         elif kcal < low and len(day_meals) == len(MEAL_TIMES):
             violations.append(Violation(ViolationKind.UNDER_KCAL, day, detail=detail))
 
-    week_cents = sum(order_cost_cents(catalog.items[m.itm_id].price_cents) for m in placed)
+    week_cents = sum(
+        order_cost_cents(catalog.items[m.itm_id].price_cents, catalog.items[m.itm_id].rtr_id,
+                         catalog.fees)
+        for m in placed
+    )
     if week_cents > profile.budget_dollars * 100:
         violations.append(
             Violation(
@@ -153,13 +156,16 @@ def kcal_band(target: int) -> tuple[int, int]:
     return -(-9 * target // 10), 11 * target // 10
 
 
-def order_cost_cents(price_cents: int) -> int:
+def order_cost_cents(price_cents: int, rtr_id: int | None = None,
+                     fees: FeeSchedule = DEFAULT_FEES) -> int:
     """
     Cost of one meal ordered on its own for delivery, the way checkout charges it: item price
-    plus tax (rounded half up to the cent), the delivery fee and the service fee. No tip.
+    plus tax (rounded half up to the cent), the restaurant's delivery fee and service fee.
+    No tip. Computed here from the fee data rather than by calling the planner's pricing.
     """
-    tax_cents = (price_cents * _TAX_RATE).quantize(Decimal(1), rounding=ROUND_HALF_UP)
-    return price_cents + int(tax_cents) + _FEES_CENTS
+    tax_cents = (Decimal(price_cents) * fees.tax_rate).quantize(Decimal(1), rounding=ROUND_HALF_UP)
+    restaurant = fees.for_restaurant(rtr_id)
+    return price_cents + int(tax_cents) + restaurant.delivery_fee_cents + restaurant.service_fee_cents
 
 
 def normalize_allergen(tag: str) -> str:

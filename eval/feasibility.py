@@ -56,7 +56,7 @@ def _cheapest_day(
         options = {}  # calories -> (cost, item id) of the cheapest open item with that count
         for item in safe:
             if is_open(catalog, item, day, meal):
-                cost = order_cost_cents(item.price_cents)
+                cost = order_cost_cents(item.price_cents, item.rtr_id, catalog.fees)
                 if item.calories not in options or cost < options[item.calories][0]:
                     options[item.calories] = (cost, item.itm_id)
         extended = {}
