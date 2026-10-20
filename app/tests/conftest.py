@@ -94,6 +94,8 @@ def app(temp_db_path):
         conn.executescript(SCHEMA_SQL)    # <-- executes all CREATE TABLEs
         import ledger
         ledger.ensure_schema(conn)       # wallet ledger tables (M2)
+        from planner.fees import ensure_fee_schema
+        ensure_fee_schema(conn)          # per-restaurant fees (M4); empty = defaults
         conn.commit()
     finally:
         close_connection(conn)
