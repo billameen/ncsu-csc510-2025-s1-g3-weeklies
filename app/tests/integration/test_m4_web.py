@@ -128,6 +128,28 @@ def test_invalid_settings_are_rejected_and_not_saved(client, temp_db_path, form)
         close_connection(conn)
 
 
+@pytest.mark.parametrize("half", ["days", "restaurants"])
+def test_pickup_needs_both_days_and_restaurants(client, temp_db_path, half):
+    usr = _user(temp_db_path, f"m4-half-{half}@example.test", f"91955512{len(half):02d}")
+    rtr_id, _ = _restaurant(temp_db_path, f"M4 Half {half}", delivery_fee=299)
+    _login(client, f"m4-half-{half}@example.test")
+    form = {"batching": "on"}
+    if half == "days":
+        form["pickup_days"] = ["Sat"]
+    else:
+        form["pickup_restaurants"] = [str(rtr_id)]
+
+    resp = client.post("/profile/fees", data=form)
+
+    assert resp.status_code == 400
+    assert "Pickup needs at least one day and at least one restaurant" in resp.get_data(as_text=True)
+    conn = create_connection(temp_db_path)
+    try:
+        assert load_fee_prefs(conn, usr) == FeePrefs()
+    finally:
+        close_connection(conn)
+
+
 def test_the_profile_links_to_the_settings(client, temp_db_path):
     _user(temp_db_path, "m4-link@example.test", "9195551102")
     _login(client, "m4-link@example.test")

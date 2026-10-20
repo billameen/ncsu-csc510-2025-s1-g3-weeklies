@@ -1051,6 +1051,13 @@ def fee_settings():
                 error = "Those settings are not valid. Pick restaurants and days from the lists."
                 prefs = load_fee_prefs(conn, usr_id)
             else:
+                # Pickup needs both a restaurant and a day; one without the other would never
+                # be used, so say so instead of silently saving a setting that does nothing.
+                if bool(prefs.pickup_restaurants) != bool(prefs.pickup_days):
+                    error = ("Pickup needs at least one day and at least one restaurant. "
+                             "Pick both, or clear both to turn pickup off.")
+                    prefs = load_fee_prefs(conn, usr_id)
+            if error is None:
                 save_fee_prefs(conn, usr_id, prefs)
                 return redirect(url_for("fee_settings", saved=1))
         else:
