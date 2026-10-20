@@ -94,8 +94,11 @@ about 3 s to re-solve the whole week (target ≤ 2 s, excluding the model call).
 ## Limits
 
 - The model is whatever `llm_toolkit` selects: OpenAI's `gpt-4o-mini` with a key, or a
-  small local model (granite-4.0-h-350M) without one. A small model parses less of the
-  varied wording correctly; the guard and the solver keep it safe either way.
+  local model without one. The default local model (granite-4.0-h-350M) is too small for
+  the edit language: it parsed 17% of the labelled requests exactly, mixing up fields (a
+  tag written as a dish) and inventing edit types. Set `EDIT_LLM_MODEL` to a larger local
+  model for edits, such as `ibm-granite/granite-4.0-micro` (3B). A weak model gives worse
+  edits, never unsafe ones: with the 350M model, 0 rules were broken.
 - Tags are decided from item names, descriptions and allergen tags (the menu has no tag
   column), and deliberately strictly: any meat word rules out "vegetarian".
 - Edits apply to the next 7 days of an existing plan, or to as many of them as are fully

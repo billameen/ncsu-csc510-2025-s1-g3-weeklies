@@ -108,6 +108,12 @@ The edit box uses the app's LLM (`OPENAI_API_KEY`, or the local model, which loa
 first edit and can take a while). To run it without any model, start the server with
 `EDIT_PARSER=regex`.
 
+The default local model is small and parses many requests wrongly (never unsafely). For
+better edits without an API key, set a larger local model for the edit box, for example
+`EDIT_LLM_MODEL=ibm-granite/granite-4.0-micro` (3B, about 6.5 GB of GPU memory in half
+precision; `ibm-granite/granite-4.0-1b` needs about half that). It is downloaded on first
+use.
+
 > [!NOTE]
 > If you have downloaded the repo locally and you're running into issues with
 > `app.` errors when trying to run `Flask_app.py`, simply remove `app.`

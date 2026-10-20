@@ -238,8 +238,17 @@ Like B2, M3's model answers are recorded once and replayed, in
 `eval/fixtures/m3_edits_cassette.json` (prompt hashes and responses, never prompt text).
 Until a recording exists, the M3 column is left out and the command still runs.
 `python -m eval.edits --live` records with the app's LLM (OpenAI if `OPENAI_API_KEY` is
-set, otherwise the local model), then replays; `--readme` also refreshes the README table.
-A new prompt version (see `app/planner/prompts/`) needs a new recording.
+set, otherwise the local model, or `EDIT_LLM_MODEL` if set), then replays; `--readme` also
+refreshes the README table. A new prompt version (see `app/planner/prompts/`) needs a new
+recording, and so does a new model: delete the recording first, since one recording never
+mixes two models.
+
+The first recording used the default local model, granite-4.0-h-350M. It parsed 16.7% of
+the normal requests exactly, refused only what the guard refused, and asked no clarifying
+questions, while breaking 0 rules. Its replies showed why: it put tags in the dish or
+allergen field, invented edit types, added days nobody asked for, and stopped six replies
+before the last closing brace (which the parser now repairs). That is why the edit parser's
+model can be set separately with `EDIT_LLM_MODEL`.
 
 ### Disclosure: how the labelled set changed
 
