@@ -260,3 +260,25 @@ def test_daily_limits_always_cover_whole_days():
         }
     ).edits[0]
     assert limit.meal_codes() == {"breakfast", "lunch", "dinner"}
+
+
+def test_edit_keys_treat_one_edit_per_day_like_one_edit_for_both_days():
+    shift = {"type": "calorie_shift", "kcal_delta": -300}
+    split = parse({"action": "edit", "edits": [{**shift, "days": "mon"}, {**shift, "days": "tue"}]})
+    joined = parse({"action": "edit", "edits": [{**shift, "days": ["mon", "tue"]}]})
+    assert edit_keys(split.edits) == edit_keys(joined.edits)
+    # include is not merged: "pizza on Monday and pizza on Tuesday" is two pizzas, not one.
+    pizza = {"type": "include", "field": "dish", "op": "is", "value": "pizza"}
+    two = parse({"action": "edit", "edits": [{**pizza, "days": "mon"}, {**pizza, "days": "tue"}]})
+    one = parse({"action": "edit", "edits": [{**pizza, "days": ["mon", "tue"]}]})
+    assert edit_keys(two.edits) != edit_keys(one.edits)
+    # Different meals are different edits.
+    lunch = parse({"action": "edit", "edits": [{**VEGAN, "days": "mon", "meals": "lunch"}]})
+    dinner = parse({"action": "edit", "edits": [{**VEGAN, "days": "tue", "meals": "dinner"}]})
+    both = parse(
+        {
+            "action": "edit",
+            "edits": [{**VEGAN, "days": ["mon", "tue"], "meals": ["lunch", "dinner"]}],
+        }
+    )
+    assert edit_keys(lunch.edits + dinner.edits) != edit_keys(both.edits)

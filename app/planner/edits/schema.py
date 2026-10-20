@@ -491,8 +491,23 @@ class ParsedRequest(BaseModel):
 
 
 def edit_keys(edits) -> list:
-    """Order-independent comparison keys for a list of edits (used to score parsers)."""
-    return sorted((e.key() for e in edits), key=_sort_key)
+    """
+    Order-independent comparison keys for a list of edits (used to score parsers). Edits that
+    differ only in their days are merged first, since "Monday and Tuesday" written as one edit
+    or as two means the same; include is the exception, as its count applies per span.
+    """
+    merged: dict = {}
+    keys = []
+    for edit in edits:
+        key = edit.key()
+        if isinstance(edit, Include):
+            keys.append(key)
+            continue
+        i = key.index(edit.day_codes())
+        rest = key[:i] + key[i + 1 :]
+        merged[rest] = (i, merged.get(rest, (i, frozenset()))[1] | edit.day_codes())
+    keys += [rest[:i] + (days,) + rest[i:] for rest, (i, days) in merged.items()]
+    return sorted(keys, key=_sort_key)
 
 
 def _sort_key(key) -> str:
