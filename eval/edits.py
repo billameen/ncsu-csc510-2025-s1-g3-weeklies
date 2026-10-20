@@ -24,6 +24,7 @@ report when it finds it there.
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -438,7 +439,10 @@ def record(requests, recording: Path = RECORDING):
 
     from eval.baselines import RecordingLLM
 
-    live = llm_toolkit.LLM(tokens=300)
+    # The same model the app uses for edits: EDIT_LLM_MODEL, else llm_toolkit's default.
+    live = llm_toolkit.LLM(
+        tokens=300, local_model=os.environ.get("EDIT_LLM_MODEL", "").strip() or None
+    )
     recorder = RecordingLLM(live, recording)
     print(
         f"Recording with {recorder.model} ({live.provider}); {recorder.resumed} already recorded",

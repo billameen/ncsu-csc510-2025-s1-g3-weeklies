@@ -13,21 +13,29 @@ except ImportError:
 # Local model imports
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+DEFAULT_LOCAL_MODEL = "ibm-granite/granite-4.0-h-350M"
+
+
 class LLM:
     """
     Robust LLM class that supports both OpenAI (Cloud) and Local (HuggingFace) models.
     Defaults to OpenAI if OPENAI_API_KEY is found, otherwise falls back to local.
     """
 
-    def __init__(self, tokens: int = 500):
+    def __init__(self, tokens: int = 500, local_model: str | None = None):
         """
         Initializes the LLM. 
         - Checks for OPENAI_API_KEY.
         - If present, sets up OpenAI client.
         - If missing, loads local model with GPU acceleration (CUDA/MPS).
+        Args:
+            tokens: Most tokens to generate per call.
+            local_model: Hugging Face id of the local model to load instead of
+                DEFAULT_LOCAL_MODEL (ignored when OpenAI is used).
         """
         load_dotenv() # Load environment variables from .env file
         self.tokens = tokens
+        self.local_model = local_model or DEFAULT_LOCAL_MODEL
         self.api_key = os.getenv("OPENAI_API_KEY")
         
         # Determine Provider
@@ -52,7 +60,7 @@ class LLM:
         else:
             self.device = "cpu"
             
-        self.model_name = "ibm-granite/granite-4.0-h-350M"
+        self.model_name = self.local_model
         
         print(f"💻 LLM Provider: Local ({self.model_name}) on {self.device.upper()}")
 

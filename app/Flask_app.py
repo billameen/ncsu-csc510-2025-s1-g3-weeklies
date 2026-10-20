@@ -1637,8 +1637,15 @@ def _generate_plan_llm():
 # Which parser /plan/edit uses: "llm" (default; OpenAI or the local model, via llm_toolkit)
 # or "regex" (no model; the guarded regex baseline). Read on every request.
 EDIT_PARSER_ENV = "EDIT_PARSER"
+# A Hugging Face id for the edit parser's local model, e.g. "ibm-granite/granite-4.0-micro".
+EDIT_LLM_MODEL_ENV = "EDIT_LLM_MODEL"
 EDIT_HISTORY_SIZE = 5
 _edit_llm_parser = None
+
+
+def edit_llm_model():
+    """The local model for plan edits, from EDIT_LLM_MODEL (default: llm_toolkit's)."""
+    return os.environ.get(EDIT_LLM_MODEL_ENV, "").strip() or None
 
 
 def get_edit_parser():
@@ -1648,7 +1655,7 @@ def get_edit_parser():
         return GuardedRegexParser()
     if _edit_llm_parser is None:
         import llm_toolkit
-        _edit_llm_parser = LLMEditParser(llm_toolkit.LLM(tokens=300))
+        _edit_llm_parser = LLMEditParser(llm_toolkit.LLM(tokens=300, local_model=edit_llm_model()))
     return _edit_llm_parser
 
 
