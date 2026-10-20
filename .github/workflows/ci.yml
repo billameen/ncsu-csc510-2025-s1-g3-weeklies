@@ -41,8 +41,11 @@ jobs:
           set -e
           pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install pytest pytest-timeout 
-        
+          pip install pytest pytest-timeout
+
+      - name: Build the database
+        run: python scripts/init_db.py # CSC510_DB.db is gitignored; seed.sql is tracked
+
       - name: Run tests with retry
         uses: nick-fields/retry@v3
         with:
