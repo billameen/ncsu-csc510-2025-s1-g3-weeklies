@@ -414,7 +414,6 @@ def index(year, month):
     items_by_id = fetch_menu_items_by_ids(all_item_ids)
 
     # Build cells for the month
-    # Build cells for the month
     cells = build_calendar_cells(gen_map, year, month, items_by_id, today=today)
     month_cost_cents = sum(c.get("cost_cents", 0) for c in cells)
     planned_days = [c for c in cells if c.get("meals")]
@@ -812,18 +811,18 @@ def edit_profile():
         new_allergies = (request.form.get('allergies', user['allergies']) or '').strip()
 
         # Validate and store phones exactly as /register does (digits only)
+        error = None
         if raw_phone:
             new_phone = _normalize_phone(raw_phone)
             if new_phone is None:
-                return render_template("edit_profile.html", user=user, error=PHONE_ERROR), 400
+                error = PHONE_ERROR
         else:
             new_phone = user['phone']
 
         # Allergies drive meal-plan filtering, so only accept allergens the filter understands
         unknown = invalid_allergies(new_allergies)
-        if unknown:
-            return render_template("edit_profile.html", user=user,
-                                   error=f"Unknown allergy: {', '.join(unknown)}"), 400
+        if unknown and error is None:
+            error = f"Unknown allergy: {', '.join(unknown)}"
 
         # Planner targets: a field left out of the form keeps its value; a blank one clears it.
         new_kcal = user['daily_calorie_target']
@@ -841,9 +840,9 @@ def edit_profile():
                 new_budget_cents = parse_weekly_budget(request.form['weekly_budget'])
             except TargetError as e:
                 errors['weekly_budget'] = str(e)
-        if errors:
+        if error or errors:
             return render_template(
-                "edit_profile.html", user=user, targets=targets, errors=errors
+                "edit_profile.html", user=user, targets=targets, errors=errors, error=error
             ), 400
 
         conn = create_connection(db_file)

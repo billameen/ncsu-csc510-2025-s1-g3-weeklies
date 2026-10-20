@@ -149,7 +149,7 @@ def test_planner_llm_keeps_the_v1_generator(client, solver_menu, user, monkeypat
     calls = []
 
     class FakeV1:
-        def __init__(self, tokens=500):
+        def __init__(self, tokens=500, strict_allergens=False):
             pass
 
         def update_menu(self, menu, preferences, allergens, date, meal_numbers, number_of_days):
