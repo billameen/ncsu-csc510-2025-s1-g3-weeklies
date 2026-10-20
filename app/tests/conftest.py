@@ -96,6 +96,8 @@ def app(temp_db_path):
         ledger.ensure_schema(conn)       # wallet ledger tables (M2)
         from planner.fees import ensure_fee_schema
         ensure_fee_schema(conn)          # per-restaurant fees (M4); empty = defaults
+        from fee_prefs import ensure_fee_prefs_schema
+        ensure_fee_prefs_schema(conn)    # users' batching / pickup settings (M4)
         conn.commit()
     finally:
         close_connection(conn)
