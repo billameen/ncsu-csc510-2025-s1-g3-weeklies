@@ -52,18 +52,54 @@ def load_prompt(version: str = PROMPT_VERSION) -> tuple[str, str]:
 
 def extract_json(raw: str) -> dict:
     """
-    The JSON object in a model reply, ignoring code fences and any text around it.
+    The JSON object in a model reply, ignoring code fences and any text around it. Small
+    models sometimes stop before the last closing brackets ('{"edits": [{...}]'), so brackets
+    left open at the end of the reply are closed.
     Raises:
         ValueError: There is no parseable JSON object.
     """
     text = _FENCE.sub("", raw or "")
-    start, end = text.find("{"), text.rfind("}")
-    if start == -1 or end <= start:
+    start = text.find("{")
+    if start == -1:
         raise ValueError("no JSON object in the reply")
-    data = json.loads(text[start : end + 1])
+    text = text[start:]
+    try:
+        data, _ = json.JSONDecoder().raw_decode(text)  # the first object; text after it is ignored
+    except json.JSONDecodeError as first_error:
+        # Close what is open, either at the end of the reply or, if text follows the JSON,
+        # at its last bracket.
+        end = max(text.rfind("}"), text.rfind("]"))
+        for candidate in (text.rstrip(), text[: end + 1]):
+            try:
+                data = json.loads(_close_brackets(candidate))
+                break
+            except json.JSONDecodeError:
+                continue
+        else:
+            raise first_error
     if not isinstance(data, dict):
         raise ValueError("the reply is not a JSON object")
     return data
+
+
+def _close_brackets(text: str) -> str:
+    """text with the brackets it leaves open closed, in order; unchanged if none are."""
+    expected, in_string, escaped = [], False, False
+    for char in text:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+        elif char == '"':
+            in_string = True
+        elif char in "{[":
+            expected.append("}" if char == "{" else "]")
+        elif char in "}]" and expected and char == expected[-1]:
+            expected.pop()
+    return text + "".join(reversed(expected))
 
 
 class LLMEditParser:

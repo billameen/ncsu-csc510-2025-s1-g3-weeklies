@@ -147,6 +147,32 @@ def test_the_prompt_covers_the_whole_format_and_its_examples_are_valid():
     assert "require_tag" in load_prompt("v1")[0]  # older prompts stay, for old recordings
 
 
+@pytest.mark.parametrize(
+    "raw",
+    [
+        # Real replies from the 350M model, which stopped before the last closing brace.
+        '{"action": "edit", "edits": [{"type": "filter", "field": "dish", "op": "is_not", '
+        '"value": "Fried Pickles"}]',
+        '{"action": "edit", "edits": [{"type": "filter", "field": "tag", "op": "is", '
+        '"value": "vegan"',
+        # A second object after the first, and an escaped quote and brace inside a value.
+        '{"action": "edit", "edits": [{"type": "filter", "field": "dish", "op": "is_not", '
+        '"value": "Fried Pickles"}]} Request: {"action": "refuse"}',
+        '{"action": "edit", "edits": [{"type": "filter", "field": "dish", "op": "is_not", '
+        '"value": "Fried \\"Pickles}"}]',
+    ],
+)
+def test_extract_json_closes_brackets_a_small_model_left_open(raw):
+    reply = extract_json(raw)
+    assert reply["action"] == "edit" and reply["edits"][0]["op"] in ("is", "is_not")
+
+
+def test_a_reply_missing_its_last_brace_still_becomes_edits():
+    reply = json.dumps(THU_VEG)[:-1]  # the model stopped one character early
+    result = parse(Scripted(reply))
+    assert result.action == "edit" and result.attempts == 1
+
+
 def test_extract_json_rejects_replies_without_an_object():
     for raw in ("", "no braces", "[1, 2]", None):
         with pytest.raises(ValueError):
