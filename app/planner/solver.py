@@ -211,8 +211,22 @@ class PlanResult:
         return totals
 
     def menu_entries(self) -> list[str]:
-        """The plan in User.generated_menu's format: "[YYYY-MM-DD,itm_id,meal]" per meal."""
-        return [f"[{m.day.isoformat()},{m.itm_id},{m.meal}]" for m in self.meals]
+        """
+        The plan in User.generated_menu's format: "[YYYY-MM-DD,itm_id,meal]" per meal. Meals in
+        a batched or picked-up order get a fourth field naming the order, "o<n>" (delivered)
+        or "p<n>" (picked up): meals with the same tag on the same day are one order.
+        """
+        tags = {}
+        for n, order in enumerate(self.orders, start=1):
+            if order.batched or order.pickup:
+                for m in order.meals:
+                    tags[m.slot.index] = f"{'p' if order.pickup else 'o'}{n}"
+        return [
+            f"[{m.day.isoformat()},{m.itm_id},{m.meal}"
+            + (f",{tags[m.slot.index]}" if m.slot.index in tags else "")
+            + "]"
+            for m in self.meals
+        ]
 
 
 def plan_week(

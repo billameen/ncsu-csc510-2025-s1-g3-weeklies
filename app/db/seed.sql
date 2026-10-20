@@ -1338,6 +1338,13 @@ CREATE INDEX idx_ticket_status
 CREATE INDEX idx_ticket_created_at 
         ON Ticket(created_at DESC)
     ;
+-- Users' fee settings for planning (M4): batching and pickup opt-ins. No row = batching off.
+CREATE TABLE IF NOT EXISTS "UserFeePrefs" (
+    usr_id             INTEGER PRIMARY KEY REFERENCES "User"(usr_id),
+    batching           INTEGER NOT NULL DEFAULT 0 CHECK (batching IN (0, 1)),
+    pickup_restaurants TEXT    NOT NULL DEFAULT '[]',
+    pickup_days        TEXT    NOT NULL DEFAULT '[]'
+);
 -- Per-restaurant fees (M4). A synthetic fee model: delivery fees from $1.99 to $5.99;
 -- NULL service fee = the default $1.49. See app/planner/fees.py.
 CREATE TABLE IF NOT EXISTS "RestaurantFee" (

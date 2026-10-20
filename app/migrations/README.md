@@ -82,6 +82,7 @@ Adds per-restaurant fees for M4's fee-aware planning.
 **What it does:**
 - Creates the `RestaurantFee` table (`rtr_id`, `delivery_fee_cents`, `service_fee_cents`; NULL means the default fee)
 - Gives every restaurant without a row the seed data's synthetic delivery fee ($1.99 to $5.99); existing rows are never changed
+- Creates the `UserFeePrefs` table for each user's batching and pickup settings (no row = batching off, no pickup)
 
 The fees are a **synthetic model**, not real prices (see `planner/fees.py`). `db/seed.sql` already includes the table and rows, so this is only needed for a database built before M4.
 

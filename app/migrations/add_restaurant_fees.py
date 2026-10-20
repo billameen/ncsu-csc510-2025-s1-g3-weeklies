@@ -1,7 +1,9 @@
 """
 Migration: add per-restaurant fees (M4).
 
-Creates the RestaurantFee table if it is missing and gives every restaurant that has no row
+Creates the RestaurantFee and UserFeePrefs tables if they are missing (UserFeePrefs holds
+each user's batching and pickup settings; a user without a row has batching off), and gives
+every restaurant that has no row
 yet the synthetic delivery fee the seed data uses ($1.99 to $5.99, see
 planner/fees.py: synthetic_delivery_fee_cents). The service fee is left NULL, which means the
 default $1.49. Fees already in the table are never changed.
@@ -23,6 +25,7 @@ APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if APP_DIR not in sys.path:
     sys.path.insert(0, APP_DIR)
 
+from fee_prefs import ensure_fee_prefs_schema  # noqa: E402
 from planner.fees import ensure_fee_schema, synthetic_delivery_fee_cents  # noqa: E402
 
 
@@ -33,6 +36,7 @@ def get_db_path():
 def migrate(conn) -> int:
     """Add the table and any missing fee rows. Returns how many rows were added."""
     ensure_fee_schema(conn)
+    ensure_fee_prefs_schema(conn)
     missing = conn.execute(
         '''SELECT r.rtr_id FROM "Restaurant" r
            LEFT JOIN "RestaurantFee" f ON f.rtr_id = r.rtr_id
