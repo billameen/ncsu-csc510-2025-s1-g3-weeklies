@@ -95,16 +95,9 @@ def test_a_wrong_current_password_is_rejected_without_touching_the_stored_hash(c
 # This proves the current-password check is enforced against the stored hash and that a failed attempt leaves the account's original password working -- the documented failure path behaves as specified.
 
 
-def test_a_new_password_with_surrounding_whitespace_is_silently_stripped_before_hashing(
-    client, temp_db_path
-):
-    """The change-password route strips every field it reads:
-
-        new_password = (request.form.get('new_password') or '').strip()
-
-    Neither ``/register`` nor ``/login`` strips the password, so the value
-    that gets hashed here is not the value the user typed, and the value they
-    typed no longer authenticates.
+def test_a_new_password_with_surrounding_whitespace_is_kept_exactly_as_typed(client, temp_db_path):
+    """The route used to strip every field it read, so the value hashed was not
+    the value typed. Like ``/register`` and ``/login``, it no longer strips.
     """
     _make_user(temp_db_path, "uc11-space@example.test")
     assert _login(client, "uc11-space@example.test").status_code == 302
@@ -124,11 +117,38 @@ def test_a_new_password_with_surrounding_whitespace_is_silently_stripped_before_
     client.get("/logout")
 
     typed = _login(client, "uc11-space@example.test", "  spaced99  ")
-    assert typed.status_code == 200
-    assert "Invalid credentials" in typed.get_data(as_text=True)
+    assert typed.status_code == 302
 
+    client.get("/logout")
     stripped = _login(client, "uc11-space@example.test", "spaced99")
-    assert stripped.status_code == 302
+    assert stripped.status_code == 200
+    assert "Invalid credentials" in stripped.get_data(as_text=True)
 
 
-# This proves the route reports success while storing a password different from the one submitted, locking the user out with the exact string they just chose -- /register and /login do not strip, so only this route disagrees, a real defect.
+# This proves the new password is stored exactly as typed: the padded password the user chose logs in, and a stripped version does not.
+
+
+def test_a_user_whose_password_has_surrounding_spaces_can_change_it(client, temp_db_path):
+    """/register accepts passwords with leading/trailing spaces. Stripping the
+    current password used to make it fail the hash check, so such a user could
+    never change their password.
+    """
+    usr_id = _make_user(temp_db_path, "uc11-padded@example.test", password=" padded99 ")
+    assert _login(client, "uc11-padded@example.test", " padded99 ").status_code == 302
+
+    response = client.post(
+        "/profile/change-password",
+        data={
+            "current_password": " padded99 ",
+            "new_password": "fresh1234",
+            "confirm_password": "fresh1234",
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    assert "/profile?pw_updated=1" in response.headers["Location"]
+    assert check_password_hash(_stored_hash(temp_db_path, usr_id), "fresh1234")
+
+
+# This proves a user whose password has surrounding spaces can authenticate to change it with the exact password they registered.

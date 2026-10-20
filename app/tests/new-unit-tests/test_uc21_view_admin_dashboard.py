@@ -314,13 +314,8 @@ def test_admin_dashboard_database_connection_closed(client, mock_db_and_render):
 
 
 def test_admin_dashboard_non_standard_order_status_not_dropped(client, mock_db_and_render):
-    # Extension Not Handled #2:
-    # Expected behavior: orders with statuses like 'Cancelled' or 'Refunded' should be surfaced
-    # or categorized somewhere on the dashboard, not silently discarded.
-    # Known defect: line 1353 tests `if status in orders_by_status:` where the dict only has
-    # ['Ordered', 'Preparing', 'Delivering', 'Delivered'], silently dropping orders with status
-    # 'Cancelled'. This test asserts the CORRECT behavior and will fail until non-standard
-    # statuses are surfaced (e.g. their own Kanban column or a catch-all bucket).
+    # Extension #2: orders with statuses like 'Cancelled' or 'Refunded' are surfaced on the
+    # dashboard (in the 'Other' column) instead of being silently discarded.
     recent_time = (datetime.now() - timedelta(days=1)).isoformat()
     order_details = json.dumps({"placed_at": recent_time, "charges": {"total": 30.00}})
 
@@ -345,8 +340,43 @@ def test_admin_dashboard_non_standard_order_status_not_dropped(client, mock_db_a
     kanban = ctx["orders_by_status"]
     all_order_ids = [order["ord_id"] for col in kanban.values() for order in col]
     assert 108 in all_order_ids
-# This fails while the Cancelled order is silently dropped from every column; it passes once
-# non-standard order statuses are surfaced somewhere on the Kanban board.
+# This proves an order with a non-standard status is surfaced on the Kanban board instead of dropped.
+
+
+def _kanban_for(client, mock_db_and_render, rows):
+    mock_db_and_render["fetch_one"].return_value = (0,)
+    mock_db_and_render["fetch_all"].side_effect = [rows, []]
+    with client.session_transaction() as sess:
+        sess["Username"] = "Admin User"
+        sess["is_admin"] = True
+    response = client.get("/admin")
+    assert response.status_code == 200
+    return mock_db_and_render["context"]["orders_by_status"]
+
+
+def test_admin_dashboard_status_casing_is_normalized_onto_known_columns(client, mock_db_and_render):
+    details = json.dumps({"placed_at": (datetime.now() - timedelta(days=1)).isoformat(), "charges": {"total": 9.0}})
+    kanban = _kanban_for(client, mock_db_and_render, [
+        (201, 1, 42, details, "delivered", "Alice", "Smith", "Tokyo Diner"),
+        (202, 1, 42, details, " PREPARING ", "Alice", "Smith", "Tokyo Diner"),
+    ])
+
+    assert [o["ord_id"] for o in kanban["Delivered"]] == [201]
+    assert [o["ord_id"] for o in kanban["Preparing"]] == [202]
+    assert kanban["Delivered"][0]["status"] == "Delivered"
+    assert kanban["Other"] == []
+# This proves statuses that differ only in casing or whitespace land in their normal Kanban column.
+
+
+def test_admin_dashboard_unknown_status_goes_to_other_with_its_original_label(client, mock_db_and_render):
+    details = json.dumps({"placed_at": (datetime.now() - timedelta(days=1)).isoformat(), "charges": {"total": 9.0}})
+    kanban = _kanban_for(client, mock_db_and_render, [
+        (203, 1, 42, details, "Cancelled", "Alice", "Smith", "Tokyo Diner"),
+    ])
+
+    assert [o["ord_id"] for o in kanban["Other"]] == [203]
+    assert kanban["Other"][0]["status"] == "Cancelled"
+# This proves an order with a status the board has no column for is shown under Other, keeping its real status label.
 
 
 def test_admin_dashboard_zero_dollar_order_shows_zero_not_na(client, mock_db_and_render):
@@ -377,3 +407,4 @@ def test_admin_dashboard_zero_dollar_order_shows_zero_not_na(client, mock_db_and
     totals = {o["ord_id"]: o["total"] for o in mock_db_and_render["context"]["orders_by_status"]["Ordered"]}
     assert totals == {107: "$0.00", 108: "N/A"}
 # This proves a $0.00 order shows "$0.00" on the admin dashboard, while an order with no total at all still shows "N/A".
+

@@ -22,7 +22,7 @@ import uuid
 import ledger
 from charges import compute_charges, order_charges_cents, item_cents
 from collections import Counter, defaultdict
-from menu_generation import MenuGenerator
+from menu_generation import MenuGenerator, ALLERGEN_TAGS, invalid_allergies
 from planner.targets import (
     TargetError,
     format_budget,
@@ -54,6 +54,9 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'
 
 db_file = os.path.join(os.path.dirname(__file__), 'CSC510_DB.db')
+
+# The selectable allergens, shared by the register and edit-profile forms
+app.jinja_env.globals['ALLERGEN_OPTIONS'] = list(ALLERGEN_TAGS)
 
 # ---------------------- Helpers ----------------------
 
@@ -480,7 +483,7 @@ def fetch_menu_items_by_ids(ids):
     return out
 
 
-def build_calendar_cells(gen_map, year, month, items_by_id):
+def build_calendar_cells(gen_map, year, month, items_by_id, today=None):
     """
     Build month-view calendar cells enriched with menu items per day.
     Args:
@@ -488,11 +491,13 @@ def build_calendar_cells(gen_map, year, month, items_by_id):
         year (int): The calendar year.
         month (int): The calendar month (1–12).
         items_by_id (dict): Mapping itm_id -> item detail dict from DB.
+        today (date | None): The current date (defaults to date.today()); days before it are past.
     Returns:
         list: A flat list of calendar cell dicts with day number and a 'meals' list. Days of
-            the month also carry 'kcal' (calories planned that day) and 'cost_cents' (what the
-            day's meals cost delivered, tax and fees included, as the planner counts it).
+            the month also carry 'is_past', 'kcal' (calories planned that day) and 'cost_cents'
+            (what the day's meals cost delivered, tax and fees included, as the planner counts it).
     """
+    today = today or date.today()
     def meal_sort_key(e):
         # Breakfast(1) first, then Lunch(2), then Dinner(3)
         return e.get('meal', 3)
@@ -523,6 +528,8 @@ def build_calendar_cells(gen_map, year, month, items_by_id):
 
             cells.append({
                 "day": d,
+                # Past days are still shown (as history) but can no longer be ordered
+                "is_past": date(year, month, d) < today,
                 "meals": meals,
                 "kcal": sum(m["item"].get("calories") or 0 for m in meals),
                 "cost_cents": sum(meal_cost_cents(int(m["item"].get("price") or 0)) for m in meals),
@@ -538,6 +545,10 @@ def _is_restaurant_reviewed(conn, usr_id: int, rtr_id: int) -> bool:
     return fetch_one(conn, sql, (usr_id, rtr_id)) is not None
 
 # ---------------------- Routes ----------------------
+
+# Calendar years the home view will render. Kept well inside date's 1..9999 range so the
+# prev/next month navigation can never step outside it.
+CALENDAR_MIN_YEAR, CALENDAR_MAX_YEAR = 2000, 2100
 
 # Home route (supports /<year>/<month> for nav)
 @app.route('/', defaults={'year': None, 'month': None})
@@ -555,8 +566,12 @@ def index(year, month):
         return redirect(url_for("login"))
 
     today = date.today()
-    if not year or not month:
+    # Only the bare "/" route omits year/month. Explicit values are validated rather than
+    # truthiness-checked, so /2026/0 and /2026/13 are both rejected the same way.
+    if year is None or month is None:
         year, month = today.year, today.month
+    elif not (1 <= month <= 12 and CALENDAR_MIN_YEAR <= year <= CALENDAR_MAX_YEAR):
+        abort(404)
 
     # Load current user's generated_menu
     conn = create_connection(db_file)
@@ -576,7 +591,8 @@ def index(year, month):
     items_by_id = fetch_menu_items_by_ids(all_item_ids)
 
     # Build cells for the month
-    cells = build_calendar_cells(gen_map, year, month, items_by_id)
+    # Build cells for the month
+    cells = build_calendar_cells(gen_map, year, month, items_by_id, today=today)
     month_cost_cents = sum(c.get("cost_cents", 0) for c in cells)
     planned_days = [c for c in cells if c.get("meals")]
     month_avg_kcal = round(sum(c["kcal"] for c in planned_days) / len(planned_days)) if planned_days else 0
@@ -606,6 +622,9 @@ def index(year, month):
         prev_year=prev_m.year,
         next_month=next_m.month,
         next_year=next_m.year,
+        # Hide nav links that would lead outside the renderable range (and so 404)
+        has_prev=prev_m.year >= CALENDAR_MIN_YEAR,
+        has_next=next_m.year <= CALENDAR_MAX_YEAR,
         calendar_cells=cells,
         month_cost_cents=month_cost_cents,
         month_avg_kcal=month_avg_kcal,
@@ -671,6 +690,20 @@ def logout():
         session.pop(k, None)
     return redirect(url_for("login"))
 
+PHONE_ERROR = "Please enter a valid phone number"
+
+def _normalize_phone(raw):
+    """
+    Normalize a user-entered phone number to its digits, as stored in "User".phone.
+    Shared by /register and /profile/edit so both accept and store phones the same way.
+    Args:
+        raw (str | None): The phone number as entered, e.g. "(919) 555-0123".
+    Returns:
+        str | None: The digits (e.g. "9195550123") if there are at least 7, else None.
+    """
+    digits = re.sub(r"\D+", "", raw or "")
+    return digits if len(digits) >= 7 else None
+
 # Registration route
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -701,9 +734,13 @@ def register():
         if len(password) < 6:
             return render_template('register.html', error="Password must be at least 6 characters")
 
-        digits_only = re.sub(r"\D+", "", phone)
-        if len(digits_only) < 7:
-            return render_template('register.html', error="Please enter a valid phone number")
+        digits_only = _normalize_phone(phone)
+        if digits_only is None:
+            return render_template('register.html', error=PHONE_ERROR)
+        # Allergies drive meal-plan filtering, so only accept allergens the filter understands
+        unknown = invalid_allergies(allergies)
+        if unknown:
+            return render_template('register.html', error=f"Unknown allergy: {', '.join(unknown)}")
 
         conn = create_connection(db_file)
         try:
@@ -959,9 +996,25 @@ def edit_profile():
     if request.method == 'POST':
         # You’ll expand this with update logic later
         # Example: update phone, preferences, allergies
-        new_phone = request.form.get('phone') or user['phone']
-        new_prefs = request.form.get('preferences') or user['preferences']
-        new_allergies = request.form.get('allergies') or user['allergies']
+        # Phone is required at registration, so an empty value keeps the stored one. Preferences
+        # and allergies can be cleared: only fall back when the field is absent, not when it is "".
+        raw_phone = (request.form.get('phone') or '').strip()
+        new_prefs = (request.form.get('preferences', user['preferences']) or '').strip()
+        new_allergies = (request.form.get('allergies', user['allergies']) or '').strip()
+
+        # Validate and store phones exactly as /register does (digits only)
+        if raw_phone:
+            new_phone = _normalize_phone(raw_phone)
+            if new_phone is None:
+                return render_template("edit_profile.html", user=user, error=PHONE_ERROR), 400
+        else:
+            new_phone = user['phone']
+
+        # Allergies drive meal-plan filtering, so only accept allergens the filter understands
+        unknown = invalid_allergies(new_allergies)
+        if unknown:
+            return render_template("edit_profile.html", user=user,
+                                   error=f"Unknown allergy: {', '.join(unknown)}"), 400
 
         # Planner targets: a field left out of the form keeps its value; a blank one clears it.
         new_kcal = user['daily_calorie_target']
@@ -1033,10 +1086,11 @@ def change_password():
         finally:
             close_connection(conn)
 
-    # Read form fields
-    current_password = (request.form.get('current_password') or '').strip()
-    new_password     = (request.form.get('new_password') or '').strip()
-    confirm_password = (request.form.get('confirm_password') or '').strip()
+    # Read form fields. Passwords are not stripped, matching /register and /login: spaces are
+    # part of the password, and stripping them here would hash a different value than was typed.
+    current_password = request.form.get('current_password') or ''
+    new_password     = request.form.get('new_password') or ''
+    confirm_password = request.form.get('confirm_password') or ''
 
     # Basic validations (mirror your frontend behavior)
     if not current_password:
@@ -1275,6 +1329,15 @@ def order():
 
         if rtr_id <= 0 or not items_in:
             return jsonify({"ok": False, "error": "invalid_input"}), 400
+
+        # The calendar sends the plan entry's date; never accept a malformed or past-dated order
+        try:
+            order_date = date.fromisoformat(str(iso_date))
+        except ValueError:
+            return jsonify({"ok": False, "error": "invalid_date"}), 400
+        if order_date < date.today():
+            return jsonify({"ok": False, "error": "invalid_date"}), 400
+        iso_date = order_date.isoformat()
 
         # Look up all items strictly from DB to get authoritative prices/names.
         # Any malformed or non-positive id rejects the whole request rather than being dropped.
@@ -1532,16 +1595,26 @@ def order_receipt(ord_id: int):
         row = fetch_one(conn, 'SELECT usr_id FROM "Order" WHERE ord_id = ?', (ord_id,))
         if not row:
             abort(404)
-        if session.get('usr_id') and row[0] != session['usr_id']:
-            abort(403)
-        # If usr_id not in session (older sessions), compare via email
-        if not session.get('usr_id'):
-            # Resolve current user's usr_id by email
-            urow = fetch_one(conn, 'SELECT usr_id FROM "User" WHERE email = ?', (session.get('Email'),))
-            if not urow or urow[0] != row[0]:
+        # Admins can pull any customer's receipt (they already see every order on the dashboard)
+        if not session.get('is_admin'):
+            if session.get('usr_id') and row[0] != session['usr_id']:
                 abort(403)
+            # If usr_id not in session (older sessions), compare via email
+            if not session.get('usr_id'):
+                # Resolve current user's usr_id by email
+                urow = fetch_one(conn, 'SELECT usr_id FROM "User" WHERE email = ?', (session.get('Email'),))
+                if not urow or urow[0] != row[0]:
+                    abort(403)
 
-        pdf_bytes = generate_order_receipt_pdf(db_file, ord_id)  # returns bytes
+        # Only the generator is wrapped: the abort(404/403) calls above raise HTTPExceptions,
+        # which must not be swallowed and turned into a 500
+        try:
+            pdf_bytes = generate_order_receipt_pdf(db_file, ord_id)  # returns bytes
+        except Exception as e:
+            print(f"Receipt Generation Error (ord_id={ord_id}): {e!r}")
+            return render_template("error.html",
+                                   error="Receipt Unavailable",
+                                   message="We couldn't generate this receipt. Please try again later."), 500
     finally:
         close_connection(conn)
 
@@ -1737,7 +1810,8 @@ def _generate_plan_llm():
 
         # 2. Initialize Generator
         # Using 500 tokens as defined in your system
-        gen = MenuGenerator(tokens=500)
+        # strict_allergens: translate allergies into menu tags and exclude items with unknown allergens
+        gen = MenuGenerator(tokens=500, strict_allergens=True)
         
         # 3. Define Timeframe (Next 7 days starting tomorrow)
         start_date = (date.today() + timedelta(days=1)).isoformat()
@@ -1761,8 +1835,9 @@ def _generate_plan_llm():
         return jsonify({"ok": True})
 
     except Exception as e:
-        print(f"Generation Error: {e}")
-        return jsonify({"ok": False, "error": str(e)}), 500
+        # Log the details server-side; don't expose internal error text to the client
+        print(f"Generation Error: {e!r}")
+        return jsonify({"ok": False, "error": "Meal plan generation failed. Please try again."}), 500
     finally:
         close_connection(conn)
 
@@ -1991,12 +2066,15 @@ def admin_dashboard():
             'Ordered': [],
             'Preparing': [],
             'Delivering': [],
-            'Delivered': []
+            'Delivered': [],
+            'Other': []  # any status the board has no column for, e.g. 'Cancelled'
         }
         
         _ledger_ready(conn)
         refunded_txns = _refunded_txn_ids(conn)
         ledger_check = ledger.check_ledger(conn)
+        # Case-insensitive lookup so e.g. 'delivered' lands in 'Delivered'
+        known_statuses = {s.lower(): s for s in orders_by_status if s != 'Other'}
 
         for row in order_rows:
             ord_id, rtr_id, usr_id, details_json, status, first_name, last_name, restaurant_name = row
@@ -2033,7 +2111,9 @@ def admin_dashboard():
             # Default status if missing
             if not status:
                 status = 'Ordered'
-            
+            # Normalize casing/whitespace onto a known column; unknown statuses keep their text
+            status = known_statuses.get(str(status).strip().lower(), status)
+
             # Build order object
             order = {
                 'ord_id': ord_id,
@@ -2046,9 +2126,12 @@ def admin_dashboard():
                 'refundable': bool(ledger_txn_id) and ledger_txn_id not in refunded_txns,
             }
             
-            # Add to appropriate status group
-            if status in orders_by_status:
+            # Add to appropriate status group; never drop an order the board doesn't recognize
+            if status in known_statuses.values():
                 orders_by_status[status].append(order)
+            else:
+                print(f"Admin dashboard: order {ord_id} has unrecognized status {status!r}; showing under Other")
+                orders_by_status['Other'].append(order)
         
         # Sort orders within each status group by ord_id descending (already sorted from query)
         # But let's ensure it's explicit
@@ -2134,6 +2217,9 @@ def admin_dashboard():
         total_pages=total_pages,
         total_tickets=total_tickets
     )
+
+# Blank line between appended staff replies in Ticket.response
+TICKET_RESPONSE_SEPARATOR = "\n\n"
 
 @app.route('/admin/update_ticket_status', methods=['POST'])
 def admin_update_ticket_status():
@@ -2222,11 +2308,17 @@ def admin_update_ticket_status():
         
         # Update ticket status and response
         if response_text:
-            # Update both status and response
+            # Append the reply as a timestamped entry instead of overwriting earlier replies.
+            # Done in one statement so two staff replying at once can't lose either reply.
+            entry = f"[{datetime.now().strftime('%Y-%m-%d %H:%M')}] {str(response_text).strip()}"
             execute_query(
-                conn, 
-                'UPDATE Ticket SET status = ?, response = ? WHERE ticket_id = ?', 
-                (final_status, response_text, ticket_id)
+                conn,
+                '''UPDATE Ticket
+                   SET status = ?,
+                       response = CASE WHEN response IS NULL OR response = '' THEN ?
+                                       ELSE response || ? END
+                   WHERE ticket_id = ?''',
+                (final_status, entry, TICKET_RESPONSE_SEPARATOR + entry, ticket_id)
             )
         else:
             # Update only status
@@ -2544,8 +2636,9 @@ def insights_data():
         })
 
     except Exception as e:
-        print(f"Insights Error: {e}")
-        return jsonify({"error": str(e)}), 500
+        # Log the details server-side; don't expose internal error text to the client
+        print(f"Insights Error: {e!r}")
+        return jsonify({"error": "Internal server error"}), 500
     finally:
         close_connection(conn)
 

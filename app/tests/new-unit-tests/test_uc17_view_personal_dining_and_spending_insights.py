@@ -254,12 +254,8 @@ def test_insights_data_malformed_order_json_skipped_gracefully(client, mock_db):
 
 
 def test_insights_data_database_exception_returns_sanitized_500(client, mock_db):
-    # Extension Not Handled #2:
-    # Expected behavior: when a database query fails, the server should return a sanitized
-    # error message without leaking internal details (e.g. raw exception text).
-    # Known defect: line 1726 catches generic exceptions and directly returns raw exception
-    # strings {"error": str(e)}, leaking internal database errors to the client. This test
-    # asserts the CORRECT behavior and will fail while the raw exception text is echoed back.
+    # Extension #2: when a database query fails, the server returns a fixed, generic error
+    # message and logs the details, without leaking the raw exception text to the client.
     mock_db["fetch_one"].side_effect = RuntimeError("SQLite database file is locked")
 
     with client.session_transaction() as sess:
@@ -270,8 +266,8 @@ def test_insights_data_database_exception_returns_sanitized_500(client, mock_db)
     assert response.status_code == 500
     body_text = response.get_data(as_text=True)
     assert "SQLite database file is locked" not in body_text
-# This fails while the raw exception string is leaked in the response; it passes once the
-# route returns a sanitized error message instead of str(e).
+    assert response.get_json() == {"error": "Internal server error"}
+# This proves a database failure is reported as a fixed generic error, without the raw exception string.
 
 
 def test_insights_data_ensures_database_connection_closed(client, mock_db):

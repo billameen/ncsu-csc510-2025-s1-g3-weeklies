@@ -82,8 +82,20 @@
 
     @media (min-width: 1200px) {
       .kanban-board {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, minmax(0, 1fr));
       }
+    }
+
+    .order-receipt {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 13px;
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .order-receipt:hover {
+      text-decoration: underline;
     }
 
     .kanban-column {
@@ -656,6 +668,7 @@
                   {% elif order.refundable %}
                   <button class="btn-refund" type="button">Refund</button>
                   {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
                 </div>
                 <div class="order-actions">
                   <button class="btn-status" data-next-status="Preparing">
@@ -699,6 +712,7 @@
                   {% elif order.refundable %}
                   <button class="btn-refund" type="button">Refund</button>
                   {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
                 </div>
                 <div class="order-actions">
                   <button class="btn-status" data-next-status="Delivering">
@@ -742,6 +756,7 @@
                   {% elif order.refundable %}
                   <button class="btn-refund" type="button">Refund</button>
                   {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
                 </div>
                 <div class="order-actions">
                   <button class="btn-status" data-next-status="Delivered">
@@ -782,6 +797,7 @@
                   {% elif order.refundable %}
                   <button class="btn-refund" type="button">Refund</button>
                   {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
                 </div>
                 <div class="order-actions">
                   <p style="color: var(--success); font-size: 13px; margin: 0;">✓ Completed</p>
@@ -792,6 +808,46 @@
             <div class="empty-state">
               <div class="empty-state-icon">✅</div>
               <p>No delivered orders</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Other Column: statuses the board has no column for (e.g. Cancelled) -->
+        <div class="kanban-column" data-status="Other">
+          <h3>
+            Other
+            <span class="count" id="count-other">0</span>
+          </h3>
+          <div class="order-cards" id="cards-other">
+            {% if orders_by_status.get('Other') %}
+              {% for order in orders_by_status['Other'] %}
+              <div class="order-card" data-ord-id="{{ order.ord_id }}">
+                <div class="order-header">
+                  <span class="order-id">#{{ order.ord_id }}</span>
+                  <span class="order-time">{{ order.placed_at }}</span>
+                </div>
+                <div class="order-details">
+                  <p class="customer-name">{{ order.customer_name }}</p>
+                  <p class="restaurant-name">{{ order.restaurant_name }}</p>
+                  <p class="order-total">{{ order.total }}</p>
+                  {% if order.refunded %}
+                  <p class="order-refunded">Refunded</p>
+                  {% elif order.refundable %}
+                  <button class="btn-refund" type="button">Refund</button>
+                  {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
+                </div>
+                <div class="order-actions">
+                  {# No status buttons: models.OrderStatus allows no transitions from these statuses #}
+                  <p style="color: var(--muted); font-size: 13px; margin: 0;">Status: {{ order.status }}</p>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+            <div class="empty-state">
+              <div class="empty-state-icon">📋</div>
+              <p>No other orders</p>
             </div>
             {% endif %}
           </div>
@@ -825,7 +881,7 @@
             {% if ticket.response %}
             <div class="ticket-message" style="background: rgba(41, 196, 138, 0.1); border-color: rgba(41, 196, 138, 0.3);">
               <strong>Response:</strong><br>
-              {{ ticket.response }}
+              <span style="white-space: pre-line;">{{ ticket.response }}</span>
             </div>
             {% endif %}
             <div class="ticket-response">

@@ -176,11 +176,8 @@ def test_order_receipt_database_connection_closed_on_abort_and_success(client, m
 
 
 def test_order_receipt_admin_can_download_other_users_receipt(client, mock_db_and_pdf):
-    # Extension Not Handled #2: An administrator (is_admin=True) assisting customers should be
-    # able to view/download receipts for orders they do not own.
-    # Known defect: the route strictly checks row[0] == session['usr_id'] without an is_admin
-    # override, so this currently 403s. This test asserts the CORRECT behavior and will fail
-    # (403 != 200) until an admin override is added to the route.
+    # Extension #2: an administrator (is_admin=True) assisting customers can view/download
+    # receipts for orders they do not own.
     mock_db_and_pdf["fetch_one"].return_value = (42,)  # Order belongs to customer 42
 
     with client.session_transaction() as sess:
@@ -192,17 +189,28 @@ def test_order_receipt_admin_can_download_other_users_receipt(client, mock_db_an
     response = client.get("/orders/101/receipt.pdf")
     assert response.status_code == 200
     assert response.mimetype == "application/pdf"
-# This fails while admins have no override and are rejected with 403; it passes once
-# administrators are granted access to receipts they don't own.
+# This proves administrators can download receipts for orders they don't own.
+
+
+def test_order_receipt_admin_still_gets_404_for_a_missing_order(client, mock_db_and_pdf):
+    # The admin override skips only the ownership check, not the existence check.
+    mock_db_and_pdf["fetch_one"].return_value = None
+
+    with client.session_transaction() as sess:
+        sess["Username"] = "Support Admin"
+        sess["usr_id"] = 1
+        sess["is_admin"] = True
+
+    response = client.get("/orders/999/receipt.pdf")
+    assert response.status_code == 404
+    assert not mock_db_and_pdf["generate_order_receipt_pdf"].called
+# This proves admins get a 404 for an order that doesn't exist, rather than a PDF attempt.
 
 
 def test_order_receipt_generator_failure_returns_500_gracefully(client, mock_db_and_pdf):
-    # Extension Not Handled #1: if PDF compilation fails (e.g. malformed details or a library
-    # error), the route should catch the error and return a clean 500 response instead of
-    # crashing the request.
-    # Known defect: generate_order_receipt_pdf has no try/except wrapper, so the exception
-    # currently bubbles up unhandled. This test asserts the CORRECT behavior and will fail
-    # (with an unhandled RuntimeError) until the route wraps PDF generation in error handling.
+    # Extension #1: if PDF compilation fails (e.g. malformed details or a library error), the
+    # route catches the error, logs it, and returns a friendly 500 error page instead of
+    # crashing the request or exposing the exception text.
     mock_db_and_pdf["fetch_one"].return_value = (42,)
     mock_db_and_pdf["generate_order_receipt_pdf"].side_effect = RuntimeError("PDF Generation Engine Failure")
 
@@ -213,5 +221,8 @@ def test_order_receipt_generator_failure_returns_500_gracefully(client, mock_db_
 
     response = client.get("/orders/101/receipt.pdf")
     assert response.status_code == 500
-# This fails with an unhandled RuntimeError while the route has no try/except around the PDF
-# generator; it passes once generator failures are caught and turned into a proper 500 response.
+    body = response.get_data(as_text=True)
+    assert "Receipt Unavailable" in body
+    assert "PDF Generation Engine Failure" not in body
+    assert mock_db_and_pdf["close_connection"].called
+# This proves a PDF generator failure is caught and turned into a friendly 500 error page that does not leak the exception text, and the DB connection is still closed.

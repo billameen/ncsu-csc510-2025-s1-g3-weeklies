@@ -267,3 +267,48 @@ def test_a_stale_session_wallet_cannot_buy_an_order_the_database_balance_cannot_
 
 
 # This proves an order is charged against the database balance, not a stale session copy, and the session is corrected.
+
+
+@pytest.mark.parametrize("bad_date", ["2020-01-15", "not-a-date", "2026-13-01"])
+def test_an_order_for_a_past_or_malformed_date_is_rejected(client, temp_db_path, bad_date):
+    """The calendar sends each plan entry's date with the order. A past-dated
+    entry used to be orderable, and the date was stored unchecked."""
+    email = f"uc8-date-{bad_date}@example.test"
+    usr_id = _make_user(temp_db_path, email, wallet_cents=100_000)
+    rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, f"UC8 Date {bad_date} Cafe", price_cents=1000)
+    _login(client, email)
+
+    response = client.post(
+        "/order",
+        json={"restaurant_id": rtr_id, "items": [{"itm_id": itm_id, "qty": 1}], "date": bad_date},
+    )
+
+    assert response.status_code == 400
+    assert response.get_json() == {"ok": False, "error": "invalid_date"}
+    assert _latest_order(temp_db_path, usr_id) is None
+    assert _wallet_cents(temp_db_path, usr_id) == 100_000
+
+
+# This proves an order dated in the past, or with an unparseable date, is refused before any charge.
+
+
+@pytest.mark.parametrize("when", ["today", "omitted"])
+def test_an_order_for_today_or_with_no_date_is_accepted(client, temp_db_path, when):
+    from datetime import date
+
+    email = f"uc8-date-ok-{when}@example.test"
+    usr_id = _make_user(temp_db_path, email, wallet_cents=100_000)
+    rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, f"UC8 Date OK {when} Cafe", price_cents=1000)
+    _login(client, email)
+
+    payload = {"restaurant_id": rtr_id, "items": [{"itm_id": itm_id, "qty": 1}]}
+    if when == "today":
+        payload["date"] = date.today().isoformat()
+    response = client.post("/order", json=payload)
+
+    assert response.status_code == 200
+    _, details, _ = _latest_order(temp_db_path, usr_id)
+    assert json.loads(details)["date"] == date.today().isoformat()
+
+
+# This proves today's plan entries, and orders without a date, are still accepted and stored with today's date.

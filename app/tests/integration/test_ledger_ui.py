@@ -164,6 +164,25 @@ def test_admin_can_refund_from_the_dashboard_and_the_badges_update(app, client, 
     assert f"Refund for order #{ord_id}" in rows[0] and "+$12.22" in rows[0]
 
 
+def test_a_cancelled_order_in_the_other_column_can_be_refunded(app, client, temp_db_path):
+    _make_user(temp_db_path, "ui-cancel@example.test", "9195553016", 5000)
+    rtr_id, itm_id = _make_item(temp_db_path, "UI Cancelled Cafe")
+    _login(client, "ui-cancel@example.test")
+    ord_id = _order(client, rtr_id, itm_id)
+    conn = create_connection(temp_db_path)
+    try:
+        execute_query(conn, 'UPDATE "Order" SET status = ? WHERE ord_id = ?', ("Cancelled", ord_id))
+    finally:
+        close_connection(conn)
+    admin = _admin_client(app, temp_db_path, "ui-admin5@example.test", "9195553017")
+
+    html = admin.get("/admin").get_data(as_text=True)
+
+    other = html[html.index('data-status="Other"'):]
+    assert f'data-ord-id="{ord_id}"' in other
+    assert 'class="btn-refund"' in _card(other, ord_id)
+
+
 def test_orders_from_before_the_ledger_have_no_refund_button(app, temp_db_path):
     usr = _make_user(temp_db_path, "ui-old@example.test", "9195553014", 0)
     rtr_id, _ = _make_item(temp_db_path, "UI Old Order Cafe")

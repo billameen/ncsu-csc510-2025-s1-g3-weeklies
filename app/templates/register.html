@@ -73,11 +73,8 @@
             <h2 class="section-title">Allergies</h2>
             <p class="muted">Select any allergens that apply.</p>
             <div class="allergen-grid" id="allergenGrid">
-              {% set allergens = [
-                'Peanuts','Tree Nuts','Milk','Eggs','Wheat','Soy',
-                'Fish','Shellfish','Sesame','Gluten','Lactose','Sulphites'
-              ] %}
-              {% for a in allergens %}
+              {# ALLERGEN_OPTIONS is a Jinja global built from menu_generation.ALLERGEN_TAGS #}
+              {% for a in ALLERGEN_OPTIONS %}
               <label class="allergen">
                 <input type="checkbox" name="allergies[]" value="{{ a }}">
                 <span>{{ a }}</span>

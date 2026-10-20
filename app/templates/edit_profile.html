@@ -35,6 +35,9 @@
       </div>
 
       <div class="card-body">
+        {% if error %}
+          <div class="flash danger">{{ error }}</div>
+        {% endif %}
         <form method="POST" action="{{ url_for('edit_profile') }}" id="editProfileForm" novalidate>
           <!-- Read-only context -->
           <div class="section" style="margin-bottom:16px;">
@@ -63,13 +66,10 @@
             <h3 class="section-title">Allergies</h3>
             <p class="muted">Select any allergens that apply.</p>
             <div class="allergen-grid" id="allergenGrid">
-              {% set allergens = [
-                'Peanuts','Tree Nuts','Milk','Eggs','Wheat','Soy',
-                'Fish','Shellfish','Sesame','Gluten','Lactose','Sulphites'
-              ] %}
-              {% set selected_allergies = (user.allergies or '') %}
-              {% set selected_set = selected_allergies|lower %}
-              {% for a in allergens %}
+              {# ALLERGEN_OPTIONS is a Jinja global built from menu_generation.ALLERGEN_TAGS #}
+              {# Match whole entries, not substrings, when deciding which boxes start checked #}
+              {% set selected_set = (user.allergies or '').lower().split(',') | map('trim') | list %}
+              {% for a in ALLERGEN_OPTIONS %}
               {% set checked = ('checked' if (a.lower() in selected_set) else '') %}
               <label class="allergen">
                 <input type="checkbox" name="allergies[]" value="{{ a }}" {{ checked }}>
