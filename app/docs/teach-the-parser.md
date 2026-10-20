@@ -146,8 +146,8 @@ In `app/planner/edits/resolve.py`, import it and map it to the rule in `to_rule`
 
 ## 3. Tell the model
 
-Prompts are versioned: copy `app/planner/prompts/edit_parser_v2.txt` to
-`edit_parser_v3.txt`, add the edit type to the list
+Prompts are versioned: copy `app/planner/prompts/edit_parser_v3.txt` to
+`edit_parser_v4.txt`, add the edit type to the list
 
 ```
 {"type": "repeat_limit", "max_times": NUMBER, "days": DAYS, "meals": MEALS}
@@ -161,7 +161,7 @@ Request: never the same lunch twice
 {"action": "edit", "edits": [{"type": "repeat_limit", "max_times": 1, "meals": ["lunch"]}]}
 ```
 
-then set `PROMPT_VERSION = "v3"` in `llm_parser.py`. Keep v2 in the repo so older
+then set `PROMPT_VERSION = "v4"` in `llm_parser.py`. Keep v3 in the repo so older
 recordings can still be explained. A test checks that the prompt names every edit type and
 that each of its examples is valid, so a format change the prompt does not describe fails.
 

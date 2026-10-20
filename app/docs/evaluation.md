@@ -250,6 +250,25 @@ allergen field, invented edit types, added days nobody asked for, and stopped si
 before the last closing brace (which the parser now repairs). That is why the edit parser's
 model can be set separately with `EDIT_LLM_MODEL`.
 
+### Disclosure: prompt v3 was written after reading the labelled set's errors
+
+The second recording used `ibm-granite/granite-4.0-micro` (3B) with prompt v2. Read back, its
+replies showed the problems to fix:
+- Most of the 31 normal requests it missed were format slips, not misunderstandings. It
+  ended 16 replies with a stray quote before the last brace, which the parser now repairs.
+  It also wrote "Monday and Tuesday" as two edits, which the scoring now counts as the
+  same (except for include).
+- With those fixes, the same recording parses 70% of normal requests exactly and asks a
+  clarifying question for 40% of the ambiguous ones.
+- Most of the rest came from the prompt. The model copied "Today is Sunday" into 11 requests
+  that named no day, wrote diet words as dishes, turned per-meal price limits into daily
+  ones, and guessed edits for vague requests.
+
+Prompt v3 removes the weekday and adds general rules for those mistakes. Its examples
+deliberately avoid the labelled requests' wording. Still, the rules were chosen by looking
+at failures on this set, so v3's scores on it are optimistic. A fresh set of requests,
+written without seeing these results, would measure it fairly.
+
 ### Disclosure: how the labelled set changed
 
 The set started with 40 normal requests over five fixed edit types (`require_tag`,
