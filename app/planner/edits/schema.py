@@ -206,7 +206,7 @@ class _Condition(_Scoped):
 
     field: FieldWord
     op: OpWord
-    value: str | float
+    value: str | int | float
 
     @field_validator("field", mode="before")
     @classmethod
@@ -364,7 +364,7 @@ class Prefer(_Scoped):
     goal: Literal["cheaper", "fewer_calories", "more_calories", "variety", "match"]
     field: FieldWord | None = None
     op: OpWord | None = None
-    value: str | float | None = None
+    value: str | int | float | None = None
 
     @field_validator("goal", mode="before")
     @classmethod
