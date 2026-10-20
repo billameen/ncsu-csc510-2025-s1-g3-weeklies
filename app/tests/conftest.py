@@ -117,14 +117,16 @@ def seed_minimal_data(temp_db_path):
     """Create one restaurant, two items in stock, and one user. Idempotent across tests."""
     conn = create_connection(temp_db_path)
     try:
-        # --- Restaurant (insert if none exists) ---
-        rtr_row = fetch_one(conn, "SELECT rtr_id FROM Restaurant LIMIT 1")
+        # --- Restaurant (insert if missing) ---
+        # Looked up by name: other fixtures add restaurants to the shared DB, and picking
+        # whichever came first would make the seeded items depend on test order.
+        rtr_row = fetch_one(conn, "SELECT rtr_id FROM Restaurant WHERE name = 'Cafe One' ORDER BY rtr_id LIMIT 1")
         if rtr_row is None:
             execute_query(conn, '''
               INSERT INTO "Restaurant"(name,address,city,state,zip,status)
               VALUES ("Cafe One","123 Main","Raleigh","NC","27606","open")
             ''')
-            rtr_row = fetch_one(conn, "SELECT rtr_id FROM Restaurant LIMIT 1")
+            rtr_row = fetch_one(conn, "SELECT rtr_id FROM Restaurant WHERE name = 'Cafe One' ORDER BY rtr_id LIMIT 1")
         rtr_id = expect_one(rtr_row, "Expected at least one Restaurant row after seeding")
 
         # --- Menu items (ensure two exist for that restaurant) ---
