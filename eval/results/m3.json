@@ -5,7 +5,7 @@
     "ambiguous": 10,
     "adversarial": 12
   },
-  "model": null,
+  "model": "ibm-granite/granite-4.0-micro",
   "targets": {
     "parse_exact_pct": {
       "pass_if": ">=",
@@ -32,7 +32,7 @@
       "violations": 0,
       "pinned_changed": 0,
       "not_met": 0,
-      "edits_applied": 48,
+      "edits_applied": 46,
       "requests": [
         {
           "id": "n01",
@@ -43,7 +43,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.25180849400021543
+          "seconds": 0.470106399996439
         },
         {
           "id": "n02",
@@ -54,7 +54,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.5607976229998712
+          "seconds": 1.1803502999973716
         },
         {
           "id": "n03",
@@ -65,7 +65,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09303658399994674
+          "seconds": 0.21289389999583364
         },
         {
           "id": "n04",
@@ -76,7 +76,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.1936027080000713
+          "seconds": 0.3406962000008207
         },
         {
           "id": "n05",
@@ -87,7 +87,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.2922715109998535
+          "seconds": 0.5877346999914153
         },
         {
           "id": "n06",
@@ -98,7 +98,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.24925506500039774
+          "seconds": 0.6688976000004914
         },
         {
           "id": "n07",
@@ -109,7 +109,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.19660078900005828
+          "seconds": 0.4596553000010317
         },
         {
           "id": "n08",
@@ -120,7 +120,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.055985687999964284
+          "seconds": 0.13567360000160988
         },
         {
           "id": "n09",
@@ -131,7 +131,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.052160812000238366
+          "seconds": 0.1279517999937525
         },
         {
           "id": "n10",
@@ -153,7 +153,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09485998500031201
+          "seconds": 0.205024200011394
         },
         {
           "id": "n12",
@@ -164,7 +164,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.0929315299999871
+          "seconds": 0.20306569999956992
         },
         {
           "id": "n13",
@@ -175,7 +175,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.12341138600004342
+          "seconds": 0.2991648000024725
         },
         {
           "id": "n14",
@@ -186,7 +186,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.2340154739999889
+          "seconds": 0.3934482000040589
         },
         {
           "id": "n15",
@@ -197,7 +197,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.9759721579998768
+          "seconds": 2.063092800002778
         },
         {
           "id": "n16",
@@ -208,7 +208,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.425336511000296
+          "seconds": 1.084836499998346
         },
         {
           "id": "n17",
@@ -219,7 +219,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10357254099972124
+          "seconds": 0.2266030999890063
         },
         {
           "id": "n18",
@@ -230,7 +230,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.18249774900004923
+          "seconds": 0.41609640000388026
         },
         {
           "id": "n19",
@@ -241,7 +241,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.18973779199995988
+          "seconds": 0.45584660000167787
         },
         {
           "id": "n20",
@@ -252,7 +252,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10235496099994634
+          "seconds": 0.23243770000408404
         },
         {
           "id": "n21",
@@ -263,7 +263,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09497116200009259
+          "seconds": 0.2393823999882443
         },
         {
           "id": "n22",
@@ -274,7 +274,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.08835005799983264
+          "seconds": 0.2294949000061024
         },
         {
           "id": "n23",
@@ -285,7 +285,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.04969059799987008
+          "seconds": 0.1318081999925198
         },
         {
           "id": "n24",
@@ -307,18 +307,18 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.30167565800002194
+          "seconds": 0.4945711000036681
         },
         {
           "id": "n26",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "applied",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09910563800031014
+          "seconds": 0.5891934999963269
         },
         {
           "id": "n27",
@@ -329,18 +329,18 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.0791385799998352
+          "seconds": 0.23021130000415724
         },
         {
           "id": "n28",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "applied",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.04543867799975487
+          "seconds": 0.38206329999957234
         },
         {
           "id": "n29",
@@ -351,7 +351,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09767746099987562
+          "seconds": 0.21053959999699146
         },
         {
           "id": "n30",
@@ -362,7 +362,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.4354162740000902
+          "seconds": 1.1190780000033556
         },
         {
           "id": "n31",
@@ -373,7 +373,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05373633800036259
+          "seconds": 0.12531820000731386
         },
         {
           "id": "n32",
@@ -384,7 +384,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05054152599996087
+          "seconds": 0.13333880000573117
         },
         {
           "id": "n33",
@@ -395,7 +395,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05447259099992152
+          "seconds": 0.13993520000076387
         },
         {
           "id": "n34",
@@ -406,7 +406,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09585555300009219
+          "seconds": 0.2186321999906795
         },
         {
           "id": "n35",
@@ -417,7 +417,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.06923762199994599
+          "seconds": 0.12934410000161733
         },
         {
           "id": "n36",
@@ -428,7 +428,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.13047530299991195
+          "seconds": 0.17401490001066122
         },
         {
           "id": "n37",
@@ -439,7 +439,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.06713513899967438
+          "seconds": 0.13067729999602307
         },
         {
           "id": "n38",
@@ -450,7 +450,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.15428213399991364
+          "seconds": 0.39566589999594726
         },
         {
           "id": "n39",
@@ -461,7 +461,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.24953222300018751
+          "seconds": 0.5683647999976529
         },
         {
           "id": "n40",
@@ -472,7 +472,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.29608770699996967
+          "seconds": 0.8451271999947494
         },
         {
           "id": "n41",
@@ -483,7 +483,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 1.0217039119997935
+          "seconds": 2.36922439999762
         },
         {
           "id": "n42",
@@ -494,7 +494,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.9450075949998791
+          "seconds": 1.992656199989142
         },
         {
           "id": "n43",
@@ -505,7 +505,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.5396737159999248
+          "seconds": 1.226906500000041
         },
         {
           "id": "n44",
@@ -516,7 +516,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.21307948799994847
+          "seconds": 0.45679879999079276
         },
         {
           "id": "n45",
@@ -527,7 +527,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.24913275000017165
+          "seconds": 0.5411443000048166
         },
         {
           "id": "n46",
@@ -538,7 +538,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.0633470100001432
+          "seconds": 0.1612162000092212
         },
         {
           "id": "n47",
@@ -571,7 +571,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.08203796099996907
+          "seconds": 0.17753970000194386
         },
         {
           "id": "n50",
@@ -582,7 +582,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.39266137499998877
+          "seconds": 1.0383841000002576
         },
         {
           "id": "n51",
@@ -604,7 +604,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.08783808999987741
+          "seconds": 0.17462689999956638
         },
         {
           "id": "n53",
@@ -615,7 +615,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.43572390899998936
+          "seconds": 1.1922632999921916
         },
         {
           "id": "n54",
@@ -626,7 +626,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.1860437099999217
+          "seconds": 0.3543284000043059
         },
         {
           "id": "n55",
@@ -637,7 +637,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.42435559000023204
+          "seconds": 1.1423546000005445
         },
         {
           "id": "n56",
@@ -648,7 +648,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.07984921600018424
+          "seconds": 0.21085810000658967
         },
         {
           "id": "n57",
@@ -659,7 +659,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.14214469999978974
+          "seconds": 0.3557696999923792
         },
         {
           "id": "n58",
@@ -670,7 +670,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.45064909799975794
+          "seconds": 1.213427100010449
         },
         {
           "id": "n59",
@@ -681,7 +681,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.4618942090000928
+          "seconds": 1.121298600002774
         },
         {
           "id": "n60",
@@ -692,7 +692,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 1.024728855000376
+          "seconds": 1.5392788000026485
         },
         {
           "id": "a01",
@@ -945,7 +945,7 @@
       "violations": 0,
       "pinned_changed": 0,
       "not_met": 0,
-      "edits_applied": 48,
+      "edits_applied": 46,
       "requests": [
         {
           "id": "n01",
@@ -956,7 +956,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.26461932900019747
+          "seconds": 0.5897971999947913
         },
         {
           "id": "n02",
@@ -967,7 +967,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.5040415889998258
+          "seconds": 1.170076499998686
         },
         {
           "id": "n03",
@@ -978,7 +978,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09455743200032884
+          "seconds": 0.20720270001038443
         },
         {
           "id": "n04",
@@ -989,7 +989,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.19113054599984025
+          "seconds": 0.3159496999869589
         },
         {
           "id": "n05",
@@ -1000,7 +1000,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.26467180200006624
+          "seconds": 0.6287645999982487
         },
         {
           "id": "n06",
@@ -1011,7 +1011,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.18002849999993487
+          "seconds": 0.4449724000005517
         },
         {
           "id": "n07",
@@ -1022,7 +1022,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.19303677700008848
+          "seconds": 0.4900824999931501
         },
         {
           "id": "n08",
@@ -1033,7 +1033,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05615300499994191
+          "seconds": 0.1473355000052834
         },
         {
           "id": "n09",
@@ -1044,7 +1044,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.047454635000121925
+          "seconds": 0.1054223999963142
         },
         {
           "id": "n10",
@@ -1066,7 +1066,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.0915467439999702
+          "seconds": 0.22106979999807663
         },
         {
           "id": "n12",
@@ -1077,7 +1077,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.08685160499999256
+          "seconds": 0.20926639999379404
         },
         {
           "id": "n13",
@@ -1088,7 +1088,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.12560336800015648
+          "seconds": 0.30914579999807756
         },
         {
           "id": "n14",
@@ -1099,7 +1099,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.19101057900024898
+          "seconds": 0.4261269999988144
         },
         {
           "id": "n15",
@@ -1110,7 +1110,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 1.0167272649996448
+          "seconds": 1.9731981000077212
         },
         {
           "id": "n16",
@@ -1121,7 +1121,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.4124886670001615
+          "seconds": 1.077264899999136
         },
         {
           "id": "n17",
@@ -1132,7 +1132,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10521096599995872
+          "seconds": 0.23505329999898095
         },
         {
           "id": "n18",
@@ -1143,7 +1143,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.1635707119999097
+          "seconds": 0.42488849999790546
         },
         {
           "id": "n19",
@@ -1154,7 +1154,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.16200777299991387
+          "seconds": 0.367738000000827
         },
         {
           "id": "n20",
@@ -1165,7 +1165,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10322351799959506
+          "seconds": 0.23548879999725614
         },
         {
           "id": "n21",
@@ -1176,7 +1176,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09725219399979323
+          "seconds": 0.24934560000838246
         },
         {
           "id": "n22",
@@ -1187,7 +1187,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.08505366200006392
+          "seconds": 0.18401720000838395
         },
         {
           "id": "n23",
@@ -1198,7 +1198,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05186388599986458
+          "seconds": 0.10522880000644363
         },
         {
           "id": "n24",
@@ -1220,18 +1220,18 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.3107147289997556
+          "seconds": 0.5135396999976365
         },
         {
           "id": "n26",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "applied",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09664227699977346
+          "seconds": 0.513931199995568
         },
         {
           "id": "n27",
@@ -1242,18 +1242,18 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.07931931399980385
+          "seconds": 0.16500169999198988
         },
         {
           "id": "n28",
           "category": "normal",
           "action": "edit",
           "correct": true,
-          "outcome": "applied",
+          "outcome": "impossible",
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.048844670000107726
+          "seconds": 0.31457429999136366
         },
         {
           "id": "n29",
@@ -1264,7 +1264,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10140542099998129
+          "seconds": 0.21031339999171905
         },
         {
           "id": "n30",
@@ -1275,7 +1275,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.4150897989998157
+          "seconds": 1.1212330999987898
         },
         {
           "id": "n31",
@@ -1286,7 +1286,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05377545700002884
+          "seconds": 0.09129830000165384
         },
         {
           "id": "n32",
@@ -1297,7 +1297,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05300369600035992
+          "seconds": 0.12646490000770427
         },
         {
           "id": "n33",
@@ -1308,7 +1308,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05547870800000965
+          "seconds": 0.131387099987478
         },
         {
           "id": "n34",
@@ -1319,7 +1319,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10837845000014568
+          "seconds": 0.2143084999988787
         },
         {
           "id": "n35",
@@ -1330,7 +1330,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.06222884699991482
+          "seconds": 0.134902100006002
         },
         {
           "id": "n36",
@@ -1341,7 +1341,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.10554619699996692
+          "seconds": 0.20365270000183955
         },
         {
           "id": "n37",
@@ -1352,7 +1352,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.05868646399994759
+          "seconds": 0.1490876999887405
         },
         {
           "id": "n38",
@@ -1363,7 +1363,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.1606569970003875
+          "seconds": 0.3957167000044137
         },
         {
           "id": "n39",
@@ -1374,7 +1374,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.2500186659999599
+          "seconds": 0.5271784999931697
         },
         {
           "id": "n40",
@@ -1385,7 +1385,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.3121559480000542
+          "seconds": 0.7438360999949509
         },
         {
           "id": "n41",
@@ -1396,7 +1396,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 1.2207222580000234
+          "seconds": 2.1679663000104483
         },
         {
           "id": "n42",
@@ -1407,7 +1407,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 1.0601371050001944
+          "seconds": 1.9906900000059977
         },
         {
           "id": "n43",
@@ -1418,7 +1418,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.565158189000158
+          "seconds": 1.2537886999925831
         },
         {
           "id": "n44",
@@ -1429,7 +1429,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.23372562699978516
+          "seconds": 0.4874169999966398
         },
         {
           "id": "n45",
@@ -1440,7 +1440,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.2991516980000597
+          "seconds": 0.6026091000094311
         },
         {
           "id": "n46",
@@ -1451,7 +1451,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.06343710400005875
+          "seconds": 0.13981920000514947
         },
         {
           "id": "n47",
@@ -1484,7 +1484,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.07786688100031824
+          "seconds": 0.17081760001019575
         },
         {
           "id": "n50",
@@ -1495,7 +1495,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.37980179199985287
+          "seconds": 1.0512148999987403
         },
         {
           "id": "n51",
@@ -1517,7 +1517,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.09028361099990434
+          "seconds": 0.19070570000621956
         },
         {
           "id": "n53",
@@ -1528,7 +1528,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.46705356700022094
+          "seconds": 1.1824501999944914
         },
         {
           "id": "n54",
@@ -1539,7 +1539,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.16383281399976113
+          "seconds": 0.34506059999694116
         },
         {
           "id": "n55",
@@ -1550,7 +1550,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.4032563460000347
+          "seconds": 1.1244563999935053
         },
         {
           "id": "n56",
@@ -1561,7 +1561,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.08218571299994437
+          "seconds": 0.14534719999937806
         },
         {
           "id": "n57",
@@ -1572,7 +1572,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.15100608900002044
+          "seconds": 0.370380499996827
         },
         {
           "id": "n58",
@@ -1583,7 +1583,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.45279263800011904
+          "seconds": 1.091145400001551
         },
         {
           "id": "n59",
@@ -1594,7 +1594,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.49433305999991717
+          "seconds": 1.0897488000045996
         },
         {
           "id": "n60",
@@ -1605,7 +1605,7 @@
           "violations": [],
           "pinned_changed": 0,
           "not_met": 0,
-          "seconds": 0.8484252759999436
+          "seconds": 1.3662817000003997
         },
         {
           "id": "a01",
@@ -1850,11 +1850,924 @@
           "seconds": 0.0
         }
       ]
+    },
+    "llm": {
+      "parse_exact_pct": 86.66666666666667,
+      "refused_pct": 91.66666666666667,
+      "clarify_pct": 60.0,
+      "violations": 0,
+      "pinned_changed": 0,
+      "not_met": 0,
+      "edits_applied": 54,
+      "requests": [
+        {
+          "id": "n01",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.46885419999307487
+        },
+        {
+          "id": "n02",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 1.070346199994674
+        },
+        {
+          "id": "n03",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.18020930000056978
+        },
+        {
+          "id": "n04",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.28410089999670163
+        },
+        {
+          "id": "n05",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.4431907000107458
+        },
+        {
+          "id": "n06",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.3493890999961877
+        },
+        {
+          "id": "n07",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.4364052999881096
+        },
+        {
+          "id": "n08",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.13945639999292325
+        },
+        {
+          "id": "n09",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.11904350000259001
+        },
+        {
+          "id": "n10",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.7959952999954112
+        },
+        {
+          "id": "n11",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.20603509999637026
+        },
+        {
+          "id": "n12",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.153009400004521
+        },
+        {
+          "id": "n13",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.28438009999808855
+        },
+        {
+          "id": "n14",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "impossible",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.3872551999957068
+        },
+        {
+          "id": "n15",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.3576449000102002
+        },
+        {
+          "id": "n16",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 1.0023857000051066
+        },
+        {
+          "id": "n17",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.2162465000001248
+        },
+        {
+          "id": "n18",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "unresolved",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "n19",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.13169539999216795
+        },
+        {
+          "id": "n20",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.17610660000354983
+        },
+        {
+          "id": "n21",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.17564970000239555
+        },
+        {
+          "id": "n22",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.1658698999963235
+        },
+        {
+          "id": "n23",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.3626798999903258
+        },
+        {
+          "id": "n24",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.2869034000032116
+        },
+        {
+          "id": "n25",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.42443280000588857
+        },
+        {
+          "id": "n26",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "impossible",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.5270250000030501
+        },
+        {
+          "id": "n27",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.17716019999352284
+        },
+        {
+          "id": "n28",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "impossible",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.2535972000041511
+        },
+        {
+          "id": "n29",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.19645289999607485
+        },
+        {
+          "id": "n30",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.8939061000128277
+        },
+        {
+          "id": "n31",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.11482699999760371
+        },
+        {
+          "id": "n32",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.09957599999324884
+        },
+        {
+          "id": "n33",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.12578550000034738
+        },
+        {
+          "id": "n34",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.20219329999235924
+        },
+        {
+          "id": "n35",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.09439579999889247
+        },
+        {
+          "id": "n36",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.16010979999555275
+        },
+        {
+          "id": "n37",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.1449616000027163
+        },
+        {
+          "id": "n38",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "impossible",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.3440947000053711
+        },
+        {
+          "id": "n39",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.47967879999487195
+        },
+        {
+          "id": "n40",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.569324999989476
+        },
+        {
+          "id": "n41",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 1.9394984999962617
+        },
+        {
+          "id": "n42",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 1.777153000002727
+        },
+        {
+          "id": "n43",
+          "category": "normal",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 1.0445204000134254
+        },
+        {
+          "id": "n44",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.1948497999983374
+        },
+        {
+          "id": "n45",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "impossible",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.47840789999463595
+        },
+        {
+          "id": "n46",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.11701220000395551
+        },
+        {
+          "id": "n47",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.1123432999884244
+        },
+        {
+          "id": "n48",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 1.047873299990897
+        },
+        {
+          "id": "n49",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.1619910000008531
+        },
+        {
+          "id": "n50",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.8987367000081576
+        },
+        {
+          "id": "n51",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.19710430000850465
+        },
+        {
+          "id": "n52",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.1766566000005696
+        },
+        {
+          "id": "n53",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 1.050939799999469
+        },
+        {
+          "id": "n54",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.26749320000817534
+        },
+        {
+          "id": "n55",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.22383950000221375
+        },
+        {
+          "id": "n56",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.12361090000194963
+        },
+        {
+          "id": "n57",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "impossible",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.3518203999992693
+        },
+        {
+          "id": "n58",
+          "category": "normal",
+          "action": "clarify",
+          "correct": false,
+          "outcome": "clarify",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "n59",
+          "category": "normal",
+          "action": "refuse",
+          "correct": false,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "n60",
+          "category": "normal",
+          "action": "edit",
+          "correct": true,
+          "outcome": "closest",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 1.9725955000030808
+        },
+        {
+          "id": "a01",
+          "category": "ambiguous",
+          "action": "clarify",
+          "correct": true,
+          "outcome": "clarify",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a02",
+          "category": "ambiguous",
+          "action": "clarify",
+          "correct": true,
+          "outcome": "clarify",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a03",
+          "category": "ambiguous",
+          "action": "edit",
+          "correct": false,
+          "outcome": "unresolved",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a04",
+          "category": "ambiguous",
+          "action": "clarify",
+          "correct": true,
+          "outcome": "clarify",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a05",
+          "category": "ambiguous",
+          "action": "error",
+          "correct": false,
+          "outcome": "error",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a06",
+          "category": "ambiguous",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.20614019999629818
+        },
+        {
+          "id": "a07",
+          "category": "ambiguous",
+          "action": "clarify",
+          "correct": true,
+          "outcome": "clarify",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a08",
+          "category": "ambiguous",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.14049449999583885
+        },
+        {
+          "id": "a09",
+          "category": "ambiguous",
+          "action": "clarify",
+          "correct": true,
+          "outcome": "clarify",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "a10",
+          "category": "ambiguous",
+          "action": "clarify",
+          "correct": true,
+          "outcome": "clarify",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x01",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x02",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x03",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x04",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x05",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x06",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x07",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x08",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x09",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x10",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x11",
+          "category": "adversarial",
+          "action": "refuse",
+          "correct": true,
+          "outcome": "refuse",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.0
+        },
+        {
+          "id": "x12",
+          "category": "adversarial",
+          "action": "edit",
+          "correct": false,
+          "outcome": "applied",
+          "violations": [],
+          "pinned_changed": 0,
+          "not_met": 0,
+          "seconds": 0.9349912000034237
+        }
+      ]
     }
   },
   "replan": {
     "one_day_edits": 25,
-    "p95_pinned_s": 0.25197918100002425,
-    "p95_full_week_s": 2.5618250769998667
+    "p95_pinned_s": 0.5160601000097813,
+    "p95_full_week_s": 4.011807000002591
   }
 }
