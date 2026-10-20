@@ -40,6 +40,7 @@ UNAVAILABLE_MESSAGE = "The assistant is unavailable right now. Please try again 
 
 _POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="edit-llm")
 _FENCE = re.compile(r"```(?:json)?", re.I)
+_STRAY_QUOTE = re.compile(r'([\]}])\s*"')
 
 
 def load_prompt(version: str = PROMPT_VERSION) -> tuple[str, str]:
@@ -53,8 +54,8 @@ def load_prompt(version: str = PROMPT_VERSION) -> tuple[str, str]:
 def extract_json(raw: str) -> dict:
     """
     The JSON object in a model reply, ignoring code fences and any text around it. Small
-    models sometimes stop before the last closing brackets ('{"edits": [{...}]'), so brackets
-    left open at the end of the reply are closed.
+    models sometimes stop before the last closing brackets ('{"edits": [{...}]') or put a
+    stray quote before the last one ('{"edits": [{...}]"}'), so those are repaired.
     Raises:
         ValueError: There is no parseable JSON object.
     """
@@ -69,7 +70,10 @@ def extract_json(raw: str) -> dict:
         # Close what is open, either at the end of the reply or, if text follows the JSON,
         # at its last bracket.
         end = max(text.rfind("}"), text.rfind("]"))
-        for candidate in (text.rstrip(), text[: end + 1]):
+        # A quote right after a closing bracket is never valid JSON; small models add one
+        # before the last brace ('}]"}').
+        unquoted = _STRAY_QUOTE.sub(r"\1", text.rstrip())
+        for candidate in (text.rstrip(), text[: end + 1], unquoted):
             try:
                 data = json.loads(_close_brackets(candidate))
                 break

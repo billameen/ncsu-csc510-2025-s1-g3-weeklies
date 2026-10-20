@@ -160,6 +160,9 @@ def test_the_prompt_covers_the_whole_format_and_its_examples_are_valid():
         '"value": "Fried Pickles"}]} Request: {"action": "refuse"}',
         '{"action": "edit", "edits": [{"type": "filter", "field": "dish", "op": "is_not", '
         '"value": "Fried \\"Pickles}"}]',
+        # A real reply from granite-4.0-micro: a stray quote before the last brace.
+        '{"action": "edit", "edits": [{"type": "filter", "field": "dish", "op": "is_not", '
+        '"value": "Filet Mignon", "days": ["saturday"]}]"}',
     ],
 )
 def test_extract_json_closes_brackets_a_small_model_left_open(raw):
