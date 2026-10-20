@@ -231,3 +231,14 @@ def test_the_m0_report_includes_the_m3_results(tmp_path, monkeypatch):
     (tmp_path / "rec.json").write_text(json.dumps({"model": None, "calls": {}}))
     assert eval.run.main(["--out", str(tmp_path)]) == 0
     assert "edits table" in (tmp_path / "m0.md").read_text()
+
+
+def test_a_stale_recording_exits_with_how_to_record_again(seed, tmp_path, monkeypatch):
+    cassette = tmp_path / "cassette.json"
+    cassette.write_text(json.dumps({"model": "x", "calls": {}}))
+    monkeypatch.setattr(edits_eval, "RECORDING", cassette)
+    monkeypatch.setattr(edits_eval, "load_requests", lambda: SAMPLE)
+    monkeypatch.setattr("menu_generation.db_file", str(seed[2]))
+    with pytest.raises(SystemExit) as exit_info:
+        edits_eval.main(["--out", str(tmp_path / "out")])
+    assert "python -m eval.edits --live" in str(exit_info.value.code)

@@ -288,6 +288,13 @@ def p95(values: Sequence[float]) -> float | None:
     return ordered[(95 * len(ordered) + 99) // 100 - 1]
 
 
+STALE_MESSAGE = (
+    f"{RECORDING} has no answer for one of the parser's prompts: the prompt, the parser's retry "
+    "message or the labelled requests changed since it was recorded. Record again with "
+    "`python -m eval.edits --live` (delete the file first if the model changed)."
+)
+
+
 class _ReplayGuard:
     """Wraps a ReplayLLM so a missing response stops the eval instead of looking like an
     "assistant unavailable" error (the parser catches every model exception)."""
@@ -465,7 +472,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     import menu_generation  # the database the app and M0 read
 
-    from eval.baselines import RecordingError, ReplayLLM
+    from eval.baselines import RecordingError, ReplayLLM, StaleRecording
 
     requests = load_requests()
     if args.live:
@@ -476,12 +483,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     replay = ReplayLLM(RECORDING) if RECORDING.exists() else None
     if replay is not None:
         replay.model = json.loads(RECORDING.read_text(encoding="utf-8"))["model"]
-    report = run(
-        requests,
-        load_menu(menu_generation.db_file),
-        load_catalog(menu_generation.db_file),
-        replay=replay,
-    )
+    try:
+        report = run(
+            requests,
+            load_menu(menu_generation.db_file),
+            load_catalog(menu_generation.db_file),
+            replay=replay,
+        )
+    except StaleRecording:
+        sys.exit(STALE_MESSAGE)
 
     markdown = render_markdown(report)
     args.out.mkdir(parents=True, exist_ok=True)
