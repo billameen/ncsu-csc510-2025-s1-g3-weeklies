@@ -122,8 +122,8 @@ def test_only_an_order_that_reached_delivered_is_offered_a_review_button(client,
 
 def test_an_order_whose_total_is_exactly_zero_renders_as_zero_dollars(client, temp_db_path):
     """The total used to be picked with an ``or`` chain, which treated a real
-    total of 0.0 as missing and rendered a blank cell. ``_first_present`` only
-    skips keys whose value is ``None``.
+    total of 0.0 as missing and rendered a blank cell. Totals are now read as integer
+    cents (``charges.order_charges_cents``), which counts 0 as a real value.
     """
     usr_id = _make_user(temp_db_path, "uc9-zero@example.test")
     rtr_id = _make_restaurant(temp_db_path, "UC9 Zero Diner")
@@ -136,7 +136,7 @@ def test_an_order_whose_total_is_exactly_zero_renders_as_zero_dollars(client, te
     assert response.status_code == 200
     page = response.get_data(as_text=True)
     assert "$12.34" in page
-    assert "$0.00" in page
+    assert "<td>$0.00</td>" in page
 
 
 # This proves a comped or fully-discounted $0.00 order shows "$0.00" instead of a blank total.

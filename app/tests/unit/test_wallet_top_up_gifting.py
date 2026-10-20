@@ -1,5 +1,7 @@
 import pytest
 from app.sqlQueries import create_connection, close_connection, execute_query, fetch_one
+import ledger
+from wallet_helpers import set_wallet_cents, wallet_cents, wallet_cents_by_email
 from werkzeug.security import generate_password_hash
 
 # Note: fixtures like 'client', 'app', 'login_session', 'seed_minimal_data', 'temp_db_path'
@@ -21,11 +23,10 @@ def seed_recipient_user(temp_db_path):
               VALUES ("Recip","User",?, "5555555", ?, 1000)
             ''', (email, generate_password_hash("recip_pw")))
             usr_row = fetch_one(conn, 'SELECT usr_id FROM "User" WHERE email=?', (email,))
-        else:
-            # Ensure the wallet is 1000 cents for consistent testing
-            execute_query(conn, 'UPDATE "User" SET wallet=? WHERE email=?', (1000, email))
 
         if usr_row:
+            # Ensure the wallet is 1000 cents for consistent testing
+            set_wallet_cents(temp_db_path, usr_row[0], 1000)
             return {"usr_email": email, "usr_id": usr_row[0], "wallet_cents": 1000}
         
     finally:
@@ -36,8 +37,7 @@ def get_user_wallet(app, user_id, temp_db_path):
     """Helper to fetch user wallet balance from DB."""
     conn = create_connection(temp_db_path)
     try:
-        row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (user_id,))
-        return row[0] if row else 0
+        return ledger.wallet_balance(conn, user_id)
     finally:
         close_connection(conn)
 
@@ -166,9 +166,7 @@ def test_gift_error_insufficient_funds(client, login_session, app, seed_minimal_
     """Tests error: insufficient_funds (sender wallet balance < amount)."""
     sender_id = seed_minimal_data["usr_id"]
     # Ensure sender balance is 0 cents
-    conn = create_connection(temp_db_path)
-    execute_query(conn, 'UPDATE "User" SET wallet = 0 WHERE usr_id = ?', (sender_id,))
-    close_connection(conn)
+    set_wallet_cents(temp_db_path, sender_id, 0)
     
     resp = client.post("/profile/wallet/gift", data={
         "recipient_email": seed_recipient_user["usr_email"],

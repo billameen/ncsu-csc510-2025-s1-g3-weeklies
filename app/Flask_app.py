@@ -6,7 +6,6 @@ import math
 import json
 import calendar
 from enum import Enum
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from io import BytesIO
 from flask import jsonify
 from sqlite3 import IntegrityError
@@ -18,9 +17,12 @@ from flask import Flask, render_template, url_for, redirect, request, session, s
 
 # Use ONLY these helpers for DB access
 from sqlQueries import create_connection, close_connection, fetch_one, fetch_all, execute_query
+from money import MoneyError, parse_cents, cents_to_str, format_cents
+import uuid
+import ledger
+from charges import compute_charges, order_charges_cents, item_cents
 from collections import Counter, defaultdict
 from menu_generation import MenuGenerator, ALLERGEN_TAGS, invalid_allergies
-from pricing import TAX_RATE, DELIVERY_FEE, SERVICE_FEE
 from planner.targets import (
     TargetError,
     format_budget,
@@ -98,66 +100,62 @@ def _cents_to_dollars(cents) -> float:
     
 def _dollars_to_cents(dollars) -> int:
     """
-    Convert an amount in dollars to cents.
+    Convert an amount in dollars to cents, rounding half up (see ``money.py``).
     Args:
-        dollars (int | float | None): The value in dollars to convert.
+        dollars (int | float | str | None): The value in dollars to convert.
     Returns:
         int: The cent value (0 on failure).
     """
     try:
-        # Use _money to ensure 2 decimal places, then round (not truncate) to cents:
-        # e.g. 0.29 * 100 == 28.999999999999996
-        return int(round(_money(dollars) * 100))
-    except Exception:
+        return parse_cents(dollars)
+    except MoneyError:
         return 0
+
 
 def _parse_amount_cents(raw) -> int:
     """
-    Strictly parse a user-entered dollar amount into cents.
+    Strictly parse a user-entered dollar amount into cents (see ``money.parse_cents``).
     Args:
-        raw (str | int | float | None): The amount as entered, e.g. "12.50".
+        raw (str | int | None): The amount as entered, e.g. "12.50".
     Returns:
         int: The amount in cents, rounded half-up to the nearest cent (may be zero or negative).
     Raises:
-        ValueError: If the input is not a finite number.
+        ValueError: If the input is not a plain finite number (``money.MoneyError`` is a ValueError).
     """
-    try:
-        d = Decimal(str(raw).strip())
-        if not d.is_finite():
-            raise ValueError(f"invalid amount: {raw!r}")
-        # quantize raises InvalidOperation for absurdly large values like 1e999
-        return int((d * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
-    except InvalidOperation:
-        raise ValueError(f"invalid amount: {raw!r}")
+    return parse_cents(raw)
 
-def _refresh_session_wallet(conn, usr_id) -> int:
+
+def require_rows(query: str, params: tuple) -> tuple:
     """
-    Reload the user's wallet balance from the database into the session.
+    Mark a statement for ``_execute_transaction`` as one that must change exactly one row.
+    A guarded debit such as ``UPDATE ... WHERE wallet >= ?`` that matches no rows is not
+    a SQL error, so without this the rest of the transaction would still commit.
     Args:
-        conn (sqlite3.Connection): Active database connection.
-        usr_id (int): The user whose balance to load.
+        query (str): SQL statement.
+        params (tuple): Parameters for the statement.
     Returns:
-        int: The current wallet balance in cents.
+        tuple: ``(query, params, 1)`` for use in ``_execute_transaction``.
     """
-    row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
-    wallet = (row[0] if row else 0) or 0
-    session['Wallet'] = wallet
-    return wallet
+    return (query, params, 1)
 
-def _execute_transaction(conn, queries_and_params: list) -> bool:
+
+def _execute_transaction(conn, queries_and_params: list, result: dict = None) -> bool:
     """
     Execute multiple queries in a single, atomic transaction.
     Args:
         conn (sqlite3.Connection): Active database connection.
         queries_and_params (list): List of (query: str, params: tuple) pairs, or
-            (query, params, expected_rowcount) triples. If a statement affects a different
-            number of rows than expected (e.g. a guarded debit matched nothing), the whole
-            transaction is rolled back.
+            (query, params, expected_rowcount) triples (``require_rows`` makes one).
+            If a statement affects a different number of rows than expected (e.g. a
+            guarded debit matched nothing), the whole transaction is rolled back.
+        result (dict, optional): If given, ``result["lastrowid"]`` is set to the
+            ID of the last row inserted by this transaction.
     Returns:
         bool: True on success, False on failure (with automatic rollback).
     """
     try:
         cur = conn.cursor()
+        lastrowid = None
         for entry in queries_and_params:
             query, params = entry[0], entry[1]
             cur.execute(query, params)
@@ -165,12 +163,191 @@ def _execute_transaction(conn, queries_and_params: list) -> bool:
                 print(f"Transaction aborted, expected {entry[2]} row(s), got {cur.rowcount}: {query}")
                 conn.rollback()
                 return False
+            if query.lstrip().upper().startswith("INSERT"):
+                lastrowid = cur.lastrowid
         conn.commit()
+        if result is not None:
+            result["lastrowid"] = lastrowid
         return True
     except Exception as e:
         print(f"Transaction failed, rolling back: {e}")
         conn.rollback()
         return False
+
+# --- Wallet ledger helpers (M2) ------------------------------------------------
+# Wallet balances live in the double-entry ledger (ledger.py), not in the old
+# User.wallet column. session['Wallet'] is only a display copy and is refreshed
+# from the ledger after every money operation; it is never used to decide
+# whether a user can pay.
+
+_LEDGER_READY = set()
+
+
+def _ledger_ready(conn):
+    """Create the ledger tables in the current database if needed (once per file)."""
+    if db_file not in _LEDGER_READY:
+        ledger.ensure_schema(conn)
+        _LEDGER_READY.add(db_file)
+
+
+def _wallet_cents(conn, usr_id) -> int:
+    """A user's wallet balance in cents, read from the ledger."""
+    _ledger_ready(conn)
+    return ledger.wallet_balance(conn, usr_id)
+
+
+def _refresh_session_wallet(conn, usr_id) -> int:
+    """Copy the user's ledger balance into session['Wallet'] for display."""
+    session['Wallet'] = _wallet_cents(conn, usr_id)
+    return session['Wallet']
+
+
+def _new_request_key(kind: str) -> str:
+    """A unique idempotency key for one money request."""
+    return f"{kind}:{uuid.uuid4().hex}"
+
+
+_CLIENT_KEY_RE = re.compile(r"[A-Za-z0-9_-]{8,64}")
+
+
+def _request_key(kind: str, usr_id, client_key) -> str:
+    """
+    Idempotency key for a money request (M2). Every money form and the order
+    pages send a one-time key; sending the same request again with the same key
+    (a double-clicked "Pay", a refreshed form) is recognised by the ledger and
+    charges only once. The key is scoped to the user, so one user can never
+    collide with or replay another user's key. Requests without a valid key
+    get a fresh one (no double-click protection, but they still work).
+    """
+    if isinstance(client_key, str) and _CLIENT_KEY_RE.fullmatch(client_key):
+        return f"{kind}:{int(usr_id)}:{client_key}"
+    return _new_request_key(kind)
+
+
+def _refunded_txn_ids(conn) -> set:
+    """IDs of ledger transactions that have been reversed (refunded)."""
+    return {r[0] for r in conn.execute(
+        'SELECT reverses_txn_id FROM "LedgerTransaction" WHERE reverses_txn_id IS NOT NULL')}
+
+
+_TXN_LABELS = {
+    "topup": "Wallet top-up",
+    "gift": "Gift",
+    "order": "Order",
+    "refund": "Refund",
+    "opening_balance": "Opening balance",
+}
+
+
+def _wallet_history(conn, usr_id, limit=25) -> list:
+    """
+    A user's most recent wallet transactions for the profile page, newest first.
+    Returns:
+        list[dict]: txn_id, date, description, amount (signed display string),
+        amount_cents and credit (True when money came in).
+    """
+    _ledger_ready(conn)
+    rows = []
+    for h in ledger.history(conn, ledger.user_account(usr_id), limit=limit):
+        try:
+            when = datetime.fromisoformat(h["created_at"]).astimezone().strftime("%Y-%m-%d %H:%M")
+        except (TypeError, ValueError):
+            when = h["created_at"] or ""
+        cents = h["amount_cents"]
+        rows.append({
+            "txn_id": h["txn_id"],
+            "date": when,
+            "description": h["memo"] or _TXN_LABELS.get(h["kind"], h["kind"]),
+            "amount": ("+" if cents > 0 else "-") + format_cents(abs(cents)),
+            "amount_cents": cents,
+            "credit": cents > 0,
+        })
+    return rows
+
+
+def _order_id_for_txn(conn, usr_id, txn_id):
+    """Find the order a ledger transaction paid for (used when a request is replayed)."""
+    for ord_id, details in fetch_all(
+        conn, 'SELECT ord_id, details FROM "Order" WHERE usr_id = ? ORDER BY ord_id DESC LIMIT 200',
+        (usr_id,),
+    ):
+        try:
+            if json.loads(details or "{}").get("ledger_txn_id") == txn_id:
+                return ord_id
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+def _charge_and_save_order(usr_id, rtr_id, restaurant_name, details, client_key=None):
+    """
+    Pay for an order from the user's wallet and save it, all or nothing.
+    The payment is one ledger transaction split into restaurant (food + tip),
+    tax and fee accounts; the order row is inserted inside that same database
+    transaction, so an order is never saved without being paid for.
+    Args:
+        usr_id (int): Buyer.
+        rtr_id (int): Restaurant.
+        restaurant_name (str): Used in the transaction-history memo.
+        details (dict): Order details including "charges_cents" (int cents, see
+            charges.py). The ledger transaction ID is added to it as "ledger_txn_id".
+        client_key (str, optional): The page's one-time idempotency key. Sending
+            the same order again with the same key returns the original order
+            instead of charging twice.
+    Returns:
+        tuple: (ord_id, None) on success, or (None, error) where error is
+        "insufficient_funds", "duplicate_request" (key reused for a different
+        order) or "db_failed".
+    """
+    charges = details["charges_cents"]
+    subtotal = charges["subtotal"]
+    tax = charges["tax"]
+    delivery_fee = charges["delivery_fee"]
+    service_fee = charges["service_fee"]
+    tip = charges["tip"]
+    total = charges["total"]
+
+    entries = [
+        (ledger.user_account(usr_id), -total),
+        (ledger.restaurant_account(rtr_id), subtotal + tip),
+        ("tax", tax),
+        ("fees:delivery", delivery_fee),
+        ("fees:service", service_fee),
+    ]
+    entries = [(account, cents) for account, cents in entries if cents]
+
+    def save_order(cur, txn_id):
+        details["ledger_txn_id"] = txn_id
+        cur.execute(
+            'INSERT INTO "Order" (rtr_id, usr_id, details, status) VALUES (?, ?, ?, ?)',
+            (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value),
+        )
+        return cur.lastrowid
+
+    conn = create_connection(db_file)
+    try:
+        _ledger_ready(conn)
+        ledger.open_legacy_wallet(conn, usr_id)
+        try:
+            result = ledger.post_transaction(
+                conn, "order", entries, _request_key("order", usr_id, client_key),
+                memo=f"Order at {restaurant_name}", after=save_order,
+            )
+        except ledger.InsufficientFunds:
+            return None, "insufficient_funds"
+        except ledger.IdempotencyConflict:
+            return None, "duplicate_request"
+        except ledger.LedgerError as e:
+            print(f"Order payment failed: {e}")
+            return None, "db_failed"
+        finally:
+            _refresh_session_wallet(conn, usr_id)
+        if not result.created:   # same request again: return the order it already paid for
+            return _order_id_for_txn(conn, usr_id, result.txn_id), None
+        return result.extra, None
+    finally:
+        close_connection(conn)
+
 
 def parse_generated_menu(gen_str):
     """
@@ -484,7 +661,11 @@ def login():
             session["Username"] = user[1] + " " + user[2]
             session["Email"] = email
             session["Phone"] = user[4]
-            session["Wallet"] = user[6]
+            conn = create_connection(db_file)
+            try:
+                session["Wallet"] = _wallet_cents(conn, user[0])
+            finally:
+                close_connection(conn)
             session["Preferences"] = user[7] if len(user) > 7 else ""
             session["Allergies"] = user[8] if len(user) > 8 else ""
             session["GeneratedMenu"] = user[9] if len(user) > 9 else ""
@@ -640,7 +821,7 @@ def profile():
             "email":         row[3],
             "phone":         row[4],
             "password_HS":   row[5],
-            "wallet":        (row[6] or 0) / 100.0,
+            "wallet":        cents_to_str(_wallet_cents(conn, row[0])),
             "preferences":   row[7] or "",
             "allergies":     row[8] or "",
             "daily_calorie_target": row[9],
@@ -666,17 +847,22 @@ def profile():
         reviewed_restaurant_rows = fetch_all(conn, 'SELECT DISTINCT rtr_id FROM "Review" WHERE usr_id = ?', (user["usr_id"],))
         reviewed_rtr_ids = {r[0] for r in reviewed_restaurant_rows}
 
+        _ledger_ready(conn)
+        refunded_txns = _refunded_txn_ids(conn)
+        wallet_history = _wallet_history(conn, user["usr_id"])
+
         orders = []
         for ord_id, details, status, r_name, rtr_id in order_rows:
             placed = ""
             total = ""
+            ledger_txn_id = None
             if details:
                 try:
                     j = json.loads(details)
+                    ledger_txn_id = j.get("ledger_txn_id")
                     placed = _fmt_date(j.get("placed_at") or j.get("time"))
-                    charges = j.get("charges") or {}
-                    total_val = _first_present(charges, "total", "grand_total", "amount")
-                    total = _fmt_total(total_val) if total_val is not None else ""
+                    if j.get("charges_cents") or j.get("charges"):
+                        total = format_cents(order_charges_cents(j)["total"])
                 except Exception:
                     pass
 
@@ -699,7 +885,8 @@ def profile():
                 "rtr_id": rtr_id,
                 "total": total,
                 "is_reviewable": is_reviewable,
-                "is_reviewed": is_reviewed_final # <-- CORRECTED: Use the final state for display
+                "is_reviewed": is_reviewed_final, # <-- CORRECTED: Use the final state for display
+                "refunded": ledger_txn_id in refunded_txns,
             })
 
         # Fetch user's support tickets with order details
@@ -747,7 +934,10 @@ def profile():
         orders=orders,
         tickets=tickets,
         pw_updated=pw_updated,
-        pw_error=pw_error
+        pw_error=pw_error,
+        topup_key=uuid.uuid4().hex,
+        gift_key=uuid.uuid4().hex,
+        wallet_history=wallet_history,
     )
 
 # Edit Profile route
@@ -777,6 +967,7 @@ def edit_profile():
                    daily_calorie_target, weekly_budget_cents
             FROM "User" WHERE usr_id = ?
         ''', (usr_id,))
+        wallet_cents = _wallet_cents(conn, row[0]) if row else 0
     finally:
         close_connection(conn)
 
@@ -789,7 +980,7 @@ def edit_profile():
         "last_name": row[2],
         "email": row[3],
         "phone": row[4],
-        "wallet": (row[5] or 0) / 100.0,
+        "wallet": cents_to_str(wallet_cents),
         "preferences": row[6] or "",
         "allergies": row[7] or "",
         "daily_calorie_target": row[8],
@@ -943,8 +1134,8 @@ def wallet_topup():
         return redirect(url_for('login'))
 
     try:
-        amount_cents = _parse_amount_cents(request.form.get('amount') or '')
-    except ValueError:
+        amount_cents = parse_cents(request.form.get('amount'))
+    except MoneyError:
         return redirect(url_for('profile', wallet_error='invalid_amount'))
 
     if amount_cents <= 0:
@@ -954,17 +1145,23 @@ def wallet_topup():
 
     conn = create_connection(db_file)
     try:
-        # Atomically update the user's wallet balance
-        success = _execute_transaction(conn, [
-            ('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, usr_id), 1)
-        ])
-
-        if success:
-            # Refresh session from the DB (not by arithmetic, which carries forward any staleness)
-            _refresh_session_wallet(conn, usr_id)
-            return redirect(url_for('profile', wallet_updated='topup'))
-        else:
+        _ledger_ready(conn)
+        ledger.open_legacy_wallet(conn, usr_id)
+        try:
+            ledger.post_transaction(
+                conn, "topup",
+                [(ledger.user_account(usr_id), amount_cents), ("external:topup", -amount_cents)],
+                _request_key("topup", usr_id, request.form.get("idempotency_key")),
+                memo="Wallet top-up",
+            )
+        except ledger.IdempotencyConflict:
+            return redirect(url_for('profile', wallet_error='duplicate_request'))
+        except ledger.LedgerError as e:
+            print(f"Top-up failed: {e}")
             return redirect(url_for('profile', wallet_error='db_failed'))
+        finally:
+            _refresh_session_wallet(conn, usr_id)
+        return redirect(url_for('profile', wallet_updated='topup'))
     finally:
         close_connection(conn)
 
@@ -979,8 +1176,8 @@ def wallet_gift():
 
     recipient_email = (request.form.get('recipient_email') or '').strip().lower()
     try:
-        amount_cents = _parse_amount_cents(request.form.get('amount') or '')
-    except ValueError:
+        amount_cents = parse_cents(request.form.get('amount'))
+    except MoneyError:
         return redirect(url_for('profile', wallet_error='invalid_amount'))
 
     sender_id = session['usr_id']
@@ -992,37 +1189,37 @@ def wallet_gift():
 
     conn = create_connection(db_file)
     try:
-        # 1. Get sender's current balance and recipient's ID
-        sender = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (sender_id,))
+        _ledger_ready(conn)
         recipient = fetch_one(conn, 'SELECT usr_id FROM "User" WHERE email = ?', (recipient_email,))
-
-        if not sender or not recipient:
+        if not recipient:
             return redirect(url_for('profile', wallet_error='recipient_not_found'))
-
-        sender_balance = sender[0] or 0
         recipient_id = recipient[0]
+        if recipient_id == sender_id:
+            return redirect(url_for('profile', wallet_error='self_gift'))
 
-        if sender_balance < amount_cents:
-            return redirect(url_for('profile', wallet_error='insufficient_funds'))
+        ledger.open_legacy_wallet(conn, sender_id)
+        ledger.open_legacy_wallet(conn, recipient_id)
+        # The ledger checks the sender's balance while holding the database write
+        # lock, so two gifts at once cannot both spend the same money (M2 bug 4).
+        try:
+            ledger.post_transaction(
+                conn, "gift",
+                [(ledger.user_account(sender_id), -amount_cents),
+                 (ledger.user_account(recipient_id), amount_cents)],
+                _request_key("gift", sender_id, request.form.get("idempotency_key")),
+                memo=f"Gift from {session.get('Email')} to {recipient_email}",
+            )
+            outcome = {'wallet_updated': 'gift'}
+        except ledger.InsufficientFunds:
+            outcome = {'wallet_error': 'insufficient_funds'}
+        except ledger.IdempotencyConflict:
+            outcome = {'wallet_error': 'duplicate_request'}
+        except ledger.LedgerError as e:
+            print(f"Gift failed: {e}")
+            outcome = {'wallet_error': 'db_failed'}
 
-        # 2. Prepare the atomic transaction (two steps: debit and credit)
-        queries_and_params = [
-            # Debit sender, guarded so a concurrent spend can't overdraw (must hit exactly 1 row)
-            ('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (amount_cents, sender_id, amount_cents), 1),
-            # Credit recipient
-            ('UPDATE "User" SET wallet = wallet + ? WHERE usr_id = ?', (amount_cents, recipient_id), 1)
-        ]
-
-        # 3. Execute the atomic transaction
-        if _execute_transaction(conn, queries_and_params):
-            # Refresh sender's session wallet value from the DB
-            _refresh_session_wallet(conn, sender_id)
-            return redirect(url_for('profile', wallet_updated='gift'))
-        else:
-            # Most likely the guarded debit matched nothing because the balance dropped meanwhile
-            if _refresh_session_wallet(conn, sender_id) < amount_cents:
-                return redirect(url_for('profile', wallet_error='insufficient_funds'))
-            return redirect(url_for('profile', wallet_error='db_failed'))
+        _refresh_session_wallet(conn, sender_id)
+        return redirect(url_for('profile', **outcome))
     finally:
         close_connection(conn)
 
@@ -1117,11 +1314,11 @@ def order():
         if delivery_type not in ("delivery", "pickup"):
             delivery_type = "delivery"
         try:
-            tip_dollars = _money(float(payload.get("tip") or 0))
-        except (TypeError, ValueError):
+            tip_cents = parse_cents(payload.get("tip") or 0)
+        except MoneyError:
             return jsonify({"ok": False, "error": "invalid_tip"}), 400
-        # Reject negative tips (would credit the wallet) and NaN/inf (would price the order at $0)
-        if not math.isfinite(tip_dollars) or tip_dollars < 0:
+        # Reject negative tips (would credit the wallet); NaN/inf are rejected by parse_cents
+        if tip_cents < 0:
             return jsonify({"ok": False, "error": "invalid_tip"}), 400
         eta_minutes = int(payload.get("eta_minutes") or 40)
         iso_date = (payload.get("date") or datetime.now().date().isoformat())
@@ -1175,9 +1372,9 @@ def order():
             if int(dbmap[it]["rtr_id"]) != rtr_id:
                 return jsonify({"ok": False, "error": "mixed_restaurants"}), 400
 
-        # Build items array for details; compute charges
+        # Build items array for details; compute charges in integer cents (charges.py)
         detail_items = []
-        subtotal = 0.0
+        lines = []
         for it, iid in zip(items_in, itm_ids):
             try:
                 qty = int(it.get("qty") or 1)
@@ -1185,22 +1382,16 @@ def order():
                 return jsonify({"ok": False, "error": "invalid_input"}), 400
             if qty <= 0: qty = 1
             meta = dbmap[iid]
-            unit_price = _cents_to_dollars(meta["price_cents"])
-            line_total = _money(unit_price * qty)
-            subtotal = _money(subtotal + line_total)
+            unit_cents = int(meta["price_cents"] or 0)
+            lines.append((unit_cents, qty))
             detail_items.append({
                 "itm_id": iid,
                 "name": meta["name"],
                 "qty": qty,
-                "unit_price": unit_price,
-                "line_total": line_total,
+                "unit_price_cents": unit_cents,
+                "line_total_cents": unit_cents * qty,
                 **({"notes": (it.get("notes") or "")} if it.get("notes") else {})
             })
-
-        tax = _money(subtotal * TAX_RATE)
-        delivery_fee = DELIVERY_FEE if delivery_type == "delivery" else 0.00
-        service_fee = SERVICE_FEE
-        total = _money(subtotal + tax + delivery_fee + service_fee + tip_dollars)
 
         placed_iso = datetime.now().astimezone().isoformat()
 
@@ -1208,69 +1399,25 @@ def order():
             "placed_at": placed_iso,
             "restaurant_id": int(rtr_id),
             "items": detail_items,
-            "charges": {
-                "subtotal": subtotal,
-                "tax": tax,
-                "delivery_fee": delivery_fee,
-                "service_fee": service_fee,
-                "tip": tip_dollars,
-                "total": total
-            },
+            "charges_cents": compute_charges(lines, delivery_type, tip_cents),
             "delivery_type": delivery_type,
             "eta_minutes": int(eta_minutes),
             "date": iso_date,
             "meal": meal
         }
 
-        # Handle amount being debited from user's wallet
-        total_cents = _dollars_to_cents(total)
-        if total_cents <= 0:
-            return jsonify({"ok": False, "error": "invalid_total"}), 400
-        # Insert the single order row with status "Ordered" AND debit the wallet atomically
-        conn = create_connection(db_file)
-        new_ord_id = None
-        try:
-            # Quick check against the DB balance (the session copy can be stale, e.g. another device)
-            if _refresh_session_wallet(conn, usr_id) < total_cents:
-                return jsonify({"ok": False, "error": "insufficient_funds"}), 402
-
-            # 1. Prepare queries for atomic transaction: Debit wallet AND Insert order
-            queries_and_params = [
-                # Debit the wallet; the WHERE clause guards against races, and the expected rowcount
-                # of 1 aborts the whole transaction (including the insert) if the guard matched nothing
-                ('UPDATE "User" SET wallet = wallet - ? WHERE usr_id = ? AND wallet >= ?', (total_cents, usr_id, total_cents), 1),
-                # Insert the new order
-                ('INSERT INTO "Order" (rtr_id, usr_id, details, status) VALUES (?, ?, ?, ?)', (rtr_id, usr_id, json.dumps(details), OrderStatus.ORDERED.value))
-            ]
-
-            if _execute_transaction(conn, queries_and_params):
-                # Transaction succeeded. Wallet debited and order inserted.
-                # Get the order ID.
-                row = fetch_one(conn, 'SELECT ord_id FROM "Order" WHERE usr_id = ? ORDER BY ord_id DESC LIMIT 1', (usr_id,))
-                new_ord_id = row[0] if row else None
-
-                # Update session wallet from the DB to reflect the debit
-                _refresh_session_wallet(conn, usr_id)
-
-            else:
-                # Transaction failed. Most likely due to the `wallet >= ?` check failing (insufficient funds).
-                # Re-fetch wallet balance to confirm the insufficient funds error.
-                if _refresh_session_wallet(conn, usr_id) < total_cents:
-                    return jsonify({"ok": False, "error": "insufficient_funds"}), 402
-                
-                # Fallback for unexpected DB error during atomic transaction.
-                return jsonify({"ok": False, "error": "db_failed"}), 500
-
-        except Exception as e:
-            print(f"Order Placement Error: {e}")
-            return jsonify({"ok": False, "error": "server_error"}), 500
-
-        finally:
-            close_connection(conn)
-
-        if new_ord_id is None:
-             return jsonify({"ok": False, "error": "order_id_missing"}), 500
-        
+        # Pay from the wallet and save the order in one all-or-nothing ledger
+        # transaction. The balance is checked by the ledger, never against
+        # session['Wallet'] (M2 bugs 2 and 3).
+        restaurant_name = dbmap[itm_ids[0]]["restaurant_name"]
+        new_ord_id, error = _charge_and_save_order(
+            usr_id, rtr_id, restaurant_name, details, client_key=payload.get("idempotency_key"))
+        if error == "insufficient_funds":
+            return jsonify({"ok": False, "error": "insufficient_funds"}), 402
+        if error == "duplicate_request":
+            return jsonify({"ok": False, "error": "duplicate_request"}), 409
+        if error:
+            return jsonify({"ok": False, "error": error}), 500
         return jsonify({"ok": True, "ord_id": new_ord_id})
 
     return jsonify({"ok": False, "error": "invalid_input"}), 400
@@ -1792,6 +1939,64 @@ def admin_update_status():
     finally:
         close_connection(conn)
 
+@app.route('/admin/orders/<int:ord_id>/refund', methods=['POST'])
+def admin_refund_order(ord_id):
+    """
+    Refund an order in full by reversing its ledger transaction (admin only).
+
+    Nothing is edited or deleted: a new "refund" transaction posts the exact
+    opposite of the order's entries, so the customer gets back everything they
+    paid and the restaurant, tax and fee accounts give it back. Each order can
+    be refunded once; repeating the request returns the same refund.
+
+    Returns:
+        JSON {"ok": true, "ord_id", "refund_txn_id", "refunded_cents", "already_refunded"}
+        or {"ok": false, "error"} with 401, 403, 404 (no such order) or
+        409 ("not_refundable": placed before the ledger existed).
+    """
+    if not session.get("Username"):
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    if not session.get("is_admin"):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    conn = create_connection(db_file)
+    try:
+        _ledger_ready(conn)
+        row = fetch_one(conn, 'SELECT usr_id, details FROM "Order" WHERE ord_id = ?', (ord_id,))
+        if not row:
+            return jsonify({"ok": False, "error": "order_not_found"}), 404
+        usr_id, details_json = row
+        try:
+            txn_id = json.loads(details_json or "{}").get("ledger_txn_id")
+        except (TypeError, ValueError):
+            txn_id = None
+        if not txn_id:
+            return jsonify({"ok": False, "error": "not_refundable"}), 409
+
+        try:
+            result = ledger.reverse_transaction(
+                conn, txn_id, f"refund:order:{ord_id}", memo=f"Refund for order #{ord_id}")
+        except ledger.AlreadyReversed:
+            return jsonify({"ok": False, "error": "already_refunded"}), 409
+        except ledger.LedgerError as e:
+            print(f"Refund failed: {e}")
+            return jsonify({"ok": False, "error": "refund_failed"}), 500
+
+        refunded = fetch_one(
+            conn, 'SELECT amount_cents FROM "LedgerEntry" WHERE txn_id = ? AND account = ?',
+            (result.txn_id, ledger.user_account(usr_id)),
+        )
+        return jsonify({
+            "ok": True,
+            "ord_id": ord_id,
+            "refund_txn_id": result.txn_id,
+            "refunded_cents": refunded[0] if refunded else 0,
+            "already_refunded": not result.created,
+        })
+    finally:
+        close_connection(conn)
+
+
 @app.route('/admin')
 def admin_dashboard():
     """
@@ -1864,6 +2069,10 @@ def admin_dashboard():
             'Delivered': [],
             'Other': []  # any status the board has no column for, e.g. 'Cancelled'
         }
+        
+        _ledger_ready(conn)
+        refunded_txns = _refunded_txn_ids(conn)
+        ledger_check = ledger.check_ledger(conn)
         # Case-insensitive lookup so e.g. 'delivered' lands in 'Delivered'
         known_statuses = {s.lower(): s for s in orders_by_status if s != 'Other'}
 
@@ -1874,6 +2083,7 @@ def admin_dashboard():
             placed_at = None
             total = None
             placed_at_display = ""
+            ledger_txn_id = None
             
             if details_json:
                 try:
@@ -1889,9 +2099,10 @@ def admin_dashboard():
                         # Format for display
                         placed_at_display = order_dt.strftime("%Y-%m-%d %H:%M")
                     
-                    # Get total from charges
-                    charges = details.get("charges", {})
-                    total = _first_present(charges, "total", "grand_total")
+                    # Get total from charges (new orders: int cents; old orders: float dollars)
+                    if details.get("charges_cents") or details.get("charges"):
+                        total = order_charges_cents(details)["total"]
+                    ledger_txn_id = details.get("ledger_txn_id")
                     
                 except Exception as e:
                     print(f"Error parsing order details: {e}")
@@ -1908,9 +2119,11 @@ def admin_dashboard():
                 'ord_id': ord_id,
                 'customer_name': f"{first_name} {last_name}",
                 'restaurant_name': restaurant_name,
-                'total': f"${total:.2f}" if total is not None else "N/A",
+                'total': format_cents(total) if total is not None else "N/A",
                 'placed_at': placed_at_display,
-                'status': status
+                'status': status,
+                'refunded': ledger_txn_id in refunded_txns,
+                'refundable': bool(ledger_txn_id) and ledger_txn_id not in refunded_txns,
             }
             
             # Add to appropriate status group; never drop an order the board doesn't recognize
@@ -1996,6 +2209,8 @@ def admin_dashboard():
     
     return render_template(
         'admin.html',
+        ledger_check=ledger_check,
+        ledger_total=format_cents(ledger_check.total_cents),
         orders_by_status=orders_by_status,
         tickets=tickets,
         current_page=page,
@@ -2295,12 +2510,12 @@ def insights_data():
                     weekday_activity[dt.strftime("%A")] += 1
                 
                 # financials
-                charges = d.get("charges", {})
-                subtotal = float(charges.get("subtotal", 0))
-                tax = float(charges.get("tax", 0))
-                fee = float(charges.get("delivery_fee", 0)) + float(charges.get("service_fee", 0))
-                tip = float(charges.get("tip", 0))
-                total = float(charges.get("total", 0))
+                cc = order_charges_cents(d)   # int cents for new and old orders
+                subtotal = cc["subtotal"] / 100
+                tax = cc["tax"] / 100
+                fee = (cc["delivery_fee"] + cc["service_fee"]) / 100
+                tip = cc["tip"] / 100
+                total = cc["total"] / 100
                 
                 total_spend += total
                 spending_breakdown["food"] += subtotal
@@ -2321,7 +2536,7 @@ def insights_data():
                     item_frequencies[item.get("name")] += item.get("qty", 1)
                     
                     # For scatter plot, we try to estimate unit price
-                    u_price = float(item.get("unit_price", 0))
+                    u_price = item_cents(item)[0] / 100
                     # Note: We assume calories aren't always in order JSON. 
                     # If you want calories, we'd need to query MenuItem table.
                     # Let's do a bulk query for Item Metadata later.

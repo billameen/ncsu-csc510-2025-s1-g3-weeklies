@@ -16,6 +16,7 @@ import pytest
 from werkzeug.security import generate_password_hash
 
 from sqlQueries import close_connection, create_connection, execute_query, fetch_one
+import ledger
 
 PASSWORD = "secret123"
 
@@ -63,7 +64,7 @@ def _make_restaurant_with_item(temp_db_path, name, price_cents=1000):
 def _wallet_cents(temp_db_path, usr_id):
     conn = create_connection(temp_db_path)
     try:
-        return fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))[0]
+        return ledger.wallet_balance(conn, usr_id)
     finally:
         close_connection(conn)
 
@@ -108,16 +109,21 @@ def test_placing_a_json_order_debits_the_wallet_and_stores_the_computed_charges(
     ord_id, details, status = _latest_order(temp_db_path, usr_id)
     assert ord_id == body["ord_id"]
     assert status == "Ordered"
-    charges = json.loads(details)["charges"]
+    stored = json.loads(details)
+    # Charges are stored as integer cents (M2), never float dollars.
     # 2 x $10.00 = $20.00 subtotal, 7.25% tax, $3.99 delivery, $1.49 service, $2.00 tip.
-    assert charges == {
-        "subtotal": 20.00,
-        "tax": 1.45,
-        "delivery_fee": 3.99,
-        "service_fee": 1.49,
-        "tip": 2.00,
-        "total": 28.93,
+    assert stored["charges_cents"] == {
+        "subtotal": 2000,
+        "tax": 145,
+        "delivery_fee": 399,
+        "service_fee": 149,
+        "tip": 200,
+        "total": 2893,
     }
+    assert all(type(v) is int for v in stored["charges_cents"].values())
+    assert "charges" not in stored
+    assert stored["items"][0]["unit_price_cents"] == 1000
+    assert stored["items"][0]["line_total_cents"] == 2000
     assert _wallet_cents(temp_db_path, usr_id) == 10_000 - 2893
     with client.session_transaction() as sess:
         assert sess["Wallet"] == 10_000 - 2893

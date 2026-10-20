@@ -58,6 +58,24 @@ python migrations/add_plan_targets.py
 at index 10. This migration refuses to run until `is_admin` exists, because adding its columns
 first would put `daily_calorie_target` at index 10 and make users with a calorie target admins.
 
+### 4. `add_wallet_ledger.py`
+Moves wallet balances from the old `User.wallet` column into the double-entry wallet ledger (M2).
+
+**What it does:**
+- Creates the `LedgerTransaction` and `LedgerEntry` tables, their indexes, and triggers that stop ledger rows from ever being edited or deleted
+- Gives every user with money in `User.wallet` one `opening_balance` transaction for exactly that amount
+- Verifies that every opening balance equals the old column, that the totals match, and that the ledger balances (all entries sum to zero, no wallet is negative)
+
+After this, balances come only from the ledger and nothing reads `User.wallet`. `scripts/init_db.py` runs this automatically when it builds a new database, and the app also opens a user's old balance the first time it touches their wallet, so running it by hand is only needed for an existing database.
+
+**Run:**
+```bash
+cd app
+python migrations/add_wallet_ledger.py            # migrate + verify
+python migrations/add_wallet_ledger.py --check    # verify only, writes nothing
+```
+Exits with code 1 and lists the users involved if anything does not match.
+
 ## Running Migrations
 
 Migrations are idempotent - they can be run multiple times safely. If a migration has already been applied, it will skip the changes.
@@ -67,6 +85,7 @@ Migrations are idempotent - they can be run multiple times safely. If a migratio
 python migrations/add_ticket_table.py
 python migrations/add_admin_column.py
 python migrations/add_plan_targets.py
+python migrations/add_wallet_ledger.py
 ```
 
 ## Migration Order
@@ -75,6 +94,7 @@ If running all migrations from scratch:
 1. `add_ticket_table.py` - Can run independently
 2. `add_admin_column.py` - Must run before `add_plan_targets.py`
 3. `add_plan_targets.py` - Refuses to run until `add_admin_column.py` has
+4. `add_wallet_ledger.py` - Can run independently (needs only the `User` table)
 
 ## Verifying Migrations
 

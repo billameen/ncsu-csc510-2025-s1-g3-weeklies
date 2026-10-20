@@ -704,6 +704,12 @@ document.getElementById('btnGenerate').addEventListener('click', async function(
   window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 
   let pendingOrder = null;
+  // One-time key per order attempt (M2): a double-clicked "Pay" sends the same
+  // key twice and the server charges only once.
+  function newIdempotencyKey() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+  }
 
   // Intercept clicks on any .order-btn (works for items inside the popover)
   document.addEventListener('click', async (e) => {
@@ -738,6 +744,7 @@ document.getElementById('btnGenerate').addEventListener('click', async function(
 
     // Stash order payload for confirm
     pendingOrder = {
+      idempotency_key: newIdempotencyKey(),
       restaurant_id: rtrId,
       items: [{ itm_id: itmId, qty: 1 }],
       delivery_type: deliveryType,
