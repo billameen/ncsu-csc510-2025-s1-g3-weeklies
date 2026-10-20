@@ -177,6 +177,8 @@ typo never silently does nothing.
 | `ctx.pick(slot, item)` | One 0/1 variable |
 | `ctx.slots_by_day()` | `{date: (slots...)}` |
 | `ctx.calories(slots)`, `ctx.cost_cents(slots=None)` | Linear expressions over the picks |
+| `ctx.food_cost_cents(item)`, `ctx.meal_cost_cents(item)` | Price + tax; price + tax + one order's fees |
+| `ctx.set_fees(rule, expr, batches)` | `fee_cost` only: the week's fee expression and its batch variables |
 | `ctx.forbid(slot, item, rule)` | Never pick that item for that slot |
 | `ctx.add_penalty(rule, expr)` | Soft rules only: add `rule.weight * expr` to the objective |
 | `ctx.model` | The CP-SAT model, for anything else (`ctx.model.Add(...)`) |
@@ -209,6 +211,7 @@ A rule file that raises while importing is reported the same way, naming the fil
 | `no_allergens` | filter | on | No item with the user's allergens; spellings normalized (Egg = Eggs) | "contain your allergens (eggs)" |
 | `one_item_per_meal` | hard | on | Exactly one item per meal | "No breakfast can be planned on any day: of 269 menu items, ..." |
 | `daily_calories` | hard | on | Each day within 10% of the calorie target | "needs each day to total 2,250-2,750 kcal ... The closest is 2,100 kcal on Sat Oct 24" |
+| `fee_cost` | hard | on | Charges delivery and service fees per order, not per meal. Options (off by default): `batching` puts two meals from the same restaurant at most 6 h apart into one order; `pickup_restaurants` and `pickup_days` skip the delivery fee where the user opted in | Never makes a week impossible by itself; its fees count toward `weekly_budget` |
 | `weekly_budget` | hard | on | Whole week, tax and fees included, within budget | "The cheapest week ... costs $212.40 with tax and fees; your weekly budget is $150.00." |
 | `max_meals_per_restaurant` | hard | off | At most N meals from one restaurant (tutorial example) | "No week meets your other requirements with at most 2 meals from any one restaurant ..." |
 | `match_preferences` | soft (400) | on | Prefer items whose name or description matches a preference word | |
