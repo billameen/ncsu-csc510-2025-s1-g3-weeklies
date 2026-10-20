@@ -43,6 +43,7 @@ from planner.request import PlanRequest
 from planner.solver import plan_week
 
 from eval.catalog import Catalog, load_catalog
+from eval.console import console_safe_output
 from eval.profiles import Profile
 from eval.validate import (
     WEEK_START,
@@ -451,6 +452,7 @@ def record(requests, recording: Path = RECORDING):
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    console_safe_output()
     parser = argparse.ArgumentParser(description="Evaluate plain-English plan edits (issue #8).")
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--live", action="store_true", help="record the app's LLM first")
@@ -469,7 +471,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             sys.exit(str(e))
     replay = ReplayLLM(RECORDING) if RECORDING.exists() else None
     if replay is not None:
-        replay.model = json.loads(RECORDING.read_text())["model"]
+        replay.model = json.loads(RECORDING.read_text(encoding="utf-8"))["model"]
     report = run(
         requests,
         load_menu(menu_generation.db_file),
@@ -479,8 +481,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     markdown = render_markdown(report)
     args.out.mkdir(parents=True, exist_ok=True)
-    (args.out / "m3.json").write_text(json.dumps(report, indent=2, default=str) + "\n")
-    (args.out / "m3.md").write_text(markdown)
+    (args.out / "m3.json").write_text(
+        json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8"
+    )
+    (args.out / "m3.md").write_text(markdown, encoding="utf-8")
     print(markdown)
     if args.readme and not update_readme(markdown):
         print(f"No {README_START} block in the README; it was not updated.", file=sys.stderr)
