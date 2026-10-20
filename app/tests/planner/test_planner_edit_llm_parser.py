@@ -127,13 +127,15 @@ def test_a_failing_model_is_reported_as_unavailable():
     assert (result.action, result.message) == ("error", UNAVAILABLE_MESSAGE)
 
 
-def test_the_prompt_lists_the_tags_and_includes_the_weekday_and_request():
+def test_the_prompt_lists_the_tags_and_includes_the_request_but_not_the_weekday():
     system, template = load_prompt()
     assert '"vegetarian"' in system and "{tags}" not in system
     llm = Scripted(THU_VEG)
     parse(llm, "no Beef Ribs")
-    assert "Today is Monday." in llm.prompts[0][1]
     assert "Request: no Beef Ribs" in llm.prompts[0][1]
+    # v3 leaves the weekday out: the 350M and 3B models copied it into requests with no day.
+    assert "Monday" not in llm.prompts[0][1]
+    assert "Today is {today}" in load_prompt("v2")[1]
 
 
 def test_the_prompt_covers_the_whole_format_and_its_examples_are_valid():

@@ -27,7 +27,7 @@ from planner.edits.schema import ParsedRequest
 from planner.tags import TAGS
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
-PROMPT_VERSION = "v2"
+PROMPT_VERSION = "v3"
 DEFAULT_TIMEOUT_S = 60.0  # the local model can take ~10 s a call on a laptop CPU
 RETRIES = 1
 
@@ -135,7 +135,9 @@ class LLMEditParser:
         Parse one request.
         Args:
             text: What the user typed.
-            today: Today's date; the model is told the weekday so "tomorrow" can resolve.
+            today: Today's date, for prompt versions that tell the model the weekday (v1, v2).
+                v3 does not: the format has no word for "today", and small models copied the
+                weekday into requests that named no day.
         """
         try:
             text = guard.check_length(text)
