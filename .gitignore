@@ -59,3 +59,5 @@ app/CSC510_DB.db
 coverage.xml
 report.xml
 *.tmp
+# M4 evaluation: per-user run log (the summary m4.json / m4.md / m4_savings.png is committed)
+eval/results/m4_runs.jsonl

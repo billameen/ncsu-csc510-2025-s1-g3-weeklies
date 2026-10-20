@@ -7,6 +7,7 @@ The one exception is the fee *data*, ``planner.fees``: what each restaurant char
 configuration, not planning logic, and checkout reads the same numbers.
 """
 
+from collections import Counter
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import date
@@ -41,6 +42,16 @@ class ViolationKind(StrEnum):
     UNDER_KCAL = "under_kcal"
     OVER_KCAL = "over_kcal"
     OVER_BUDGET = "over_budget"
+    # M4: problems with how the meals are grouped into orders.
+    ORDER_MISMATCH = "order_mismatch"  # a meal in no order or in two, or an order of nothing
+    MIXED_ORDER = "mixed_order"  # one order holds meals from different restaurants or days
+    FOOD_SAFETY = "food_safety"  # meals in one order more than FOOD_SAFETY_HOURS apart
+    PICKUP_NOT_OPTED = "pickup_not_opted"  # picked up without the user opting in
+
+
+# M4: the longest food may wait between delivery and its meal. An order's meals must be at
+# most this far apart, because the order arrives for the first one.
+FOOD_SAFETY_HOURS = 6
 
 
 @dataclass(frozen=True)
@@ -48,6 +59,25 @@ class Meal:
     day: str  # one of WEEKDAYS
     meal: int  # a key of MEAL_TIMES
     itm_id: int
+
+
+@dataclass(frozen=True)
+class Order:
+    """M4: meals delivered (or picked up) together, as one order with one set of fees."""
+
+    meals: tuple[Meal, ...]
+    pickup: bool = False
+
+
+@dataclass(frozen=True)
+class PickupOptIn:
+    """M4: where a user agreed to pick up: an order may be picked up only if both match."""
+
+    restaurants: frozenset = frozenset()
+    days: frozenset = frozenset()  # of WEEKDAYS
+
+    def allows(self, rtr_id: int, day: str) -> bool:
+        return rtr_id in self.restaurants and day in self.days
 
 
 @dataclass(frozen=True)
@@ -59,13 +89,23 @@ class Violation:
     detail: str = field(default="", compare=False)
 
 
-def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> list[Violation]:
+def validate_week(
+    meals: Sequence[Meal],
+    profile: Profile,
+    catalog: Catalog,
+    orders: Sequence[Order] | None = None,
+    pickup: PickupOptIn | None = None,
+) -> list[Violation]:
     """
     Check a planned week.
     Args:
         meals: The planned meals, one per (day, meal) slot.
         profile: The user the week was planned for.
         catalog: In-stock items from open restaurants.
+        orders: M4: how the meals are grouped into orders. None means every meal is its own
+            delivery order (M0/M1). When given, the orders are checked (validate_orders) and
+            the budget is checked against what those orders cost.
+        pickup: M4: where the user opted into pickup (default: nowhere).
     Returns:
         list[Violation]: Empty if the week is valid. Meal-level problems come in the order the
         meals were given, then missing slots in week order, then calorie problems by day, then
@@ -133,11 +173,17 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
         elif kcal < low and len(day_meals) == len(MEAL_TIMES):
             violations.append(Violation(ViolationKind.UNDER_KCAL, day, detail=detail))
 
-    week_cents = sum(
-        order_cost_cents(catalog.items[m.itm_id].price_cents, catalog.items[m.itm_id].rtr_id,
-                         catalog.fees)
-        for m in placed
-    )
+    if orders is not None:
+        order_violations = validate_orders(meals, orders, catalog, pickup or PickupOptIn())
+        violations.extend(order_violations)
+    if orders is not None and not order_violations:
+        week_cents = week_cost_cents(orders, catalog)
+    else:
+        week_cents = sum(
+            order_cost_cents(catalog.items[m.itm_id].price_cents, catalog.items[m.itm_id].rtr_id,
+                             catalog.fees)
+            for m in placed
+        )
     if week_cents > profile.budget_dollars * 100:
         violations.append(
             Violation(
@@ -146,6 +192,68 @@ def validate_week(meals: Sequence[Meal], profile: Profile, catalog: Catalog) -> 
             )
         )
     return violations
+
+
+def validate_orders(
+    meals: Sequence[Meal], orders: Sequence[Order], catalog: Catalog, pickup: PickupOptIn
+) -> list[Violation]:
+    """
+    M4: check that the orders are a valid grouping of the meals: every meal in exactly one
+    order; each order from one restaurant on one day; no order's meals more than
+    FOOD_SAFETY_HOURS apart; pickup only where the user opted in. Meals with unknown items
+    are left to validate_week.
+    """
+    violations = []
+    expected = Counter((m.day, m.meal, m.itm_id) for m in meals)
+    grouped = Counter((m.day, m.meal, m.itm_id) for o in orders for m in o.meals)
+    for key in sorted((expected - grouped) + (grouped - expected)):
+        day, meal, itm_id = key
+        violations.append(Violation(ViolationKind.ORDER_MISMATCH, day, meal,
+                                    f"item {itm_id} is in {grouped[key]} order(s), planned {expected[key]} time(s)"))
+    for o in orders:
+        if not o.meals:
+            violations.append(Violation(ViolationKind.ORDER_MISMATCH, detail="an order with no meals"))
+            continue
+        known = [m for m in o.meals if m.itm_id in catalog.items]
+        restaurants = {catalog.items[m.itm_id].rtr_id for m in known}
+        days = {m.day for m in o.meals}
+        first = o.meals[0]
+        if len(restaurants) > 1 or len(days) > 1:
+            violations.append(Violation(ViolationKind.MIXED_ORDER, first.day, first.meal,
+                                        f"one order from restaurants {sorted(restaurants)} on {sorted(days)}"))
+        minutes = [(MEAL_TIMES[m.meal] // 100) * 60 + MEAL_TIMES[m.meal] % 100
+                   for m in o.meals if m.meal in MEAL_TIMES]
+        if minutes and max(minutes) - min(minutes) > FOOD_SAFETY_HOURS * 60:
+            violations.append(Violation(ViolationKind.FOOD_SAFETY, first.day, first.meal,
+                                        f"meals {sorted(m.meal for m in o.meals)} are more than "
+                                        f"{FOOD_SAFETY_HOURS} h apart in one order"))
+        if o.pickup and not all(pickup.allows(r, d) for r in restaurants for d in days):
+            violations.append(Violation(ViolationKind.PICKUP_NOT_OPTED, first.day, first.meal,
+                                        f"picked up from {sorted(restaurants)} on {sorted(days)}"))
+    return violations
+
+
+def order_fee_cents(order: Order, catalog: Catalog) -> int:
+    """M4: one order's fees: its restaurant's service fee, plus delivery unless picked up."""
+    rtr_id = catalog.items[order.meals[0].itm_id].rtr_id
+    fees = catalog.fees.for_restaurant(rtr_id)
+    return fees.service_fee_cents + (0 if order.pickup else fees.delivery_fee_cents)
+
+
+def week_cost_cents(orders: Sequence[Order], catalog: Catalog) -> int:
+    """M4: what the orders cost: every item's price plus its tax, plus each order's fees."""
+    food = 0
+    for o in orders:
+        for m in o.meals:
+            price = catalog.items[m.itm_id].price_cents
+            tax = (Decimal(price) * catalog.fees.tax_rate).quantize(Decimal(1), rounding=ROUND_HALF_UP)
+            food += price + int(tax)
+    return food + sum(order_fee_cents(o, catalog) for o in orders)
+
+
+def separate_fee_cents(meals: Sequence[Meal], catalog: Catalog) -> int:
+    """M4: the fees if every meal were its own delivery order (the M1 way)."""
+    return sum(order_fee_cents(Order((m,)), catalog) for m in meals)
 
 
 def kcal_band(target: int) -> tuple[int, int]:
