@@ -56,21 +56,15 @@ to the seed data:
 python app/scripts/init_db.py --force             # reset to app/db/seed.sql
 ```
 
-or keep your data and run the migrations, in this order (each one is idempotent, so running one
-that is already applied does nothing):
+or keep your data and run the migrations, in this order:
 
 ```bash
 cd app
-python migrations/add_ticket_table.py
-python migrations/add_admin_column.py      # before add_plan_targets.py
+python migrations/add_admin_column.py
 python migrations/add_plan_targets.py
-python migrations/add_wallet_ledger.py     # moves old wallet balances into the M2 ledger
 python migrations/add_plan_edit_table.py
-python migrations/add_restaurant_fees.py
 cd ..
 ```
-
-See [app/migrations/README.md](app/migrations/README.md) for what each one changes.
 
 ---
 
@@ -119,21 +113,6 @@ better edits without an API key, set a larger local model for the edit box, for 
 `EDIT_LLM_MODEL=ibm-granite/granite-4.0-micro` (3B, about 6.5 GB of GPU memory in half
 precision; `ibm-granite/granite-4.0-1b` needs about half that). It is downloaded on first
 use.
-
-### Delivery fees, batching and pickup
-
-Every order pays the restaurant's delivery fee and a service fee, and the planner counts them
-toward your weekly budget. On *Profile → Delivery & Fees* you can turn on **batching**, so meals
-from the same restaurant on the same day, at most 6 hours apart, share one delivery, and pick
-**pickup** days and restaurants, where the delivery fee is skipped (pickup needs at least one of
-each). Both are off by default. The calendar shows the month's fees and how much batching saved;
-the fees are a synthetic model, not real prices.
-
-### Wallet
-
-Top up or gift wallet balance on your profile; *Wallet History* below it lists every top-up,
-gift, order and refund. Admins see a ledger check (every transaction balances, no wallet is
-negative) at the top of the admin dashboard and can refund an order from its card.
 
 > [!NOTE]
 > If you have downloaded the repo locally and you're running into issues with
