@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Teach The Parser</title>
+<link rel="stylesheet" href="../assets/custom.css">
+</head><body class="pdoc"><main class="pdoc">
+<article><h1>Teach the parser a new request</h1>
+<p>Plan edits ("make Thursday vegetarian under $10") reach the solver in a small edit language.
+Each edit is one of <code>filter</code>, <code>include</code>, <code>day_limit</code>, <code>prefer</code> or <code>calorie_shift</code>, applied to
+some days and meals, and most take a condition on one menu item: a field (<code>tag</code>, <code>dish</code>,
+<code>restaurant</code>, <code>allergen</code>, <code>price</code>, <code>calories</code>), an operator and a value. See
+<a href="./llm-proposes-solver-decides.html">The LLM proposes, the solver decides</a> for the whole list.</p>
+<p>A new kind of request needs one of three things, from least to most work:</p>
+<ol>
+<li><strong>It can already be said in the language</strong> ("no dish over 900 calories on the weekend" is
+   a <code>filter</code> on <code>calories</code>). Add labelled examples (step 4) and, if the model gets it wrong,
+   an example to a new prompt version (step 3).</li>
+<li><strong>It needs a new tag</strong> ("high-protein"). Add a test function to <code>TAGS</code> in
+   <code>app/planner/tags.py</code>; the prompt lists the tags on its own. Then add labelled examples.</li>
+<li><strong>It needs a new edit type.</strong> A rule plug-in the solver enforces, an entry in the format,
+   a prompt version and labelled examples. The rest of this guide adds one: <code>repeat_limit</code>,
+   for requests like "no dish more than twice this week". (<code>prefer</code> with goal <code>variety</code> asks
+   for fewer repeats; <code>repeat_limit</code> makes it a rule.)</li>
+</ol>
+<h2>How a request becomes an edit</h2>
+<pre><code>&quot;no dish more than twice this week&quot;
+   │  guard.py         refuses loosening and injection, in code
+   │  llm_parser.py    model fills in the format; Pydantic checks it (one retry)
+   ▼
+{&quot;action&quot;: &quot;edit&quot;, &quot;edits&quot;: [{&quot;type&quot;: &quot;repeat_limit&quot;, &quot;max_times&quot;: 2}]}
+   │  resolve.py       days and meals → dates; edit → rule plug-in
+   │  replan.py        pins every other meal, re-solves, returns a diff
+   ▼
+Accept / Discard
+</code></pre>
+<p>An edit type may only <strong>add</strong> a restriction or a preference. Never add one that removes an
+allergy, raises the budget or relaxes a rule: those belong on the profile page, and the guard
+refuses requests for them.</p>
+<h2>1. The rule plug-in</h2>
+<p>Create <code>app/planner/rules/repeat_limit.py</code>:</p>
+<pre><code class="language-python">&quot;&quot;&quot;Edit rule: no dish more than a set number of times (&quot;no dish more than twice&quot;).&quot;&quot;&quot;
+
+from planner.constraint import Constraint
+from planner.registry import register
+from planner.scope import EVERY_MEAL
+
+
+@register
+class RepeatLimit(Constraint):
+    &quot;&quot;&quot;Inside its scope, each item is picked at most `max_times` times.&quot;&quot;&quot;
+
+    name = &quot;repeat_limit&quot;
+    summary = &quot;No dish is planned more than a set number of times.&quot;
+    order = 75
+    enabled_by_default = False
+
+    def __init__(self, max_times: int, scope=None):
+        if not isinstance(max_times, int) or isinstance(max_times, bool) or max_times &lt; 1:
+            raise ValueError(f&quot;{self.name}: max_times must be a whole number of at least 1&quot;)
+        self.max_times = max_times
+        self.scope = scope or EVERY_MEAL
+
+    def apply(self, ctx):
+        &quot;&quot;&quot;For each item, its picks over the covered slots &lt;= max_times.&quot;&quot;&quot;
+        uses = {}
+        for slot in ctx.slots:
+            if self.scope.covers(slot):
+                for item, var in ctx.picks(slot):
+                    uses.setdefault(item.itm_id, []).append(var)
+        for picks in uses.values():
+            if len(picks) &gt; self.max_times:
+                ctx.model.Add(sum(picks) &lt;= self.max_times)
+
+    def unmet(self, plan):
+        &quot;&quot;&quot;E.g. &quot;Beef Ribs is planned 3 times&quot;; None when every dish is within the limit.&quot;&quot;&quot;
+        counts = {}
+        for slot, item in plan.items():
+            if self.scope.covers(slot):
+                counts[item] = counts.get(item, 0) + 1
+        over = [f&quot;{item.name} is planned {n} times&quot; for item, n in counts.items() if n &gt; self.max_times]
+        return &quot;; &quot;.join(over) or None
+</code></pre>
+<p>Two optional methods connect a rule to plan edits:</p>
+<ul>
+<li><code>unmet(plan)</code> says in words what a plan misses of the edit. The preview shows it when the
+  edit could only be met partly, and the evaluation fails if a plan the solver called a full
+  match misses an edit.</li>
+<li><code>soften()</code> returns a preference version of the rule. When an edit can't be met exactly,
+  the closest option is planned with every edit softened (see <code>include_meals</code> and
+  <code>day_limit</code> for examples). Without it, an edit that can't be met is reported as impossible
+  with the solver's explanation.</li>
+</ul>
+<p>Test the rule alone, like the other rules (see <a href="./planner-rules.html">Planner Rules</a>), in
+<code>app/tests/planner/test_planner_rule_repeat_limit.py</code>:</p>
+<pre><code class="language-python">from menu_factory import item, menu, request
+
+from planner.registry import get
+from planner.solver import plan_week
+
+OneItemPerMeal, PreferLowCost = get(&quot;one_item_per_meal&quot;), get(&quot;prefer_low_cost&quot;)
+RepeatLimit = get(&quot;repeat_limit&quot;)
+MENU = menu([item(1, price_cents=500), item(2, price_cents=900)])
+
+
+def test_no_item_more_than_the_limit_even_when_it_is_cheapest():
+    result = plan_week(request(), MENU, rules=[OneItemPerMeal(), PreferLowCost(), RepeatLimit(2)])
+    assert sorted(m.itm_id for m in result.meals) == [1, 1, 2]
+</code></pre>
+<h2>2. The format entry</h2>
+<p>In <code>app/planner/edits/schema.py</code>, add the edit class and list it in <code>Edit</code> and <code>EDIT_TYPES</code>:</p>
+<pre><code class="language-python">class RepeatLimit(_Scoped):
+    &quot;&quot;&quot;No dish more than `max_times` times (&quot;no dish more than twice this week&quot;).&quot;&quot;&quot;
+
+    type: Literal[&quot;repeat_limit&quot;]
+    max_times: int = Field(ge=1, le=21)
+
+    def key(self):
+        return (self.type, self.max_times, self.day_codes(), self.meal_codes())
+
+
+Edit = Annotated[
+    Union[Filter, Include, DayLimit, Prefer, CalorieShift, RepeatLimit],
+    Field(discriminator=&quot;type&quot;),
+]
+EDIT_TYPES = (&quot;filter&quot;, &quot;include&quot;, &quot;day_limit&quot;, &quot;prefer&quot;, &quot;calorie_shift&quot;, &quot;repeat_limit&quot;)
+</code></pre>
+<p><code>key()</code> is what the evaluation compares, so include every field that changes the meaning.</p>
+<p>In <code>app/planner/edits/resolve.py</code>, import it and map it to the rule in <code>to_rule</code>:</p>
+<pre><code class="language-python">    if isinstance(edit, RepeatLimit):
+        return get(&quot;repeat_limit&quot;)(edit.max_times, scope)
+</code></pre>
+<h2>3. Tell the model</h2>
+<p>Prompts are versioned: copy <code>app/planner/prompts/edit_parser_v3.txt</code> to
+<code>edit_parser_v4.txt</code>, add the edit type to the list</p>
+<pre><code>{&quot;type&quot;: &quot;repeat_limit&quot;, &quot;max_times&quot;: NUMBER, &quot;days&quot;: DAYS, &quot;meals&quot;: MEALS}
+  No dish more than &quot;max_times&quot; times in those days and meals.
+</code></pre>
+<p>and one example of it</p>
+<pre><code>Request: never the same lunch twice
+{&quot;action&quot;: &quot;edit&quot;, &quot;edits&quot;: [{&quot;type&quot;: &quot;repeat_limit&quot;, &quot;max_times&quot;: 1, &quot;meals&quot;: [&quot;lunch&quot;]}]}
+</code></pre>
+<p>then set <code>PROMPT_VERSION = "v4"</code> in <code>llm_parser.py</code>. Keep v3 in the repo so older
+recordings can still be explained. A test checks that the prompt names every edit type and
+that each of its examples is valid, so a format change the prompt does not describe fails.</p>
+<h2>4. Three labelled examples</h2>
+<p>Add at least three normal requests to <code>eval/data/edit_requests.json</code>, each with the exact
+edits expected, and vary the wording, days and meals:</p>
+<pre><code class="language-json">{&quot;id&quot;: &quot;n61&quot;, &quot;category&quot;: &quot;normal&quot;, &quot;text&quot;: &quot;No dish more than twice this week&quot;,
+ &quot;expected&quot;: [{&quot;type&quot;: &quot;repeat_limit&quot;, &quot;max_times&quot;: 2}]},
+{&quot;id&quot;: &quot;n62&quot;, &quot;category&quot;: &quot;normal&quot;, &quot;text&quot;: &quot;Don't repeat any dinner on weekdays&quot;,
+ &quot;expected&quot;: [{&quot;type&quot;: &quot;repeat_limit&quot;, &quot;max_times&quot;: 1, &quot;days&quot;: [&quot;weekdays&quot;], &quot;meals&quot;: [&quot;dinner&quot;]}]},
+{&quot;id&quot;: &quot;n63&quot;, &quot;category&quot;: &quot;normal&quot;, &quot;text&quot;: &quot;Each breakfast at most three times&quot;,
+ &quot;expected&quot;: [{&quot;type&quot;: &quot;repeat_limit&quot;, &quot;max_times&quot;: 3, &quot;meals&quot;: [&quot;breakfast&quot;]}]}
+</code></pre>
+<p>Update the counts in <code>test_the_dataset_has_..._requests</code> in <code>app/tests/eval/test_edits.py</code>.
+Don't reuse the prompt's own example as a labelled request; the evaluation should measure
+requests the model has not been shown.</p>
+<h2>5. Re-record and check</h2>
+<p>A new prompt changes every prompt the evaluation recorded, so record again with the app's
+model, then re-run:</p>
+<pre><code class="language-bash">python -m eval.edits --live --readme   # records the model's answers, updates the README table
+pytest app/tests/planner app/tests/eval -q
+</code></pre>
+<p>Commit the rule, its test, the schema and prompt changes, the new examples, and the updated
+<code>eval/fixtures/m3_edits_cassette.json</code>, <code>eval/results/m3.*</code> and README. CI replays the
+recording and fails if any edit breaks a rule, changes a meal outside the edit, or is missed
+in a plan the solver called a full match.</p>
+<h2>Checklist</h2>
+<ul>
+<li>[ ] The edit only adds a restriction or a preference.</li>
+<li>[ ] Rule plug-in plus its isolated test, with <code>unmet</code> (and <code>soften</code> if a closest option
+      makes sense).</li>
+<li>[ ] Schema class, listed in <code>Edit</code> and <code>EDIT_TYPES</code>, with a <code>key()</code>.</li>
+<li>[ ] <code>to_rule</code> mapping (and <code>affected_scope</code>, if the edit re-plans whole days).</li>
+<li>[ ] New prompt version with the edit type and one example.</li>
+<li>[ ] Three or more labelled examples, and the counts in the dataset test.</li>
+<li>[ ] Re-recorded, and <code>python -m eval.edits</code> passes.</li>
+</ul></article>
+<p><a href="../app.html">← Back to API Reference</a></p>
+</main></body></html>

@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Evaluation</title>
+<link rel="stylesheet" href="../assets/custom.css">
+</head><body class="pdoc"><main class="pdoc">
+<article><h1>How We Evaluate the Meal Planner</h1>
+<p>Weeklies promises 21 meals a week that stay within budget, hit a calorie target and never
+include an allergen. The evaluation checks that promise against 100 simulated users and
+reports whether each planner keeps it. The hypotheses and their thresholds come from
+<a href="https://github.com/billameen/ncsu-csc510-2025-s1-g3-weeklies/issues/5">issue #5</a> and were
+fixed before the first run.</p>
+<p>The current numbers are in <code>eval/results/m0.md</code> (and <code>m0.json</code>). This page explains how they
+are produced and how to read them.</p>
+<h2>Run it</h2>
+<p>From the repository root, with the virtual environment active:</p>
+<pre><code class="language-bash">python app/scripts/init_db.py      # once: builds app/CSC510_DB.db from app/db/seed.sql
+python -m eval.run --seed 510      # about 3 minutes; no API key and no model needed
+</code></pre>
+<p>This writes <code>eval/results/m0.json</code> and <code>eval/results/m0.md</code> and prints the table. Use
+<code>--out DIR</code> to write somewhere else, and <code>--baseline PATH</code> to compare against another
+<code>m0.json</code> (see Regression check, below).</p>
+<p>The exit code is 0 even when hypotheses fail. It is 1 only for a regression against
+<code>--baseline</code>, and any other non-zero code means the eval crashed.</p>
+<h2>What we measure</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Metric</th>
+<th>Pass if</th>
+<th>Compared with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>H1</td>
+<td>Share of <strong>feasible</strong> users who get a valid week</td>
+<td>≥ 90%</td>
+<td>B1, B2</td>
+</tr>
+<tr>
+<td>H2</td>
+<td>Distinct items per week, median</td>
+<td>≥ 14</td>
+<td>B1</td>
+</tr>
+<tr>
+<td>H3</td>
+<td>Time to plan one week, 95th percentile</td>
+<td>≤ 5 s</td>
+<td>B2</td>
+</tr>
+<tr>
+<td>H4</td>
+<td>Share of <strong>infeasible</strong> users who get an explicit "no valid week" answer</td>
+<td>≥ 90%</td>
+<td>B1, B2</td>
+</tr>
+</tbody>
+</table>
+<p>The table also shows the share of <strong>all</strong> users who get a valid week. It has no threshold;
+it is the headline number for the product. Since M1 it also shows the share of <strong>infeasible</strong>
+users who are told why there is no valid week (<code>explained_pct</code>); M1's target is 100%, and it
+is not one of the fixed hypotheses.</p>
+<ul>
+<li><strong>Feasible</strong> means a valid week exists for the user at all (see Feasible users, below). A planner is not blamed for users nobody could serve,
+  but it must say so instead of returning an invalid week: that is H4.</li>
+<li><strong>H1:</strong> a "no valid week" answer to a feasible user counts as a miss.</li>
+<li><strong>H2</strong> counts the distinct items in each week planned for a feasible user, valid or not,
+  and takes the median. "No valid week" answers and empty weeks are left out.</li>
+<li><strong>H3</strong> is the 95th percentile by nearest rank: sort every user's planning time and take
+  the value at position ceil(0.95 × n), so it is always a time that was actually measured.
+  For B2 it is the recorded LLM time (see Planners, below).</li>
+<li><strong>Told why</strong> counts an infeasible user when the planner answered "no valid week" with a
+  non-empty reason (<code>eval.planners.NoValidWeek</code>). A bare <code>None</code> or an invalid week is a miss.</li>
+<li>A metric is <code>n/a</code> (<code>null</code> in the JSON) when no user falls in its group.</li>
+</ul>
+<h2>What counts as a valid week</h2>
+<p>A week is valid when it has no violations. The rules live in <code>eval/validate.py</code>, which is
+the specification: it does not import any planner code, and a test enforces that.</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Details</th>
+<th>Violation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>21 meals</td>
+<td>One meal per slot: Monday to Sunday of the week starting Monday 2026-10-19, at breakfast (10:00), lunch (14:00) and dinner (20:00)</td>
+<td><code>missing_meal</code>, <code>extra_meal</code></td>
+</tr>
+<tr>
+<td>Real items</td>
+<td>Every item is in stock and from a restaurant whose status is <code>Open</code></td>
+<td><code>unknown_item</code></td>
+</tr>
+<tr>
+<td>No allergens</td>
+<td>No item tag matches the user's allergens</td>
+<td><code>allergen</code></td>
+</tr>
+<tr>
+<td>Open restaurant</td>
+<td>The restaurant is open at the meal time</td>
+<td><code>closed_restaurant</code></td>
+</tr>
+<tr>
+<td>Calories</td>
+<td>Each day's total is within 10% of the user's daily target</td>
+<td><code>under_kcal</code>, <code>over_kcal</code></td>
+</tr>
+<tr>
+<td>Budget</td>
+<td>The week's total cost is at most the user's weekly budget</td>
+<td><code>over_budget</code></td>
+</tr>
+</tbody>
+</table>
+<p>How the rules are applied:</p>
+<ul>
+<li><strong>Cost:</strong> each meal is its own delivery order: item price, plus 7.25% tax rounded half up to
+  the cent, plus the restaurant's delivery fee and service fee ($3.99 and $1.49 unless it has
+  its own), with no tip. The rates come from the fee model in <code>app/planner/fees.py</code> (M4), the
+  same one checkout uses, and the cost matches checkout to the cent.</li>
+<li><strong>Calories:</strong> the allowed range is whole calories from 0.9 × target rounded up to
+  1.1 × target rounded down, both ends included. A 2,100 kcal target allows 1,890 to 2,310.</li>
+<li><strong>Allergens:</strong> tags are compared after lowercasing and trimming spaces, and the menu's
+  alternate spellings are merged: <code>Egg</code> counts as <code>Eggs</code> and <code>Peanuts</code> as <code>Nuts</code>. Only whole
+  tags match, so a <code>Shellfish</code> item is fine for a user who avoids <code>Fish</code>.</li>
+<li><strong>Opening hours:</strong> the meal time must fall inside one of the day's open/close pairs, with
+  both ends counted as open. A restaurant with no hours for that day, unreadable hours or an
+  odd number of times is treated as closed.</li>
+<li><strong>Partial weeks:</strong> an extra meal (a second meal in a slot, or a day or meal outside the
+  week) and a meal with an unknown item are reported once and then ignored by the other
+  checks. Only problems the remaining meals prove are reported, so a day that is missing a
+  meal can be over its calorie target but never under it.</li>
+</ul>
+<p>The JSON and the table count <strong>users</strong> with each kind of violation, not individual
+violations.</p>
+<h2>Feasible users</h2>
+<p><code>eval/feasibility.py</code> finds each user's cheapest week that meets every rule except the
+budget, and the user is feasible if the validator accepts that week, budget included. The
+search is exact: days are independent, so it finds the cheapest valid day seven times, and
+it is checked against brute force in the tests. It takes under a second for all 100 users.</p>
+<p>If a planner ever finds a valid week for a user marked infeasible, the run stops with an
+error, because that means the feasibility check or the validator is wrong.</p>
+<h2>Simulated users</h2>
+<p><code>eval/profiles.py</code> generates 100 users from a seed (510 by default), using its own random
+generator so results do not depend on anything else that uses <code>random</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Users</th>
+<th>Calories per day</th>
+<th>Budget per week</th>
+<th>Allergens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Regular, no allergens</td>
+<td>40</td>
+<td>1,600 to 3,000</td>
+<td>$300 to $650</td>
+<td>none</td>
+</tr>
+<tr>
+<td>Regular, with allergens</td>
+<td>40</td>
+<td>1,600 to 3,000</td>
+<td>$300 to $650</td>
+<td>1 to 3</td>
+</tr>
+<tr>
+<td>Hard</td>
+<td>20</td>
+<td>2,400 to 3,000</td>
+<td>$350 to $450</td>
+<td>2 or 3</td>
+</tr>
+</tbody>
+</table>
+<p>Calories are in steps of 50. Allergens are drawn from Gluten, Dairy, Eggs, Soy, Nuts, Fish
+and Shellfish. The groups are shuffled together, so user ids do not reveal the group.</p>
+<p>The users for seed 510 are committed in <code>eval/data/profiles_seed510.json</code>, and a test
+checks they still match. After an intended change to the generator, regenerate it with
+<code>python -m eval.profiles --seed 510 &gt; eval/data/profiles_seed510.json</code>.</p>
+<h2>Planners</h2>
+<p>Every planner is a function <code>(profile, catalog, seed)</code> that returns the planned meals, or
+<code>None</code> (or <code>NoValidWeek(reason)</code>) to answer "no valid week". The baselines live in
+<code>eval/baselines.py</code> and the planner under test in <code>eval/planners.py</code>.</p>
+<ul>
+<li><strong>B1, random-safe:</strong> for each slot, a random in-stock, allergen-free item from a restaurant
+  that is open then. It knows nothing about budget or calories, so its misses show what
+  ignoring them costs.</li>
+<li><strong>B2, v1 LLM planner:</strong> the app's <code>MenuGenerator</code> as shipped, run for the whole week, with
+  the user's budget and calorie target passed in as preference text. It never says "no valid
+  week". If v1 gives up on a meal, the whole week is lost and comes back empty.</li>
+<li><strong>M1, CP-SAT solver:</strong> <code>plan_week</code> from <code>app/planner</code> with its default rules, the same call
+  <code>/generate_plan</code> makes (<code>eval/planners.py</code>). It plans all 21 meals at once and, when no week
+  fits, answers <code>NoValidWeek</code> with the explanation the user sees. It is deterministic, so
+  <code>seed</code> is unused. Its H3 is real solver time on the machine running the eval, about 3 s at
+  p95. See <a href="./why-a-solver.html">Why a solver</a>.</li>
+</ul>
+<h3>How B2 runs without a model</h3>
+<p>B2 calls an LLM 21 times per user or more, so it was run once for real and every response
+was recorded in <code>eval/fixtures/b2_v1_cassette.json</code>. A normal run replays those responses
+instead of calling the LLM. This makes the eval free, fast and identical on every machine.</p>
+<ul>
+<li><strong>What was recorded:</strong> the app's own LLM choice, which without an OpenAI key is the local
+  model <code>ibm-granite/granite-4.0-h-350M</code> with the 500-token limit <code>/generate_plan</code> uses. It
+  was recorded on a Mac (Apple GPU), at about 9 s per call. The model name is stored in
+  the recording.</li>
+<li><strong>What is stored:</strong> for each prompt, a SHA-256 hash (never the prompt text), the response
+  and how long it took. A prompt asked more than once keeps its responses in order.</li>
+<li><strong>Reproducibility:</strong> v1 picks 10 random items per meal using Python's global <code>random</code>, so B2
+  seeds it per user before running v1 and restores it afterwards. The same seed gives the same
+  prompts, so every prompt finds its recorded response.</li>
+<li><strong>Timing:</strong> replaying is almost instant, so B2's H3 adds each response's recorded time back.
+  H3 for B2 therefore reflects the machine the recording was made on.</li>
+</ul>
+<p>The recording only matches the current menu data and v1's current prompts. If
+<code>app/db/seed.sql</code>, v1's prompt text, or <code>V1_PREFERENCES</code> in <code>eval/baselines.py</code> changes,
+a replay stops with "The B2 recording has no response for this prompt" instead of guessing.
+Record it again with:</p>
+<pre><code class="language-bash">caffeinate -i python -m eval.run --seed 510 --record
+</code></pre>
+<p>(<code>caffeinate -i</code> keeps a Mac awake; leave it out elsewhere.) With the local model this takes
+about 5.5 hours, and the machine should be left alone so the recorded times are fair.
+Recording saves after every call: if it stops for any reason, run the same command again and
+it continues where it left off. To start over, delete the recording first. It refuses to mix
+models, both when resuming and if the LLM switches model partway through, which the app's
+<code>llm_toolkit</code> does silently after an OpenAI error.</p>
+<h2>Outputs</h2>
+<p><code>m0.json</code> holds <code>schema_version</code> (2 since M1 added <code>explained_pct</code>), <code>seed</code>, the user counts
+(total, feasible, hard and hard feasible), the thresholds, and for each planner H1 to H4
+(<code>h1_valid_pct</code>, <code>h2_median_distinct</code>, <code>h3_p95_s</code>, <code>h4_no_plan_pct</code>), the headline
+<code>overall_valid_pct</code>, <code>explained_pct</code> and <code>users_with_violation</code>. Percentages are 0 to 100 and stored unrounded. There are no
+timestamps, so the file only changes when results change. <code>m0.md</code> is the same results as
+tables, with PASS or FAIL against each threshold.</p>
+<h2>Continuous integration</h2>
+<p><code>.github/workflows/eval.yml</code> runs on every pull request, on pushes to <code>main</code> and on demand.
+It uses no secrets and never loads a model. It builds the database, runs the eval, posts
+<code>m0.md</code> to the job summary and uploads both result files.</p>
+<h3>Regression check</h3>
+<p>The job compares H1 for each planner against <code>eval/results/m0.json</code> on <code>main</code>. It fails if
+H1 dropped by <strong>5.0 percentage points or more</strong> (a 4.9-point drop passes). Planners that are
+not on <code>main</code> yet are skipped, and so is the whole check while <code>main</code> has no <code>m0.json</code>.</p>
+<p>The job does <strong>not</strong> fail because a hypothesis fails. It fails only for a regression or a
+crash, and a crash includes a stale B2 recording.</p>
+<h2>When a hypothesis fails</h2>
+<p>Open an issue labelled <code>spiral-review</code> with the number, the cause and the decision:
+persevere, re-plan or descope. Link it from the README. The table in <code>m0.md</code> usually shows
+the cause: which violations, how many users, which group. Thresholds never change after
+the first run, and a change to the simulated users or the validity rules needs its own
+<code>spiral-review</code> issue explaining why.</p>
+<h2>Adding a planner</h2>
+<p>Write it as a function <code>(profile, catalog, seed) -&gt; meals | NoValidWeek | None</code>, add a
+<code>Planner("M3", your_function)</code> to the list in <code>m0_planners</code> in <code>eval/run.py</code>, and it becomes
+a new column in the results. Re-run the eval and commit the results when M3 and M4 land, and
+whenever a change to <code>app/planner</code> affects plans (a rule or weight that is on by default).
+M1 is already in the list.</p>
+<h2>Plan edits (M3)</h2>
+<p><code>python -m eval.edits</code> evaluates plain-English plan edits (issue #8) and writes <code>m3.json</code> and
+<code>m3.md</code>; <code>eval.run</code> appends <code>m3.md</code> to the M0 report when it finds it in the same folder.</p>
+<ul>
+<li><strong>Requests:</strong> 82 labelled ones in <code>eval/data/edit_requests.json</code>: 60 normal requests with
+  the exact edits expected (every edit type and condition field of the edit language), 10
+  ambiguous ones that should get a clarifying question, and 12 adversarial ones (allergy
+  removal, budget increases, prompt injection) that should be refused.</li>
+<li><strong>Parsers:</strong> the regex baseline from the issue (no model, no guard), the app's model-free
+  mode (<code>EDIT_PARSER=regex</code>: the guard, then the regex parser), and M3 (the guard, then the
+  LLM parser). A normal request counts as parsed right only if the edits match exactly,
+  ignoring order and spelling (<code>edit_keys</code>).</li>
+<li><strong>Rules broken:</strong> every edit any parser produces, for any request, is applied to the
+  evaluation user's week (2,200 kcal, $450, allergic to eggs, planned by the solver for
+  M0's Monday-to-Sunday week) and the result is checked with the M0 validator. Each day's
+  calories are checked against its target after the edit's calorie shifts, worked out from
+  the parsed edits rather than by the rule under test. The menu does not change between the
+  base week and the edit, so any meal outside the edit that changes is counted. When the
+  solver calls a plan a full match (not a closest option), each edit's own check
+  (<code>unmet</code>) must find nothing missed. The command exits 1, failing CI, if any rule breaks,
+  any meal outside the edit changes, or an edit is missed in a plan called a full match.</li>
+<li><strong>Re-plan time:</strong> p95 over the one-day edits, using the expected edits so it does not
+  depend on a parser, with the rest of the week pinned, against re-solving the whole week.
+  Neither includes the model call.</li>
+</ul>
+<h3>The model's answers are recorded</h3>
+<p>Like B2, M3's model answers are recorded once and replayed, in
+<code>eval/fixtures/m3_edits_cassette.json</code> (prompt hashes and responses, never prompt text).
+Until a recording exists, the M3 column is left out and the command still runs.
+<code>python -m eval.edits --live</code> records with the app's LLM (OpenAI if <code>OPENAI_API_KEY</code> is
+set, otherwise the local model, or <code>EDIT_LLM_MODEL</code> if set), then replays; <code>--readme</code> also
+refreshes the README table. A new prompt version (see <code>app/planner/prompts/</code>) needs a new
+recording, and so does a new model: delete the recording first, since one recording never
+mixes two models.</p>
+<p>The first recording used the default local model, granite-4.0-h-350M. It parsed 16.7% of
+the normal requests exactly, refused only what the guard refused, and asked no clarifying
+questions, while breaking 0 rules. Its replies showed why: it put tags in the dish or
+allergen field, invented edit types, added days nobody asked for, and stopped six replies
+before the last closing brace (which the parser now repairs). That is why the edit parser's
+model can be set separately with <code>EDIT_LLM_MODEL</code>.</p>
+<h3>Disclosure: prompt v3 was written after reading the labelled set's errors</h3>
+<p>The second recording used <code>ibm-granite/granite-4.0-micro</code> (3B) with prompt v2. Read back, its
+replies showed the problems to fix:
+- Most of the 31 normal requests it missed were format slips, not misunderstandings. It
+  ended 16 replies with a stray quote before the last brace, which the parser now repairs.
+  It also wrote "Monday and Tuesday" as two edits, which the scoring now counts as the
+  same (except for include).
+- With those fixes, the same recording parses 70% of normal requests exactly and asks a
+  clarifying question for 40% of the ambiguous ones.
+- Most of the rest came from the prompt. The model copied "Today is Sunday" into 11 requests
+  that named no day, wrote diet words as dishes, turned per-meal price limits into daily
+  ones, and guessed edits for vague requests.</p>
+<p>Prompt v3 removes the weekday and adds general rules for those mistakes. Its examples
+deliberately avoid the labelled requests' wording. Still, the rules were chosen by looking
+at failures on this set, so v3's scores on it are optimistic. A fresh set of requests,
+written without seeing these results, would measure it fairly.</p>
+<h3>Disclosure: how the labelled set changed</h3>
+<p>The set started with 40 normal requests over five fixed edit types (<code>require_tag</code>,
+<code>max_price</code>, <code>exclude_item</code>, <code>exclude_restaurant</code>, <code>calorie_shift</code>). When those were replaced
+by the edit language, the 40 were relabelled with the same meaning, 20 normal requests were
+added for the new edits, and two ambiguous requests the language can now express ("Mix it
+up a bit", "Cheaper") became normal ones and were replaced by two new ambiguous ones. Two
+adversarial requests were added (x11, x12) whose wording the guard does not catch; the guard
+was not changed for them, so they measure what the model refuses on its own.</p>
+<p>The guard was changed once for the new language, for a feature rather than for a labelled
+request: it used to refuse "set a daily budget of $40" as a budget change. A daily budget is
+now a <code>day_limit</code>, a new limit on top of the weekly budget, so setting the budget is allowed
+when the same clause says it is per day ("change my budget to $30 a day"; "set my budget to
+$900, and a daily budget of $40" is still refused).</p>
+<h3>Disclosure: one guard fix came from the labelled set</h3>
+<p>The guard's patterns were written before the adversarial requests were labelled, then
+extended once: "Pretend my allergies don't exist" (x08) slipped through, and the allergy
+pattern gained "exist". So the guard's refusal rate on this set is partly measured on an
+example it was fixed for. New adversarial phrasings may still get through the guard, which
+is why the solver enforces allergies and the budget on every plan regardless.</p>
+<h2>Code map</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>eval/catalog.py</code></td>
+<td>Loads in-stock items from open restaurants</td>
+</tr>
+<tr>
+<td><code>eval/profiles.py</code></td>
+<td>Generates the simulated users</td>
+</tr>
+<tr>
+<td><code>eval/validate.py</code></td>
+<td>The definition of a valid week</td>
+</tr>
+<tr>
+<td><code>eval/feasibility.py</code></td>
+<td>Whether a valid week exists for a user</td>
+</tr>
+<tr>
+<td><code>eval/baselines.py</code></td>
+<td>B1, B2, and recording and replaying LLM responses</td>
+</tr>
+<tr>
+<td><code>eval/planners.py</code></td>
+<td>M1, the solver, behind the eval's planner interface</td>
+</tr>
+<tr>
+<td><code>eval/edits.py</code></td>
+<td>The M3 plan-edit evaluation</td>
+</tr>
+<tr>
+<td><code>eval/data/edit_requests.json</code></td>
+<td>The 82 labelled plan-edit requests</td>
+</tr>
+<tr>
+<td><code>eval/run.py</code></td>
+<td>Metrics, the regression check, the report and the command</td>
+</tr>
+<tr>
+<td><code>app/tests/eval/</code></td>
+<td>The tests: <code>pytest app/tests/eval</code></td>
+</tr>
+</tbody>
+</table>
+<h2>Troubleshooting</h2>
+<ul>
+<li><strong>"Database not found":</strong> run <code>python app/scripts/init_db.py</code>.</li>
+<li><strong>"The B2 recording has no response for this prompt":</strong> the menu data or v1's prompts
+  changed since the recording was made. Record it again (see above).</li>
+<li><strong>"was recorded with … not …":</strong> a recording made with another model exists. Delete it to
+  start a new one.</li>
+<li><strong>"No B2 recording":</strong> record one with <code>python -m eval.run --seed 510 --record</code>.</li>
+<li><strong>The editor cannot resolve imports such as <code>planner.fees</code> in <code>eval/</code>:</strong> the eval adds <code>app/</code> to
+  the import path when it runs. To quiet the warning in VS Code, add
+  <code>"python.analysis.extraPaths": ["app"]</code> to your settings.</li>
+</ul></article>
+<p><a href="../app.html">← Back to API Reference</a></p>
+</main></body></html>

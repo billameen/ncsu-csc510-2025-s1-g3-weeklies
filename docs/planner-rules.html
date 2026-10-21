@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planner Rules</title>
+<link rel="stylesheet" href="../assets/custom.css">
+</head><body class="pdoc"><main class="pdoc">
+<article><h1>Add a planner rule in 15 minutes</h1>
+<p>The weekly planner is a list of rules handed to a constraint solver. Every rule lives in its
+own file in <code>app/planner/rules/</code>, and adding one never means touching the solver. A new rule
+is <strong>one file, one test file and one row</strong> in the rule reference at the bottom of this
+page.</p>
+<p>This guide builds a real rule, <code>max_meals_per_restaurant</code> ("order from any one restaurant at
+most N times a week"), which ships in <code>app/planner/rules/max_meals_per_restaurant.py</code>. Open
+that file next to this page.</p>
+<h2>1. How a rule works (2 minutes)</h2>
+<p>For every meal slot (day and meal) and every menu item, the model has one 0/1 variable:
+"pick this item for this slot". A rule adds to that model and never builds its own.</p>
+<p>A rule is a class with two methods:</p>
+<ul>
+<li><code>apply(ctx)</code> adds the rule to the model in <code>ctx</code> (a <code>PlanContext</code>).</li>
+<li><code>explain(ctx)</code> is called only when no week can be planned. It returns the sentence shown to
+  the user if this rule is the reason, or <code>None</code> if it is not.</li>
+</ul>
+<p>There are three kinds:</p>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Subclass</th>
+<th>You write</th>
+<th>Use it for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Item filter (hard)</td>
+<td><code>ItemFilter</code></td>
+<td><code>allows(item, slot, ctx)</code> and <code>blocked_reason</code></td>
+<td>"This item can never be picked for this meal": allergens, stock, opening hours</td>
+</tr>
+<tr>
+<td>Hard rule</td>
+<td><code>Constraint</code></td>
+<td><code>apply</code> and <code>explain</code></td>
+<td>Limits across meals: daily calories, weekly budget, meals per restaurant</td>
+</tr>
+<tr>
+<td>Soft rule</td>
+<td><code>SoftConstraint</code></td>
+<td><code>apply</code> with <code>ctx.add_penalty</code></td>
+<td>Preferences the solver trades off: variety, lower cost</td>
+</tr>
+</tbody>
+</table>
+<p>Hard rules must hold in every plan. Soft rules add a weighted penalty, and the solver picks
+the plan with the lowest total. Weights are in cents: <code>prefer_low_cost</code> charges 1 per cent
+spent, so a soft rule with weight 600 is worth $6 per unit of penalty.</p>
+<h2>2. Write the file (5 minutes)</h2>
+<p>Create <code>app/planner/rules/max_meals_per_restaurant.py</code>:</p>
+<pre><code class="language-python">from planner.constraint import Constraint
+from planner.registry import register
+
+
+@register
+class MaxMealsPerRestaurant(Constraint):
+    &quot;&quot;&quot;At most `limit` meals of the plan come from the same restaurant.&quot;&quot;&quot;
+
+    name = &quot;max_meals_per_restaurant&quot;   # unique snake_case id, also its key in options
+    summary = &quot;No restaurant supplies more than a set number of meals.&quot;
+    order = 70                          # filters 10-19, structure 20, limits 50-99, soft 200+
+    enabled_by_default = False          # opt-in: requests turn it on in their options
+
+    def __init__(self, limit: int = 3):
+        if not isinstance(limit, int) or isinstance(limit, bool) or limit &lt; 1:
+            raise ValueError(f&quot;{self.name}: limit must be a whole number &gt;= 1, got {limit!r}&quot;)
+        self.limit = limit
+
+    def apply(self, ctx):
+        picks_by_restaurant = {}
+        for slot in ctx.slots:
+            for item, var in ctx.picks(slot):   # only items no filter has ruled out
+                picks_by_restaurant.setdefault(item.rtr_id, []).append(var)
+        for picks in picks_by_restaurant.values():
+            ctx.model.Add(sum(picks) &lt;= self.limit)
+</code></pre>
+<p>That is a working rule. <code>@register</code> adds it to the registry, and the registry imports every
+module in <code>planner/rules/</code> on first use, so nothing else needs to list it.</p>
+<p><code>@register</code> also checks the class and refuses a broken one with a <code>PluginError</code> that says
+what is wrong (see "What the registry rejects", below).</p>
+<h2>3. Explain it (3 minutes)</h2>
+<p>When a week is impossible, the solver asks every hard rule for its <code>explain(ctx)</code>. Only blame
+your rule when you can prove it is the cause. Here, the rule is the cause if the plan works
+once the rule is lifted, and <code>cheapest_without</code> answers exactly that:</p>
+<pre><code class="language-python">    def explain(self, ctx):
+        from planner.solver import cheapest_without
+
+        if cheapest_without(ctx, self) is None:   # still impossible without this rule
+            return None                           # so another rule explains it
+        # Claim only what was proven: a week exists without the limit, none with it.
+        return (
+            f&quot;No week meets your other requirements with at most {self.limit} meals from any &quot;
+            f&quot;one restaurant; allowing more meals per restaurant would make one possible.&quot;
+        )
+</code></pre>
+<p>Write the sentence for the user: what is impossible, the numbers behind it, and what they
+could change. Say no more than you proved: lifting this rule fixes the week, but that does not
+mean there are too few restaurants (the cheap one may be capped while the budget is tight). <code>cheapest_without(ctx, rule)</code> re-solves without <code>rule</code> and returns the lowest
+cost, or <code>None</code> if the other rules are impossible on their own. <code>weekly_budget</code> uses the same
+helper to say "The cheapest week that meets your other requirements costs $212.40".</p>
+<p>Item filters do not write <code>explain</code>. When a meal has no item left, <code>one_item_per_meal</code>
+counts how many items each filter blocked and uses each filter's <code>blocked_reason</code> ("are out of
+stock"), or <code>describe_block(slot, ctx)</code> if the filter overrides it.</p>
+<h2>4. Test it alone (4 minutes)</h2>
+<p>Create <code>app/tests/planner/test_planner_rule_max_meals_per_restaurant.py</code>. Test the rule with
+<code>one_item_per_meal</code> and nothing else, on a hand-built menu, so a failure points at your rule:</p>
+<pre><code class="language-python">from menu_factory import item, menu, request
+
+from planner.registry import get
+from planner.solver import Status, plan_week
+
+OneItemPerMeal = get(&quot;one_item_per_meal&quot;)
+MaxMealsPerRestaurant = get(&quot;max_meals_per_restaurant&quot;)
+
+SIX = menu([item(i, rtr_id=(i + 1) // 2) for i in range(1, 7)])  # 3 restaurants, 2 items each
+
+
+def test_no_restaurant_supplies_more_than_the_limit():
+    result = plan_week(
+        request(days=2), SIX, rules=[OneItemPerMeal(), MaxMealsPerRestaurant(limit=2)]
+    )
+    assert result.ok
+    per_restaurant = [sum(m.item.rtr_id == r for m in result.meals) for r in (1, 2, 3)]
+    assert per_restaurant == [2, 2, 2]
+
+
+def test_too_strict_a_limit_is_explained():
+    result = plan_week(
+        request(days=7), SIX, rules=[OneItemPerMeal(), MaxMealsPerRestaurant(limit=2)]
+    )
+    assert result.status is Status.INFEASIBLE
+    assert &quot;allowing more meals per restaurant&quot; in result.explanation
+</code></pre>
+<p><code>menu_factory</code> (in <code>app/tests/planner/</code>) builds items, restaurants and requests with sensible
+defaults. Cover at least: the rule holds when the week is possible, the explanation when it
+is not, and that the explanation stays quiet when another rule is the cause.</p>
+<h2>5. Document it (1 minute)</h2>
+<p>Add a row to the rule reference at the bottom of this page.</p>
+<h2>6. Check it (1 minute)</h2>
+<pre><code class="language-bash">pytest app/tests/planner -q        # the planner's tests, about 20 s
+python -m eval.run --seed 510      # only if the rule is on by default: re-run M0
+</code></pre>
+<p>If the rule is on by default, it changes what every user gets, so re-run the M0 evaluation
+and commit <code>eval/results/</code> with your change (see <a href="./evaluation.html">How We Evaluate</a>). H1
+must not drop, and H3 (p95 planning time) must stay at or below 5 s.</p>
+<h2>Turning a rule on or off</h2>
+<p>A request's <code>options</code> configure rules by name:</p>
+<pre><code class="language-python">PlanRequest(..., options={
+    &quot;max_meals_per_restaurant&quot;: 3,          # one value: passed to __init__
+    &quot;prefer_variety&quot;: {&quot;weight&quot;: 900},      # a dict: passed as keyword arguments
+    &quot;match_preferences&quot;: False,             # False: off for this request
+})
+</code></pre>
+<p><code>True</code> turns on an opt-in rule with its defaults. An unknown name raises <code>KeyError</code>, so a
+typo never silently does nothing.</p>
+<h2>What PlanContext gives you</h2>
+<table>
+<thead>
+<tr>
+<th>Helper</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ctx.request</code>, <code>ctx.menu</code>, <code>ctx.slots</code></td>
+<td>The request, the menu, every slot (day and meal) in order</td>
+</tr>
+<tr>
+<td><code>ctx.picks(slot)</code></td>
+<td><code>(item, variable)</code> for every item still allowed for the slot</td>
+</tr>
+<tr>
+<td><code>ctx.candidates(slot)</code></td>
+<td>The items still allowed for the slot</td>
+</tr>
+<tr>
+<td><code>ctx.pick(slot, item)</code></td>
+<td>One 0/1 variable</td>
+</tr>
+<tr>
+<td><code>ctx.slots_by_day()</code></td>
+<td><code>{date: (slots...)}</code></td>
+</tr>
+<tr>
+<td><code>ctx.calories(slots)</code>, <code>ctx.cost_cents(slots=None)</code></td>
+<td>Linear expressions over the picks</td>
+</tr>
+<tr>
+<td><code>ctx.food_cost_cents(item)</code>, <code>ctx.meal_cost_cents(item)</code></td>
+<td>Price + tax; price + tax + one order's fees</td>
+</tr>
+<tr>
+<td><code>ctx.set_fees(rule, expr, batches)</code></td>
+<td><code>fee_cost</code> only: the week's fee expression and its batch variables</td>
+</tr>
+<tr>
+<td><code>ctx.forbid(slot, item, rule)</code></td>
+<td>Never pick that item for that slot</td>
+</tr>
+<tr>
+<td><code>ctx.add_penalty(rule, expr)</code></td>
+<td>Soft rules only: add <code>rule.weight * expr</code> to the objective</td>
+</tr>
+<tr>
+<td><code>ctx.model</code></td>
+<td>The CP-SAT model, for anything else (<code>ctx.model.Add(...)</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Each <code>Slot</code> has <code>day</code>, <code>weekday</code> ("Mon"), <code>meal</code> (1, 2 or 3), <code>meal_name</code>, <code>time</code> (HHMM)
+and <code>label</code> ("Mon Oct 19 breakfast"). Each <code>MenuItem</code> has <code>itm_id</code>, <code>rtr_id</code>, <code>name</code>,
+<code>description</code>, <code>price_cents</code>, <code>cost_cents</code> (with tax and fees), <code>calories</code>, <code>allergens</code> and
+<code>in_stock</code>.</p>
+<h2>What the registry rejects</h2>
+<p><code>@register</code> raises <code>PluginError</code> when the rule file loads if the class:</p>
+<ul>
+<li>is not a subclass of <code>Constraint</code>;</li>
+<li>has no <code>name</code>, or one that is not snake_case, or one another rule already uses;</li>
+<li>leaves an abstract method unimplemented (<code>apply</code>, or <code>allows</code> for an <code>ItemFilter</code>);</li>
+<li>has a <code>kind</code> that is not <code>Kind.HARD</code> or <code>Kind.SOFT</code>, or is soft without subclassing
+  <code>SoftConstraint</code>;</li>
+<li>has no <code>summary</code>, or is an <code>ItemFilter</code> without a <code>blocked_reason</code>;</li>
+<li>has a non-integer <code>order</code>.</li>
+</ul>
+<p>A rule file that raises while importing is reported the same way, naming the file.</p>
+<h2>Rule reference</h2>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Kind</th>
+<th>Default</th>
+<th>What it does</th>
+<th>When the week is impossible it says</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>in_stock</code></td>
+<td>filter</td>
+<td>on</td>
+<td>Only in-stock items</td>
+<td>"2 are out of stock"</td>
+</tr>
+<tr>
+<td><code>restaurant_open</code></td>
+<td>filter</td>
+<td>on</td>
+<td>Restaurant open at the meal's time (10:00, 14:00, 20:00)</td>
+<td>"come from restaurants closed at 10:00"</td>
+</tr>
+<tr>
+<td><code>no_allergens</code></td>
+<td>filter</td>
+<td>on</td>
+<td>No item with the user's allergens; spellings normalized (Egg = Eggs)</td>
+<td>"contain your allergens (eggs)"</td>
+</tr>
+<tr>
+<td><code>one_item_per_meal</code></td>
+<td>hard</td>
+<td>on</td>
+<td>Exactly one item per meal</td>
+<td>"No breakfast can be planned on any day: of 269 menu items, ..."</td>
+</tr>
+<tr>
+<td><code>daily_calories</code></td>
+<td>hard</td>
+<td>on</td>
+<td>Each day within 10% of the calorie target</td>
+<td>"needs each day to total 2,250-2,750 kcal ... The closest is 2,100 kcal on Sat Oct 24"</td>
+</tr>
+<tr>
+<td><code>fee_cost</code></td>
+<td>hard</td>
+<td>on</td>
+<td>Charges delivery and service fees per order, not per meal. Options (off by default): <code>batching</code> puts two meals from the same restaurant at most 6 h apart into one order; <code>pickup_restaurants</code> and <code>pickup_days</code> skip the delivery fee where the user opted in</td>
+<td>Never makes a week impossible by itself; its fees count toward <code>weekly_budget</code></td>
+</tr>
+<tr>
+<td><code>weekly_budget</code></td>
+<td>hard</td>
+<td>on</td>
+<td>Whole week, tax and fees included, within budget</td>
+<td>"The cheapest week ... costs $212.40 with tax and fees; your weekly budget is $150.00."</td>
+</tr>
+<tr>
+<td><code>max_meals_per_restaurant</code></td>
+<td>hard</td>
+<td>off</td>
+<td>At most N meals from one restaurant (tutorial example)</td>
+<td>"No week meets your other requirements with at most 2 meals from any one restaurant ..."</td>
+</tr>
+<tr>
+<td><code>match_preferences</code></td>
+<td>soft (400)</td>
+<td>on</td>
+<td>Prefer items whose name or description matches a preference word</td>
+<td></td>
+</tr>
+<tr>
+<td><code>prefer_low_cost</code></td>
+<td>soft (1)</td>
+<td>on</td>
+<td>Prefer cheaper weeks; 1 per cent</td>
+<td></td>
+</tr>
+<tr>
+<td><code>prefer_variety</code></td>
+<td>soft (600)</td>
+<td>on</td>
+<td>Prefer fewer repeats; the 1st, 2nd and later repeats of an item cost 1x, 2x and 3x the weight</td>
+<td></td>
+</tr>
+</tbody>
+</table></article>
+<p><a href="../app.html">← Back to API Reference</a></p>
+</main></body></html>

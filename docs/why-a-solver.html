@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Why A Solver</title>
+<link rel="stylesheet" href="../assets/custom.css">
+</head><body class="pdoc"><main class="pdoc">
+<article><h1>Why a solver, not an LLM, picks your meals</h1>
+<p>Weeklies promises 21 meals a week that never contain your allergens, keep every day within
+10% of your calorie target, and keep the whole week, tax and fees included, within your
+budget. Since M1 those meals are picked by a constraint solver (OR-Tools CP-SAT) instead of
+an LLM. This page explains why, with the M0 evaluation's numbers.</p>
+<h2>The problem is the whole week, not one meal</h2>
+<p>The budget is a limit on the sum of 21 prices. The calorie target is a limit on the sum of
+each day's three meals. Whether a given lunch is a good pick depends on what the other 20
+meals cost and how many calories they have.</p>
+<p>The v1 planner asked an LLM for one meal at a time. Each prompt showed 10 random items and the
+budget and calorie target as text. The LLM never saw the other meals of the week, so it could
+not keep a running total, and nothing checked the totals afterwards. Picking well one meal at
+a time cannot guarantee a weekly limit.</p>
+<p>The solver chooses all 21 meals together. Every rule (allergens, opening hours, stock,
+calories per day, the weekly budget) is a constraint on one model, and every plan it returns
+meets all of them. When no week can meet them, it proves that and says which rule is the
+reason.</p>
+<h2>Before and after (M0 evaluation, seed 510)</h2>
+<p>The same 100 simulated users, the same menu, and the same validator for every planner. B2 is
+v1 as shipped. M1 is the solver. 63 of the users can be served at all; 37 cannot (for example,
+their budget is below the cheapest valid week). Full results are in <code>eval/results/m0.md</code>.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Target</th>
+<th>v1 LLM (B2)</th>
+<th>Solver (M1)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Feasible users who get a valid week (H1)</td>
+<td>at least 90%</td>
+<td>0%</td>
+<td><strong>100%</strong></td>
+</tr>
+<tr>
+<td>Distinct items per week, median (H2)</td>
+<td>at least 14</td>
+<td>19</td>
+<td><strong>20</strong></td>
+</tr>
+<tr>
+<td>Time to plan a week, 95th percentile (H3)</td>
+<td>at most 5 s</td>
+<td>216 s</td>
+<td><strong>2.8 s</strong></td>
+</tr>
+<tr>
+<td>Infeasible users told "no valid week" (H4)</td>
+<td>at least 90%</td>
+<td>0%</td>
+<td><strong>100%</strong></td>
+</tr>
+<tr>
+<td>Infeasible users told why</td>
+<td>100%</td>
+<td>0% (generic error)</td>
+<td><strong>100%</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Users whose week broke each rule:</p>
+<table>
+<thead>
+<tr>
+<th>Rule broken</th>
+<th>v1 LLM (B2)</th>
+<th>Solver (M1)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Contains an allergen</td>
+<td>13</td>
+<td>0</td>
+</tr>
+<tr>
+<td>A day under the calorie band</td>
+<td>99</td>
+<td>0</td>
+</tr>
+<tr>
+<td>A day over the calorie band</td>
+<td>8</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Over budget</td>
+<td>28</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<h2>What changed for users</h2>
+<ul>
+<li><strong>Every week fits.</strong> No plan the solver returns breaks a rule, because the plan is the
+  solution of a model that contains every rule.</li>
+<li><strong>Allergens are safe whatever the spelling.</strong> v1 compared allergen tags exactly, so an item
+  tagged "Egg" passed a profile that listed "Eggs". Every allergen v1 let through in M0 was
+  such a mismatch: "Egg" against "Eggs", or "Peanuts" against "Nuts". The solver normalizes
+  both sides first (Egg = Eggs, Peanuts and Tree Nuts count as nuts, Milk as dairy).</li>
+<li><strong>Impossible requests get a reason.</strong> v1 either returned a week that broke the rules or
+  failed with a generic error. The solver says, for example, "The cheapest week that meets
+  your other requirements costs $317.73 with tax and fees; your weekly budget is $100.00."</li>
+<li><strong>Planning takes seconds.</strong> v1 made 21 or more LLM calls per week; the solver needs no
+  model, no API key and no GPU.</li>
+<li><strong>The same request gets the same week.</strong> The solver's effort is capped in work done, not
+  clock time, so a plan does not depend on timing, unless the server is so overloaded that
+  the 4 second limit is reached first. Then the week can differ, but it still meets every rule.</li>
+</ul>
+<h2>How it works</h2>
+<p><code>/generate_plan</code> builds a <code>PlanRequest</code> from the profile (calorie target, budget, allergens,
+preferences) and calls <code>plan_week</code>. For each meal slot and menu item there is a 0/1 variable,
+"pick this item for this meal". Hard rules constrain those variables; soft rules add weighted
+penalties for repeats, cost, and items that match none of your preferences, and the solver
+looks for the plan with the lowest total penalty. It stops at 4 seconds (or after a fixed
+amount of work, usually sooner) and returns the best plan found, marked <code>optimal: false</code> if
+it has not proven that no better plan exists. Every rule is a plug-in; see
+<a href="./planner-rules.html">Add a planner rule in 15 minutes</a>.</p>
+<p><code>PLANNER=llm</code> switches <code>/generate_plan</code> back to v1, which the evaluation keeps as baseline B2.</p>
+<h2>Limits</h2>
+<ul>
+<li>Preferences match whole words in item names and descriptions ("spicy" matches "Spicy
+  Ramen"). There is no notion of cuisine or taste beyond that.</li>
+<li>Each meal is priced as its own delivery order, with both fees. Sharing a delivery between
+  meals is milestone M4.</li>
+<li>Meal times are fixed at 10:00, 14:00 and 20:00.</li>
+</ul>
+<h2>Next: Project 3 ideas</h2>
+<p>Each of these is a new rule file (or a small change to <code>PlanRequest</code>), not a new planner:</p>
+<ul>
+<li><strong>Macro targets:</strong> a hard rule like <code>daily_calories</code> for protein, carbohydrate and fat,
+  once menu items carry those numbers.</li>
+<li><strong>Group plans:</strong> plan several users' weeks in one model so shared meals come from one order.</li>
+<li><strong>Pantry and leftovers:</strong> zero-cost slots filled from what is already at home, as a soft
+  rule that prefers them.</li>
+<li><strong>Skip-meal days:</strong> let a request leave out meals on some days, and scale that day's
+  calorie band to the meals that remain.</li>
+</ul></article>
+<p><a href="../app.html">← Back to API Reference</a></p>
+</main></body></html>

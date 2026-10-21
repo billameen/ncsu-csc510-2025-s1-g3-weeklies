@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Llm Proposes Solver Decides</title>
+<link rel="stylesheet" href="../assets/custom.css">
+</head><body class="pdoc"><main class="pdoc">
+<article><h1>The LLM proposes, the solver decides</h1>
+<p>Users think in sentences ("make Thursday vegetarian under $10"), not settings. Since M3
+they can type one into the calendar's <strong>Change your week</strong> box. The risk with putting an
+LLM in that path is that it quietly breaks a rule: drops an allergy, goes over budget, or
+does whatever a cleverly worded request tells it to. Weeklies avoids that by giving the
+model one narrow job.</p>
+<p><strong>The LLM only turns the sentence into typed edits. The M1 solver re-plans and enforces
+every rule.</strong> Nothing the model says can loosen an allergy or the budget, and nothing is
+saved until the user accepts a diff.</p>
+<h2>The pipeline</h2>
+<ol>
+<li><strong>Guard (code, no model).</strong> The request must be 1 to 300 characters. Requests to drop
+   or ignore an allergy, raise or remove the budget, or instruct the assistant ("ignore
+   previous instructions", role tags, pasted JSON) are refused here with a fixed message
+   that points to the profile page where relevant. A model is never asked.</li>
+<li><strong>Parser (model).</strong> The model writes the request in the edit language below, as JSON
+   with <code>action</code> set to <code>edit</code>, <code>clarify</code> or <code>refuse</code>. Pydantic checks the reply. An
+   invalid reply gets one retry, then the request is reported as not understood, with a
+   list of what can be asked for. The model's own words are shown only when it asks a
+   clarifying question.</li>
+<li><strong>Resolve (code).</strong> "Thursday" becomes a date in the plan window, "dinners" a meal
+   number, and dish words or restaurant names become menu ids (a dish word matches item
+   names or descriptions, singular or plural, so "pork" finds every pork dish). A name
+   that matches nothing turns into a question ("I couldn't find "Lasagna" on the menu.
+   Which dish did you mean?").</li>
+<li><strong>Re-plan (solver).</strong> Every meal outside the edit is pinned. The edit's rules are added
+   to the plan's usual rules (allergens, opening hours, stock, daily calories, weekly
+   budget, variety), and the solver re-plans the rest, changing as few meals as it can.
+   If the edit can't be met, the user gets the reason and the closest plan: each filter,
+   inclusion and daily limit becomes a strong preference (a calorie shift stays as asked,
+   and wishes only break ties), and the preview says what that plan still misses ("Every
+   day costs $42.18 (you asked for at most $4.00 a day)"). If even that plan changes
+   nothing, the edit is reported as impossible, with the reason.</li>
+<li><strong>Accept or Discard.</strong> The diff shows each changed meal, its price change, and the
+   week's cost and calories before and after. Accept checks the proposal again against the
+   menu and profile as they are now (stock, opening hours, allergies, budget, calories) and
+   saves it; it is refused if anything changed since the preview. Discard leaves the plan
+   untouched.</li>
+</ol>
+<h2>The edit language</h2>
+<p>Each edit applies to some days and meals (<code>days</code>, <code>meals</code>; all of them if left out).</p>
+<table>
+<thead>
+<tr>
+<th>Edit</th>
+<th>Means</th>
+<th>Example request</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>filter</code></td>
+<td>Every meal meets a condition</td>
+<td>"make Thursday vegetarian", "dinners under $15", "no pork this week", "only Cowpers for breakfast"</td>
+</tr>
+<tr>
+<td><code>include</code></td>
+<td>At least <code>times</code> meals meet a condition</td>
+<td>"pizza on Friday night", "chicken twice this week"</td>
+</tr>
+<tr>
+<td><code>day_limit</code></td>
+<td>Each day's cost (with tax and fees) or calories under or over a limit</td>
+<td>"keep each day under $40", "no day over 2,000 calories"</td>
+</tr>
+<tr>
+<td><code>prefer</code></td>
+<td>A wish, never a rule: cheaper, fewer or more calories, more variety, or meals that meet a condition</td>
+<td>"cheaper lunches if possible", "vegetarian dinners when you can"</td>
+</tr>
+<tr>
+<td><code>calorie_shift</code></td>
+<td>Move a day's calorie target by up to 1,000 kcal</td>
+<td>"lighter days on the weekend"</td>
+</tr>
+</tbody>
+</table>
+<p>A condition is a field, an operator and a value:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Operators</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tag</code></td>
+<td><code>is</code>, <code>is_not</code></td>
+<td>vegetarian, vegan, spicy, gluten-free, dairy-free, low-calorie</td>
+</tr>
+<tr>
+<td><code>dish</code></td>
+<td><code>is</code>, <code>is_not</code></td>
+<td>a dish name or food word</td>
+</tr>
+<tr>
+<td><code>restaurant</code></td>
+<td><code>is</code>, <code>is_not</code></td>
+<td>a restaurant name</td>
+</tr>
+<tr>
+<td><code>allergen</code></td>
+<td><code>is</code>, <code>is_not</code></td>
+<td>an allergen word, such as shellfish</td>
+</tr>
+<tr>
+<td><code>price</code></td>
+<td><code>&lt;=</code>, <code>&gt;=</code></td>
+<td>dollars for one meal (menu price)</td>
+</tr>
+<tr>
+<td><code>calories</code></td>
+<td><code>&lt;=</code>, <code>&gt;=</code></td>
+<td>calories for one meal</td>
+</tr>
+</tbody>
+</table>
+<p>Every edit only adds a restriction or a preference. Nothing in the language can remove an
+allergy, raise the weekly budget or relax a rule: a daily cost limit is checked on top of
+the weekly budget, and a preference is weighed against the plan's other preferences but
+never against a hard rule. Requests the language can't express get a clarifying question.</p>
+<h2>Why this is safe even when the model is wrong</h2>
+<p>The parser can only <em>add</em> restrictions and preferences, and the solver enforces every rule
+whatever the parser produces. A wrong parse can give the user a week they didn't ask for, which they
+see in the diff and can discard. It cannot give them a week that breaks a rule.</p>
+<p>The evaluation checks this directly. It applies <strong>every</strong> edit any parser produces, even
+for ambiguous and adversarial requests, to a real week and runs the M0 validator on the
+result. CI fails if a single rule is broken or a meal outside the edit changes.</p>
+<h2>Results</h2>
+<p>Run <code>python -m eval.edits</code> (no key or model needed: it replays recorded model answers once
+a recording exists; <code>--live</code> makes one).
+The current numbers are in the README and <code>eval/results/m3.md</code>. Without a model, the
+regex baseline already shows the solver's guarantee: its edits break <strong>0</strong> rules, even
+when it turns an adversarial request into edits, because the solver enforces them all.
+What a model adds is understanding: exact parses of varied wording, clarifying questions
+for vague requests, and refusals the guard's patterns don't cover.</p>
+<p>Re-planning one day with the rest of the week pinned takes about 0.3 s at p95, against
+about 3 s to re-solve the whole week (target ≤ 2 s, excluding the model call).</p>
+<h2>Limits</h2>
+<ul>
+<li>The model is whatever <code>llm_toolkit</code> selects: OpenAI's <code>gpt-4o-mini</code> with a key, or a
+  local model without one. The default local model (granite-4.0-h-350M) is too small for
+  the edit language: it parsed 17% of the labelled requests exactly, mixing up fields (a
+  tag written as a dish) and inventing edit types. Set <code>EDIT_LLM_MODEL</code> to a larger local
+  model for edits, such as <code>ibm-granite/granite-4.0-micro</code> (3B). A weak model gives worse
+  edits, never unsafe ones: with the 350M model, 0 rules were broken.</li>
+<li>Tags are decided from item names, descriptions and allergen tags (the menu has no tag
+  column), and deliberately strictly: any meat word rules out "vegetarian".</li>
+<li>Edits apply to the next 7 days of an existing plan, or to as many of them as are fully
+  planned. A day that is not planned is never filled in. Plan the week first.</li>
+<li>The menu has no cuisine, protein or ingredient columns, so "Italian" or "high protein"
+  can only be matched through dish words in names and descriptions, or a new tag (see the
+  tutorial).</li>
+<li>A calorie shift changes whole days, up to 1,000 kcal, within the profile's 800 to
+  6,000 kcal bounds, and each day can have only one shift per edit.</li>
+</ul>
+<p>To support a new kind of request, see <a href="./teach-the-parser.html">Teach the parser a new request</a>.</p></article>
+<p><a href="../app.html">← Back to API Reference</a></p>
+</main></body></html>
