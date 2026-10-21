@@ -10,7 +10,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Lint: ruff](https://img.shields.io/badge/lint-ruff-46a2f1?logo=ruff&logoColor=white)](https://github.com/astral-sh/ruff)
 
-**[▶ Watch the teaser](https://drive.google.com/drive/folders/1Z0d3Li2DlNRVN6i6tmm4G6MSkhUvY3Cv?usp=sharing)** · [Full demo (YouTube)](https://youtu.be/PxjkRfjJGXs)
+**[▶ Watch the teaser](https://youtu.be/6kqtTYBGfYY)** · [Full demo (YouTube)](https://youtu.be/PxjkRfjJGXs)
 
 ---
 
