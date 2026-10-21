@@ -1,0 +1,449 @@
+{
+ "calls": {
+  "0051bb1b37a504d14bb1c31cfa231a293925d06a47af0c0cfadf360c5390d3d6": [
+   {
+    "latency_s": 3.3970942000014475,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"dish\", \"op\": \"is_not\", \"value\": \"pork\"}]}"
+   }
+  ],
+  "0258a97a2539d3f384856e98f592f98216f9f9e74defe9c7c0c0647f84003947": [
+   {
+    "latency_s": 3.6350361999939196,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"day_limit\", \"metric\": \"cost\", \"op\": \">=\", \"value\": 0, \"days\": \"all\"}]}"
+   }
+  ],
+  "0b4f77fa2f1e61266d40eda86f5e0fc0f8daa71d14bb46831db8d93feb151008": [
+   {
+    "latency_s": 3.5194973000034224,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"vegan\", \"days\": [\"tue\"]}] }"
+   }
+  ],
+  "12a80d46deb9fe530c122f3ded83e5f3979b4b8f60173ad6b42f7e28f985dc2e": [
+   {
+    "latency_s": 3.632283800005098,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"vegetarian\", \"days\": [\"weekend\"]}] }"
+   }
+  ],
+  "161623be3fa70e53091b33b943b8d6839e4f150acb61029a2cd69dfbb5d452b2": [
+   {
+    "latency_s": 2.777868800010765,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"restaurant\", \"op\": \"is_not\", \"value\": \"Golden Corral\"}]}"
+   }
+  ],
+  "170880c80f92f3a44613525bb67cb9442248b2ca35d6e1895f08cd15501eaeb1": [
+   {
+    "latency_s": 3.6754999999975553,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"dish\", \"op\": \"is_not\", \"value\": \"Filet Mignon\", \"days\": [\"sat\"]}]}"
+   }
+  ],
+  "180ed8b756d62420874b2c3c7cfdb465a6deea46c52da617a0fb7ea0cd41fe5a": [
+   {
+    "latency_s": 3.144434600006207,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"calorie_shift\", \"kcal_delta\": 300, \"days\": [\"wed\"]}]}\""
+   }
+  ],
+  "21568abdc2434201c3e3ab1e83e4f9e6fe4ea6ca10db22a0d27aef89d36081a1": [
+   {
+    "latency_s": 3.6019556000101147,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"restaurant\", \"op\": \"is_not\", \"value\": \"Sorella's\", \"days\": [\"friday\"], \"meals\": [\"all\"]}]"
+   }
+  ],
+  "2319901ac7fa4193396ee51f7070c2f0fb3c9fa8cb913074a6fe8212f33e0262": [
+   {
+    "latency_s": 2.5076753000030294,
+    "response": "{\"action\": \"refuse\", \"reason\": \"Allergies can only be changed on the profile page.\"}"
+   }
+  ],
+  "233ff576fc3b74387320b42cc8b6feef53fd0d8f70b0fa33f2ae2477df33a10a": [
+   {
+    "latency_s": 3.650407199995243,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"price\", \"op\": \"<=\", \"value\": 8, \"days\": [\"all\"], \"meals\": [\"breakfast\"]}]"
+   }
+  ],
+  "258ca20845a5c5a8683fd5caa162a5c17df55efd00612285ea88902f1ecb0796": [
+   {
+    "latency_s": 3.739902599991183,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"day_limit\", \"metric\": \"cost\", \"op\": \"<=\", \"value\": 9, \"days\": [\"thu\"]}]}\""
+   }
+  ],
+  "282f92846e1f86437dcd0fe05a822aa789ad56ad19f0c287cf534510b450bb2f": [
+   {
+    "latency_s": 3.526325099999667,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"vegan\", \"days\": [\"all\"], \"meals\": [\"breakfast\"]}]"
+   }
+  ],
+  "2e237c11d595243b4eed9e3a6d7fa701303a11b30bf820d6e813171478f37813": [
+   {
+    "latency_s": 4.59192809999513,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"prefer\", \"goal\": \"match\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"vegetarian\", \"days\": [\"all\"], \"meals\": [\"dinner\"]}]"
+   }
+  ],
+  "2edfbfec99d2655cd0466b60099f095cce38749312f7d68540b84dd4e5fd4ae1": [
+   {
+    "latency_s": 2.702527800007374,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"prefer\", \"goal\": \"cheaper\", \"meals\": [\"lunch\"]}]}"
+   }
+  ],
+  "2ee4124e56677911302ab6597e094475f7fcc3a5618011e894911e851c153d9d": [
+   {
+    "latency_s": 3.0580397000012454,
+    "response": "{\"action\": \"clarify\", \"question\": \"What makes a lunch nicer: more expensive, healthier, a specific dish, or something else?\"}"
+   }
+  ],
+  "30d20c77f427585522d0249416e59da4a69e8964b5d0c9bb9d75463f8033f0cf": [
+   {
+    "latency_s": 4.5944022000039695,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"price\", \"op\": \"<=\", \"value\": 11, \"days\": [\"sun\"], \"meals\": [\"all\"]}] }"
+   }
+  ],
+  "38bc977e8b9f1ace6ab3c04a236752a548233d53e55cddcc76a9eb4190681fed": [
+   {
+    "latency_s": 7.15172339999117,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"include\", \"field\": \"dish\", \"op\": \"is\", \"value\": \"eggs\", \"days\": [\"all\"], \"meals\": [\"all\"]}]"
+   }
+  ],
+  "3b0b72df66680ea7462e4331cd1257a85b6b274c38f418a410d2e93d6329081c": [
+   {
+    "latency_s": 3.63385019999987,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"dairy-free\", \"days\": [\"tue\"], \"meals\": [\"dinner\"]}]\"}"
+   }
+  ],
+  "3ba22c39bf35c7a1fffa7ddb1cb1d35518d7d1ac55af0a9f7e257d4ec9da2b63": [
+   {
+    "latency_s": 3.166278200005763,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"gluten-free\", \"days\": [\"mon\"]}]"
+   }
+  ],
+  "3f92f5473510f7e6f2d0172fd5f8ca1b289357bb74254c1a55b36cc19fd419e7": [
+   {
+    "latency_s": 4.33006559999194,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"dish\", \"op\": \"is\", \"value\": \"spicy\", \"days\": [\"mon\"], \"meals\": [\"lunch\"]}]\"}"
+   }
+  ],
+  "3ff277cbb2a3c0144985d05d539478cfd37c8d4b36df2ceb3281a5dc500d5c86": [
+   {
+    "latency_s": 4.695153099994059,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"restaurant\", \"op\": \"is_not\", \"value\": \"Cowpers\", \"days\": [\"all\"], \"meals\": [\"breakfast\"]}]"
+   }
+  ],
+  "47a92c67b9d4d5cd2614eb3d600c1daa19b9d3bdad48158c7eeb798b54ea2b73": [
+   {
+    "latency_s": 4.260652400000254,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"vegetarian\", \"days\": [\"weekend\"]}]"
+   }
+  ],
+  "49041b602e4c0ce6223c09c9c319216e4c6391ff8f56df73b24bb5e242e409ed": [
+   {
+    "latency_s": 2.8188681000028737,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"calorie_shift\", \"kcal_delta\": -300, \"days\": [\"mon\", \"tue\"]}] }"
+   }
+  ],
+  "4a894cc94f1c53efeb8ed997314106a6d13d1aa55fd81136812d64cdfddaba73": [
+   {
+    "latency_s": 2.829815299992333,
+    "response": "{\"action\": \"clarify\", \"question\": \"Less of what stuff? Calories, carbs, specific foods, or something else?\"}"
+   }
+  ],
+  "4e6299fd1ee63eb16a1e73f37ae5c94f7f64af30b6efa5e6e0a6df27ea877706": [
+   {
+    "latency_s": 6.013967200007755,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"vegetarian\", \"days\": [\"thu\"]}, {\"type\": \"filter\", \"field\": \"price\", \"op\": \"<=\", \"value\": 10, \"days\": [\"thu\"]}] }"
+   }
+  ],
+  "4f4387cf26fb7b498d4b37718c801a7b9ee1885c31a98e618702f7e5ba1afba5": [
+   {
+    "latency_s": 2.7885858999943594,
+    "response": "{\"action\": \"clarify\", \"question\": \"What should change: cheaper meals, vegetarian meals, lighter days, or something else?\"}"
+   }
+  ],
+  "51af92460843c6f753ec63018e7e4415199ee60c655dd0ef121828fa2c4fc1f5": [
+   {
+    "latency_s": 3.7103945999988355,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"include\", \"field\": \"dish\", \"op\": \"is\", \"value\": \"chicken\", \"times\": 2}]}"
+   }
+  ],
+  "58778d5fc30ea422f688ef507ae51ecd501849fd6367a076f7cfc8413d3fc4e6": [
+   {
+    "latency_s": 3.645264799997676,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"spicy\", \"days\": [\"weekdays\"], \"meals\": [\"dinner\"]}]\"}"
+   }
+  ],
+  "59fd3f41b8558c4bd44e3605e6bb98a63fbd2549a9687c1fe0b4ff2b88a7b735": [
+   {
+    "latency_s": 4.509365099991555,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"calories\", \"op\": \">=\", \"value\": 400, \"days\": [\"all\"], \"meals\": [\"breakfast\"]}]"
+   }
+  ],
+  "5a06e633b80536d50df8ce56bedf4c7e38b407194237fd3ec20d6b90bebb6511": [
+   {
+    "latency_s": 4.209316899999976,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"dish\", \"op\": \"is_not\", \"value\": \"Spaghetti Carbonara\", \"days\": [\"all\"], \"meals\": [\"lunch\"]}]"
+   }
+  ],
+  "5be11f529f9b73dc7d78f82fe90c6dbf1d33c52e730a940bb70a1123f8399601": [
+   {
+    "latency_s": 4.9536031000025105,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"include\", \"field\": \"restaurant\", \"op\": \"is\", \"value\": \"Sorella's\", \"days\": [\"saturday\"], \"meals\": [\"all\"]}]"
+   }
+  ],
+  "5d1e0921b779814f0b63e119d3955c068ec170a9fd96f6ff67d5af4ed636937f": [
+   {
+    "latency_s": 4.700788300004206,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"dish\", \"op\": \"is_not\", \"value\": \"Fried Pickles\", \"days\": [\"mon\", \"tue\", \"wed\", \"thu\"]}]"
+   }
+  ],
+  "6923113beea18a3246a7352f56fa8d6681021933ff0bac216c8bc77021438e67": [
+   {
+    "latency_s": 4.039755699996022,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"dairy-free\", \"days\": [\"wed\"], \"meals\": [\"dinner\"]}]\"}"
+   }
+  ],
+  "692f8429b6b3d249d2f951d02a4a46644c281763d36b9e388db1f97422d7ec43": [
+   {
+    "latency_s": 4.370634899998549,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"vegetarian\", \"days\": [\"mon\"], \"meals\": [\"lunch\", \"dinner\"]}]\"}"
+   }
+  ],
+  "6a8d75afd791c7602c58606efe453e479eec13ad201abe0781ab23755783d686": [
+   {
+    "latency_s": 6.072721599994111,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"spicy\", \"days\": [\"friday\"], \"meals\": [\"dinner\"]}, {\"type\": \"filter\", \"field\": \"price\", \"op\": \"<=\", \"value\": 15, \"days\": [\"friday\"]}] }"
+   }
+  ],
+  "6aecf0199d0ca8855bde81a220b309278f9b43c4473369c3c8b05eb3a10dfc30": [
+   {
+    "latency_s": 4.163904800007003,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"calories\", \"op\": \"<=\", \"value\": 700, \"days\": [\"all\"], \"meals\": [\"dinner\"]}]"
+   }
+  ],
+  "7267ad8665aeef7b6c5934ec44040511afeedec356c252082123f592cd2add81": [
+   {
+    "latency_s": 2.8994384999969043,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"dish\", \"op\": \"is_not\", \"value\": \"Caesar Salad\"}]}"
+   }
+  ],
+  "72a3cfa166d6989c264eba5396474296b3518fb58ad31a23e6c6eebdacf3f506": [
+   {
+    "latency_s": 3.36523589999706,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"meal\", \"op\": \"is_not\", \"value\": \"dinner\"}]}"
+   }
+  ],
+  "798829031f2fe6f5cd8a677bda68a692f8ca6d491c3b4a4a604f8b31d2bce4c7": [
+   {
+    "latency_s": 3.020251800000551,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"meal\", \"op\": \"is_not\", \"value\": \"dinner\"}]}"
+   }
+  ],
+  "7dd18b6b45eb19c8cc51fddb2fc29b8b9619e7abe9aabce52eefe00fafb764b9": [
+   {
+    "latency_s": 3.8556060999981128,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"price\", \"op\": \"<=\", \"value\": 20, \"days\": [\"all\"], \"meals\": [\"dinner\"]}] }"
+   }
+  ],
+  "7e190019e44e1ac6c81c6235e75f29171f4abcfd0b96c6f9083674bd7407c4a5": [
+   {
+    "latency_s": 2.2397818000026746,
+    "response": "{\"action\": \"refuse\", \"reason\": \"Allergies can only be changed on the profile page.\"}"
+   }
+  ],
+  "7f6260d2c434055eb39402e06686ea988ebd2a78cb384a071ba7566b5e389e5f": [
+   {
+    "latency_s": 3.030008599991561,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"dish\", \"op\": \"is_not\", \"value\": \"Mac and Cheese\", \"days\": [\"wed\"]}]}"
+   }
+  ],
+  "7ffe4bfb55bca42ace3584d9484a9a5e5eae3a919a75e148f297a6a02f89de4a": [
+   {
+    "latency_s": 4.045742000002065,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"restaurant\", \"op\": \"is_not\", \"value\": \"The Pit\", \"days\": [\"all\"], \"meals\": [\"dinner\"]}]"
+   }
+  ],
+  "859330a7493e9e0d24085a9f4bdcfc7d897c54fb9b99f4478a0618b00962cb47": [
+   {
+    "latency_s": 3.6396546000032686,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"dish\", \"op\": \"is_not\", \"value\": \"Shrimp and Grits\", \"days\": [\"thu\"]}]"
+   }
+  ],
+  "85ba12413b9343f4c00a661be00c54e31e353f1fde5f146e7942bf3d7fcb9016": [
+   {
+    "latency_s": 5.523613099998329,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"day_limit\", \"metric\": \"cost\", \"op\": \"<=\", \"value\": 30, \"days\": [\"weekdays\"]}, {\"type\": \"filter\", \"field\": \"dish\", \"op\": \"is_not\", \"value\": \"Mac and Cheese\"}]}"
+   }
+  ],
+  "922628cd4cbbd9ee37e0275ba03d3c1df4549bbf5f3e2a209fca3604a27d377e": [
+   {
+    "latency_s": 4.225077199997031,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"restaurant\", \"op\": \"is_not\", \"value\": \"Ruckus Seafood Co.\", \"days\": [\"all\"]}]"
+   }
+  ],
+  "98f7e9a7d95d2f91985dde6e60d1ac48ea32e75bd7c0d74d43278ec8fcc43a3a": [
+   {
+    "latency_s": 3.34618049999699,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"day_limit\", \"metric\": \"cost\", \"op\": \"<=\", \"value\": 4, \"days\": \"all\"}]}"
+   }
+  ],
+  "a3538fade9765dd31ab8b1c7bf30229b554f08420b82a6d0aedec1577572bc60": [
+   {
+    "latency_s": 2.322126599989133,
+    "response": "{\"action\": \"clarify\", \"question\": \"What should change about Friday's meal plan?\"}"
+   }
+  ],
+  "a61c3e9625b237c6cf3340eaaff65f803d7d84894af450191dc7d8ed848920c5": [
+   {
+    "latency_s": 4.306496499993955,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"low-calorie\", \"days\": [\"weekend\"], \"meals\": [\"dinner\"]}]\"}"
+   }
+  ],
+  "a7398055653206cb99ba89d1798412cb0d503173071ecaf5f05f26581428ed4a": [
+   {
+    "latency_s": 2.58612279999943,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"prefer\", \"goal\": \"variety\", \"days\": \"all\"}]}"
+   }
+  ],
+  "aa3dbcf8b40a46e07b17110fd7a20b41027abb6e8ad95a0f45cda73940568c75": [
+   {
+    "latency_s": 3.213664000009885,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"day_limit\", \"metric\": \"cost\", \"op\": \"<=\", \"value\": 40, \"days\": \"all\"}]}"
+   }
+  ],
+  "ac126672703301c6647353dfb03090dc024f1451a3bd177dc7b1735a19e1c2dd": [
+   {
+    "latency_s": 3.659601899998961,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is_not\", \"value\": \"spicy\", \"days\": [\"mon\"]}]"
+   }
+  ],
+  "aeefc2514c4a09acc8d6703c22bbe59e22d5eda6286b6c61f3bdfb26292fb0dc": [
+   {
+    "latency_s": 3.463135099998908,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"include\", \"field\": \"dish\", \"op\": \"is_not\", \"value\": \"Thursday\"}]}"
+   }
+  ],
+  "afb6d56a7c88c753cdaaa3a07f26031d6476acadbd4d345eec7983f24b92f873": [
+   {
+    "latency_s": 4.299439800000982,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"allergen\", \"op\": \"is_not\", \"value\": \"shellfish\", \"days\": [\"wed\"]}]"
+   }
+  ],
+  "afd4618749b76d831cc265874166de1fc4b6f93c02537148b3aa0c041c41b26e": [
+   {
+    "latency_s": 3.4312485000118613,
+    "response": "{\"action\": \"clarify\", \"question\": \"What should change to make it healthier: lower calories, more vegetables, fewer processed foods, or something else?\"}"
+   }
+  ],
+  "b37bb84849cf314fcd38c960746bf829dd52de252900898e17a858118b68b3f7": [
+   {
+    "latency_s": 3.6757809999980964,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"vegetarian\", \"days\": [\"sun\"], \"meals\": [\"lunch\"]}] }"
+   }
+  ],
+  "bb37ac33989164e581a6131da54da1233a1422f5295703d1ef1cd2912d46f2b8": [
+   {
+    "latency_s": 4.590390800003661,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"include\", \"field\": \"dish\", \"op\": \"is\", \"value\": \"tacos\", \"times\": 2, \"days\": [\"all\"], \"meals\": [\"lunch\"]}]"
+   }
+  ],
+  "bcceea1d768ecdb73bdea269988eb4ed663337a1bd2acd2626a39b9b7634ed9e": [
+   {
+    "latency_s": 2.709502600002452,
+    "response": "{\"action\": \"clarify\", \"question\": \"What meals should change: breakfast, lunch, dinner, or all meals?\"}"
+   }
+  ],
+  "c8075394b86c9171a6b70ae6fc26ff3c2abccee84463e377ca1cc28bf3dd09ae": [
+   {
+    "latency_s": 2.785725800000364,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"calorie_shift\", \"kcal_delta\": -250, \"days\": [\"friday\"]}]}\""
+   }
+  ],
+  "c8871720003c2280a2098b279d917c20e970fe43bc4d4a0ffb9c16079b8eceb8": [
+   {
+    "latency_s": 2.9475065000005998,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"dish\", \"op\": \"is_not\", \"value\": \"Beef Ribs\"}]}"
+   }
+  ],
+  "cb9d3f9376e650a10b4ef75803480d575bc035b54d05e1a89ec03327d400fa57": [
+   {
+    "latency_s": 2.63357520000136,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"calorie_shift\", \"kcal_delta\": -300, \"days\": [\"weekend\"]}]}\""
+   }
+  ],
+  "cbeab7a3e94fbc93fad23c3078c032bc87d6d92a6a3776ab3956bdee03a0030c": [
+   {
+    "latency_s": 4.207602399997995,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"day_limit\", \"metric\": \"calories\", \"op\": \">=\", \"value\": 2000, \"days\": \"all\"}]}"
+   }
+  ],
+  "d3c9b320be4e3c8175d3c3482a37e602918ee96e7d51a388d3d9016776232e7c": [
+   {
+    "latency_s": 4.584545800011256,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"include\", \"field\": \"dish\", \"op\": \"is\", \"value\": \"Pizza\", \"days\": [\"friday\"], \"meals\": [\"dinner\"]}]"
+   }
+  ],
+  "d49e3dffc07f0b3a13740e3c61b73b49d21529da4648f3c7d2705ed577974cfa": [
+   {
+    "latency_s": 5.740260999999009,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"dish\", \"op\": \"is\", \"value\": \"lunch\", \"days\": [\"weekdays\"], \"meals\": [\"lunch\"]}, {\"type\": \"filter\", \"field\": \"calories\", \"op\": \"<\", \"value\": 500}]}"
+   }
+  ],
+  "db8b960fc2e13e9cbfb7785ef9eb8799853114e3a6228fc7037034962e7159a2": [
+   {
+    "latency_s": 3.6479436000081478,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"day_limit\", \"metric\": \"calories\", \"op\": \">=\", \"value\": 2300, \"days\": [\"sat\"]}] }"
+   }
+  ],
+  "dbab03d485634fd615c95472b28d7552243307289292fed5cc5701b5a54cfb70": [
+   {
+    "latency_s": 4.1504761000105646,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"price\", \"op\": \"<=\", \"value\": 12, \"days\": [\"all\"], \"meals\": [\"lunch\"]}] }"
+   }
+  ],
+  "e215edd41d43f9f580978c2cae08da7afff1b80b36cab91346fd7a3e8cf31e47": [
+   {
+    "latency_s": 2.4310599000018556,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"calorie_shift\", \"kcal_delta\": 200, \"days\": [\"sat\"]}]"
+   }
+  ],
+  "ed225f3ea3c7bf78b9ed87839ee63d6fa85543bc1780b18f6e3297ea6522e17b": [
+   {
+    "latency_s": 4.3191119999974035,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"restaurant\", \"op\": \"is\", \"value\": \"Cowpers\", \"days\": [\"all\"], \"meals\": [\"breakfast\"]}]"
+   }
+  ],
+  "ee7b7cc913597f7fe349f423471e1c438dc9da7e681c75b825ba645d2c292a29": [
+   {
+    "latency_s": 3.565580999988015,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"restaurant\", \"op\": \"is_not\", \"value\": \"Basil's\", \"days\": [\"weekend\"]}]}"
+   }
+  ],
+  "f64dbec7864622b8494187b534a0fa3df6d5b1ae287c5a8fd3744281b85d64f3": [
+   {
+    "latency_s": 3.1815535000059754,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"calorie_shift\", \"kcal_delta\": -300, \"days\": [\"tue\"]}] }"
+   }
+  ],
+  "f8f88dfc1e503fb8bf3606e2137ded0d612962b9df8ccf88143e5cc0b6d5eac8": [
+   {
+    "latency_s": 4.386752999998862,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"gluten-free\", \"days\": [\"weekend\"], \"meals\": [\"breakfast\"]}]\"}"
+   }
+  ],
+  "f9677535d1254dce9fecc7c0a3dd499665fc33f1f671fd517734522e53a02c07": [
+   {
+    "latency_s": 5.688919799998985,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"filter\", \"field\": \"tag\", \"op\": \"is\", \"value\": \"vegetarian\", \"days\": [\"sat\"]}, {\"type\": \"filter\", \"field\": \"price\", \"op\": \"<=\", \"value\": 13, \"days\": [\"sat\"]}] }"
+   }
+  ],
+  "fb1c36a9660bc24a530c6666e8811507b807d8df26b7d1af449369ad839f245d": [
+   {
+    "latency_s": 2.9399450999917462,
+    "response": "{\"action\": \"clarify\", \"question\": \"What should change: cheaper meals, vegetarian meals, lighter days, or something else?\"}"
+   }
+  ],
+  "ff9d9d47e37676a363b904e2a171971e6535e87d6905ff8c8b3824ba0dfba439": [
+   {
+    "latency_s": 2.46336579999479,
+    "response": "{\"action\": \"edit\", \"edits\": [{\"type\": \"prefer\", \"goal\": \"fewer_calories\", \"meals\": [\"dinner\"]}]"
+   }
+  ]
+ },
+ "model": "ibm-granite/granite-4.0-micro"
+}

@@ -22,6 +22,7 @@ ruff==0.6.9
 
 # --- Meal planner (CP-SAT constraint solver) ---
 ortools==9.15.6755
+pydantic>=2.7,<3
 
 # --- Evaluation charts (python -m eval.m4 draws eval/results/m4_savings.png) ---
 matplotlib==3.9.2

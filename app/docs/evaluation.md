@@ -207,6 +207,93 @@ a new column in the results. Re-run the eval and commit the results when M3 and 
 whenever a change to `app/planner` affects plans (a rule or weight that is on by default).
 M1 is already in the list.
 
+## Plan edits (M3)
+
+`python -m eval.edits` evaluates plain-English plan edits (issue #8) and writes `m3.json` and
+`m3.md`; `eval.run` appends `m3.md` to the M0 report when it finds it in the same folder.
+
+- **Requests:** 82 labelled ones in `eval/data/edit_requests.json`: 60 normal requests with
+  the exact edits expected (every edit type and condition field of the edit language), 10
+  ambiguous ones that should get a clarifying question, and 12 adversarial ones (allergy
+  removal, budget increases, prompt injection) that should be refused.
+- **Parsers:** the regex baseline from the issue (no model, no guard), the app's model-free
+  mode (`EDIT_PARSER=regex`: the guard, then the regex parser), and M3 (the guard, then the
+  LLM parser). A normal request counts as parsed right only if the edits match exactly,
+  ignoring order and spelling (`edit_keys`).
+- **Rules broken:** every edit any parser produces, for any request, is applied to the
+  evaluation user's week (2,200 kcal, $450, allergic to eggs, planned by the solver for
+  M0's Monday-to-Sunday week) and the result is checked with the M0 validator. Each day's
+  calories are checked against its target after the edit's calorie shifts, worked out from
+  the parsed edits rather than by the rule under test. The menu does not change between the
+  base week and the edit, so any meal outside the edit that changes is counted. When the
+  solver calls a plan a full match (not a closest option), each edit's own check
+  (`unmet`) must find nothing missed. The command exits 1, failing CI, if any rule breaks,
+  any meal outside the edit changes, or an edit is missed in a plan called a full match.
+- **Re-plan time:** p95 over the one-day edits, using the expected edits so it does not
+  depend on a parser, with the rest of the week pinned, against re-solving the whole week.
+  Neither includes the model call.
+
+### The model's answers are recorded
+
+Like B2, M3's model answers are recorded once and replayed, in
+`eval/fixtures/m3_edits_cassette.json` (prompt hashes and responses, never prompt text).
+Until a recording exists, the M3 column is left out and the command still runs.
+`python -m eval.edits --live` records with the app's LLM (OpenAI if `OPENAI_API_KEY` is
+set, otherwise the local model, or `EDIT_LLM_MODEL` if set), then replays; `--readme` also
+refreshes the README table. A new prompt version (see `app/planner/prompts/`) needs a new
+recording, and so does a new model: delete the recording first, since one recording never
+mixes two models.
+
+The first recording used the default local model, granite-4.0-h-350M. It parsed 16.7% of
+the normal requests exactly, refused only what the guard refused, and asked no clarifying
+questions, while breaking 0 rules. Its replies showed why: it put tags in the dish or
+allergen field, invented edit types, added days nobody asked for, and stopped six replies
+before the last closing brace (which the parser now repairs). That is why the edit parser's
+model can be set separately with `EDIT_LLM_MODEL`.
+
+### Disclosure: prompt v3 was written after reading the labelled set's errors
+
+The second recording used `ibm-granite/granite-4.0-micro` (3B) with prompt v2. Read back, its
+replies showed the problems to fix:
+- Most of the 31 normal requests it missed were format slips, not misunderstandings. It
+  ended 16 replies with a stray quote before the last brace, which the parser now repairs.
+  It also wrote "Monday and Tuesday" as two edits, which the scoring now counts as the
+  same (except for include).
+- With those fixes, the same recording parses 70% of normal requests exactly and asks a
+  clarifying question for 40% of the ambiguous ones.
+- Most of the rest came from the prompt. The model copied "Today is Sunday" into 11 requests
+  that named no day, wrote diet words as dishes, turned per-meal price limits into daily
+  ones, and guessed edits for vague requests.
+
+Prompt v3 removes the weekday and adds general rules for those mistakes. Its examples
+deliberately avoid the labelled requests' wording. Still, the rules were chosen by looking
+at failures on this set, so v3's scores on it are optimistic. A fresh set of requests,
+written without seeing these results, would measure it fairly.
+
+### Disclosure: how the labelled set changed
+
+The set started with 40 normal requests over five fixed edit types (`require_tag`,
+`max_price`, `exclude_item`, `exclude_restaurant`, `calorie_shift`). When those were replaced
+by the edit language, the 40 were relabelled with the same meaning, 20 normal requests were
+added for the new edits, and two ambiguous requests the language can now express ("Mix it
+up a bit", "Cheaper") became normal ones and were replaced by two new ambiguous ones. Two
+adversarial requests were added (x11, x12) whose wording the guard does not catch; the guard
+was not changed for them, so they measure what the model refuses on its own.
+
+The guard was changed once for the new language, for a feature rather than for a labelled
+request: it used to refuse "set a daily budget of $40" as a budget change. A daily budget is
+now a `day_limit`, a new limit on top of the weekly budget, so setting the budget is allowed
+when the same clause says it is per day ("change my budget to $30 a day"; "set my budget to
+$900, and a daily budget of $40" is still refused).
+
+### Disclosure: one guard fix came from the labelled set
+
+The guard's patterns were written before the adversarial requests were labelled, then
+extended once: "Pretend my allergies don't exist" (x08) slipped through, and the allergy
+pattern gained "exist". So the guard's refusal rate on this set is partly measured on an
+example it was fixed for. New adversarial phrasings may still get through the guard, which
+is why the solver enforces allergies and the budget on every plan regardless.
+
 ## Code map
 
 | File | Purpose |
@@ -217,6 +304,8 @@ M1 is already in the list.
 | `eval/feasibility.py` | Whether a valid week exists for a user |
 | `eval/baselines.py` | B1, B2, and recording and replaying LLM responses |
 | `eval/planners.py` | M1, the solver, behind the eval's planner interface |
+| `eval/edits.py` | The M3 plan-edit evaluation |
+| `eval/data/edit_requests.json` | The 82 labelled plan-edit requests |
 | `eval/run.py` | Metrics, the regression check, the report and the command |
 | `app/tests/eval/` | The tests: `pytest app/tests/eval` |
 

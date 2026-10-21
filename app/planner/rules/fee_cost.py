@@ -86,6 +86,41 @@ class FeeCostConstraint(Constraint):
         """Fees for one order from rtr_id on day: no delivery fee if it is picked up."""
         return ctx.menu.fees.order_fee_cents(rtr_id, pickup=self.pickup(rtr_id, day))
 
+    def plan_fees_cents(self, fees, plan) -> int:
+        """
+        The fees this rule charges for a plan already made, {Slot: MenuItem}, with the
+        cheapest batching its settings allow. Used to price a saved week (e.g. the "before"
+        of a plan edit) the same way the solver prices a new one.
+        """
+        def fee(rtr_id, day):
+            return fees.order_fee_cents(rtr_id, pickup=self.pickup(rtr_id, day))
+
+        total = 0
+        by_day = {}
+        for slot, item in plan.items():
+            by_day.setdefault(slot.day, []).append(slot)
+            total += fee(item.rtr_id, slot.day)
+        if not self.batching:
+            return total
+        for day, day_slots in by_day.items():
+            options = [
+                (set(g), (len(g) - 1) * fee(plan[g[0]].rtr_id, day))
+                for g in batch_groups(day_slots, self.window_hours)
+                if len({plan[s].rtr_id for s in g}) == 1
+            ]
+
+            def best(i, used):
+                if i == len(options):
+                    return 0
+                skip = best(i + 1, used)
+                group, saving = options[i]
+                if group & used:
+                    return skip
+                return max(skip, saving + best(i + 1, used | group))
+
+            total -= best(0, frozenset())
+        return total
+
     def apply(self, ctx):
         """
         fees = sum over meals of their own order's fee - the fees saved by every batch.

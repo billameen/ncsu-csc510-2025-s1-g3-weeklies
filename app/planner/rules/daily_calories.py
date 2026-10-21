@@ -28,8 +28,8 @@ class DailyCalories(Constraint):
         that day's cost, which lets it prove at once that a budget is too low, and as a hint
         to start from, which finds a valid week quickly when the budget allows one.
         """
-        low, high = calorie_band(ctx.request.daily_calorie_target)
-        for slots in ctx.slots_by_day().values():
+        for day, slots in ctx.slots_by_day().items():
+            low, high = calorie_band(ctx.kcal_target(day))
             total = ctx.calories(slots)
             ctx.model.Add(total >= low)
             ctx.model.Add(total <= high)
@@ -49,33 +49,41 @@ class DailyCalories(Constraint):
         candidate items can make. Ignores other rules such as the budget, so a day it names
         is impossible however the rest of the week is planned.
         """
-        target = ctx.request.daily_calorie_target
-        low, high = calorie_band(target)
-        closest_by_day = {}
+        failing: dict[int, dict] = {}  # day's target -> {day: closest reachable total}
         for day, slots in ctx.slots_by_day().items():
+            low, high = calorie_band(ctx.kcal_target(day))
             options = [{item.calories for item in ctx.candidates(slot)} for slot in slots]
             if not all(options):
                 continue  # an empty meal; one_item_per_meal explains that
             totals = reachable_totals(options)
             if not any(low <= t <= high for t in totals):
-                closest_by_day[day] = min(
+                failing.setdefault(ctx.kcal_target(day), {})[day] = min(
                     totals, key=lambda t: (min(abs(t - low), abs(t - high)), t)
                 )
-        if not closest_by_day:
+        if not failing:
             return None
-        days_by_total: dict[int, list] = {}
-        for day, total in closest_by_day.items():
-            days_by_total.setdefault(total, []).append(day)
-        all_days = len(closest_by_day) == len(ctx.slots_by_day()) > 1
-        closest = "; ".join(
-            f"{total:,} kcal "
-            + ("on any day" if all_days and len(days_by_total) == 1 else "on " + _days(days))
-            for total, days in days_by_total.items()
-        )
-        return (
-            f"Your daily target of {target:,} kcal needs each day to total {low:,}-{high:,} kcal, "
-            f"but no combination of the available meals gets there. The closest is {closest}."
-        )
+        sentences = []
+        for target, closest_by_day in failing.items():
+            low, high = calorie_band(target)
+            days_by_total: dict[int, list] = {}
+            for day, total in closest_by_day.items():
+                days_by_total.setdefault(total, []).append(day)
+            all_days = len(closest_by_day) == len(ctx.slots_by_day()) > 1
+            closest = "; ".join(
+                f"{total:,} kcal "
+                + ("on any day" if all_days and len(days_by_total) == 1 else "on " + _days(days))
+                for total, days in days_by_total.items()
+            )
+            whose = (
+                "Your daily target"
+                if target == ctx.request.daily_calorie_target
+                else "Your adjusted target"
+            )
+            sentences.append(
+                f"{whose} of {target:,} kcal needs each day to total {low:,}-{high:,} kcal, "
+                f"but no combination of the available meals gets there. The closest is {closest}."
+            )
+        return " ".join(sentences)
 
 
 def _days(days) -> str:

@@ -107,7 +107,7 @@ class RecordingLLM:
         self.calls = defaultdict(list)
         self.used = defaultdict(int)
         if self.path.exists():
-            saved = json.loads(self.path.read_text())
+            saved = json.loads(self.path.read_text(encoding="utf-8"))
             if saved["model"] != self.model:
                 raise RecordingError(
                     f"{self.path} was recorded with {saved['model']}, not {self.model}. "
@@ -147,7 +147,7 @@ class RecordingLLM:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.path.with_suffix(".tmp")
         recording = {"model": self.model, "calls": calls}
-        tmp.write_text(json.dumps(recording, indent=1, sort_keys=True) + "\n")
+        tmp.write_text(json.dumps(recording, indent=1, sort_keys=True) + "\n", encoding="utf-8")
         tmp.replace(self.path)
 
 
@@ -158,7 +158,7 @@ class ReplayLLM:
     """
 
     def __init__(self, path: str | Path):
-        self.calls = json.loads(Path(path).read_text())["calls"]
+        self.calls = json.loads(Path(path).read_text(encoding="utf-8"))["calls"]
         self.used = defaultdict(int)
         self.recorded_seconds = 0.0
 

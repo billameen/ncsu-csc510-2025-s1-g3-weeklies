@@ -53,6 +53,13 @@ class PlanContext:
             for itm_id in menu.items
         }
         self._blocked: dict[tuple[int, int], Constraint] = {}
+        # Calories per day the plan aims for. Rules such as calorie_shift change single days
+        # before daily_calories reads them.
+        self.kcal_targets: dict[date, int] = {
+            day: request.daily_calorie_target for day in request.dates()
+        }
+        # Slots pin_meals had to leave free because their pinned item is no longer allowed.
+        self.unpinned: list[Slot] = []
         self._penalties: list[tuple[Constraint, cp_model.LinearExpr]] = []
         self._fee_rule: Constraint | None = None
         self._fees: cp_model.LinearExpr | None = None
@@ -82,6 +89,10 @@ class PlanContext:
         for slot in self.slots:
             days.setdefault(slot.day, []).append(slot)
         return {day: tuple(slots) for day, slots in days.items()}
+
+    def kcal_target(self, day: date) -> int:
+        """The calorie target for one day: the request's, unless a rule adjusted it."""
+        return self.kcal_targets.get(day, self.request.daily_calorie_target)
 
     def calories(self, slots: Iterable[Slot]) -> cp_model.LinearExpr:
         """Total calories picked over slots."""

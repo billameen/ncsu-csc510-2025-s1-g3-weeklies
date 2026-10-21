@@ -30,6 +30,23 @@ def _user(db, email, phone, kcal=1800, budget=60000):
         close_connection(conn)
 
 
+@pytest.fixture(autouse=True)
+def _hide_test_restaurants(temp_db_path):
+    """
+    The test database is shared by the whole session, so after each test the restaurants
+    made here are closed and their dishes taken out of stock. Otherwise later tests that plan
+    against the real menu (M3's plan edits, say) could pick an "M4 ..." dish.
+    """
+    yield
+    conn = create_connection(temp_db_path)
+    try:
+        execute_query(conn, '''UPDATE "MenuItem" SET instock = 0
+                               WHERE rtr_id IN (SELECT rtr_id FROM "Restaurant" WHERE name LIKE 'M4 %')''')
+        execute_query(conn, """UPDATE "Restaurant" SET status = 'Closed' WHERE name LIKE 'M4 %'""")
+    finally:
+        close_connection(conn)
+
+
 def _login(c, email):
     assert c.post("/login", data={"email": email, "password": PASSWORD}).status_code == 302
 

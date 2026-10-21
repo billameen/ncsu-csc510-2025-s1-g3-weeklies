@@ -50,11 +50,20 @@ python app/scripts/init_db.py
 ### Already have a local database?
 
 `app/CSC510_DB.db` is not rebuilt automatically. After pulling schema changes, either reset it
-to the seed data or apply the new migration (keeps your data):
+to the seed data:
 
 ```bash
 python app/scripts/init_db.py --force             # reset to app/db/seed.sql
-cd app && python migrations/add_plan_targets.py   # or: add the planner's two User columns
+```
+
+or keep your data and run the migrations, in this order:
+
+```bash
+cd app
+python migrations/add_admin_column.py
+python migrations/add_plan_targets.py
+python migrations/add_plan_edit_table.py
+cd ..
 ```
 
 ---
@@ -85,6 +94,25 @@ Set a **daily calorie target** and **weekly budget** on *Profile → Edit Profil
 and never picks an item with one of your allergens; if no week fits, it says why. To use the
 v1 LLM planner instead, start the server with `PLANNER=llm` (it needs `OPENAI_API_KEY` or a
 local model).
+
+### Changing your week in plain English
+
+Once a week is planned, type a change into **Change your week** on the calendar, such as
+"make Thursday vegetarian under $10", "keep each day under $40", "pizza on Friday night" or
+"cheaper lunches if possible", and press **Preview**. You
+see exactly which meals would change and what the week would cost; nothing is saved until you
+press **Accept**. Allergies and the budget can't be loosened this way; change them on your
+profile.
+
+The edit box uses the app's LLM (`OPENAI_API_KEY`, or the local model, which loads on the
+first edit and can take a while). To run it without any model, start the server with
+`EDIT_PARSER=regex`.
+
+The default local model is small and parses many requests wrongly (never unsafely). For
+better edits without an API key, set a larger local model for the edit box, for example
+`EDIT_LLM_MODEL=ibm-granite/granite-4.0-micro` (3B, about 6.5 GB of GPU memory in half
+precision; `ibm-granite/granite-4.0-1b` needs about half that). It is downloaded on first
+use.
 
 > [!NOTE]
 > If you have downloaded the repo locally and you're running into issues with

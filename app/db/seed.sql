@@ -1338,6 +1338,16 @@ CREATE INDEX idx_ticket_status
 CREATE INDEX idx_ticket_created_at 
         ON Ticket(created_at DESC)
     ;
+CREATE TABLE IF NOT EXISTS "PlanEdit" (
+    edit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usr_id INTEGER NOT NULL,
+    request TEXT NOT NULL,
+    status TEXT NOT NULL,
+    detail TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usr_id) REFERENCES User(usr_id)
+);
+CREATE INDEX idx_plan_edit_usr_id ON PlanEdit(usr_id, edit_id DESC);
 -- Users' fee settings for planning (M4): batching and pickup opt-ins. No row = batching off.
 CREATE TABLE IF NOT EXISTS "UserFeePrefs" (
     usr_id             INTEGER PRIMARY KEY REFERENCES "User"(usr_id),

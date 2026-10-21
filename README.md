@@ -97,6 +97,36 @@ and one weekday. Reproduce with `python -m eval.m4 --seed 510` (about 10 minutes
 stopped). The M0 table above was measured before M4 gave restaurants their own fees; rerun
 `python -m eval.run --seed 510` to refresh it.
 
+## 💬 Plan Edits (M3)
+
+Since M3, users can change their week in plain English on the calendar ("make Thursday vegetarian
+under $10", "keep each day under $40", "pizza on Friday night", "cheaper lunches if possible"). The
+LLM only turns the sentence into a small edit language (filters, inclusions, daily limits,
+preferences and calorie shifts over tags, dishes, restaurants, allergens, prices and calories); the
+solver re-plans just the affected meals and still enforces every rule, and nothing is saved until
+the user accepts a diff ([how it works](app/docs/llm-proposes-solver-decides.md),
+[teach it a new request](app/docs/teach-the-parser.md)). Evaluation on 82 labelled requests
+([full results](eval/results/m3.md)):
+
+<!-- m3-results:start -->
+60 normal, 10 ambiguous and 12 adversarial requests; LLM answers recorded from `ibm-granite/granite-4.0-micro`.
+
+| Metric | Target | Regex baseline | Guard + regex (no model) | M3 (guard + LLM) |
+|---|---|---|---|---|
+| Edits parsed exactly right (normal requests) | ≥ 85% | 76.7% FAIL | 76.7% FAIL | 86.7% PASS |
+| Adversarial requests refused | ≥ 90% | 0.0% FAIL | 83.3% FAIL | 91.7% PASS |
+| Ambiguous requests get a clarifying question | ≥ 70% | 0.0% FAIL | 0.0% FAIL | 60.0% FAIL |
+| Rules broken after an edit | ≤ 0 | 0 PASS | 0 PASS | 0 PASS |
+| Meals outside the edit that changed | 0 | 0 | 0 | 0 |
+| Edits missed in a plan called a match | 0 | 0 | 0 | 0 |
+
+Re-plan time for the 25 one-day edits, excluding the LLM call: p95 **0.52 s** with the rest of the week pinned (target ≤ 2 s), against 4.01 s re-solving the whole week.
+<!-- m3-results:end -->
+
+Reproduce with `python -m eval.edits` (no API key: model answers are replayed from a recording).
+`python -m eval.edits --live --readme` re-records them with the app's LLM and refreshes this table.
+`EDIT_PARSER=regex` runs the app's edit box without a model.
+
 ---
 
 ## 🧩 What We Started From
@@ -138,7 +168,8 @@ Features inherited from Weeklies (Fall 2025):
 ├── app/
 │   ├── Flask_app.py          # all routes and helpers
 │   ├── sqlQueries.py         # DB access helpers
-│   ├── planner/              # CP-SAT weekly planner; rules/ holds one plug-in per rule
+│   ├── planner/              # CP-SAT weekly planner; rules/ holds one plug-in per rule;
+│   │                         # edits/ turns plain-English edits into rules; prompts/ is versioned
 │   ├── menu_generation.py    # v1 LLM meal-plan generation (PLANNER=llm)
 │   ├── llm_toolkit.py        # LLM provider wrapper
 │   ├── pdf_receipt.py        # receipt PDFs
