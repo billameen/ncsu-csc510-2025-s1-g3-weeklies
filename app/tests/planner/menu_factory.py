@@ -31,11 +31,12 @@ def restaurant(rtr_id=1, hours=None, status_open=True, name=None):
     )
 
 
-def menu(items, restaurants=None):
+def menu(items, restaurants=None, fees=None):
     restaurants = restaurants or [restaurant(r) for r in sorted({i.rtr_id for i in items})]
     return Menu(
         items={i.itm_id: i for i in sorted(items, key=lambda i: i.itm_id)},
         restaurants={r.rtr_id: r for r in restaurants},
+        **({"fees": fees} if fees is not None else {}),
     )
 
 

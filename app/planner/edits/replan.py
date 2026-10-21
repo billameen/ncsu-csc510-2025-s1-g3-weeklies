@@ -123,12 +123,24 @@ def preview_edits(
         for rule in edit_rules
         if hasattr(rule, "unmet") and (message := rule.unmet(plan)) is not None
     )
-    before_items = [menu.items[i] for i in current.values() if i in menu.items]
+    before = {
+        s: menu.items[current[(s.day, s.meal)]]
+        for s in slots
+        if current.get((s.day, s.meal)) in menu.items
+    }
+    fee_rule = next((r for r in base if r.name == "fee_cost"), None)
+    before_food = sum(i.price_cents + menu.fees.tax_cents(i.price_cents) for i in before.values())
+    # Price the current week as the solver prices the new one (each restaurant's fees, and
+    # batching or pickup if the user turned them on), so the difference is the edit's alone.
+    before_fees = (
+        fee_rule.plan_fees_cents(menu.fees, before) if fee_rule is not None
+        else sum(menu.fees.order_fee_cents(i.rtr_id) for i in before.values())
+    )
     return EditPreview(
         status,
         changes=changes,
         entries=tuple(result.menu_entries()),
-        cost_before_cents=sum(i.cost_cents for i in before_items),
+        cost_before_cents=before_food + before_fees,
         cost_after_cents=result.total_cost_cents,
         kcal_before=_kcal(current, menu),
         kcal_after=result.kcal_by_day(),
@@ -162,7 +174,8 @@ def check_proposal(
     """
     pins = {}
     for entry in entries:
-        day_str, itm_id, meal = entry.strip("[]").split(",")
+        # A fourth field, if any, is M4's order tag (batched or pickup); it is not a meal.
+        day_str, itm_id, meal = entry.strip("[]").split(",")[:3]
         pins[(date.fromisoformat(day_str), int(meal))] = int(itm_id)
     if set(pins) != {(s.day, s.meal) for s in request.slots()}:
         return "The proposal does not cover every meal of the plan."

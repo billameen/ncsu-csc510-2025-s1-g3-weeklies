@@ -104,7 +104,8 @@ def cheapest_day(slots, ctx, low: int, high: int):
         options = {}  # calories -> cheapest candidate with that many
         for item in ctx.candidates(slot):
             best = options.get(item.calories)
-            if best is None or (item.cost_cents, item.itm_id) < (best.cost_cents, best.itm_id):
+            cost = ctx.meal_cost_cents(item)
+            if best is None or (cost, item.itm_id) < (ctx.meal_cost_cents(best), best.itm_id):
                 options[item.calories] = item
         extended = {}
         for total, (cost, items) in reachable.items():
@@ -112,7 +113,7 @@ def cheapest_day(slots, ctx, low: int, high: int):
                 new_total = total + calories
                 if new_total > high:
                     continue  # calories only add up, so this cannot come back into the band
-                candidate = (cost + item.cost_cents, items + (item,))
+                candidate = (cost + ctx.meal_cost_cents(item), items + (item,))
                 if new_total not in extended or _key(candidate) < _key(extended[new_total]):
                     extended[new_total] = candidate
         reachable = extended

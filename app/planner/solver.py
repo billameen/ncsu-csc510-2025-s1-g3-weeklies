@@ -12,7 +12,7 @@ such as the budget, which picking one meal at a time cannot guarantee.
 
     result = plan_week(request, load_menu(db_file))
     if result.ok:
-        ...  # result.meals, result.total_cost_cents, result.kcal_by_day()
+        ...  # result.meals, result.orders, result.total_cost_cents, result.kcal_by_day()
     else:
         ...  # result.explanation says why no week could be planned
 
@@ -70,10 +70,15 @@ class Status(StrEnum):
 
 @dataclass(frozen=True)
 class PlannedMeal:
-    """One meal of the plan."""
+    """
+    One meal of the plan. food_cost_cents (price + tax) and separate_fee_cents (the fees it
+    would pay as its own delivery order) are filled in by plan_week from the menu's fees.
+    """
 
     slot: Slot
     item: MenuItem
+    food_cost_cents: int | None = None
+    separate_fee_cents: int | None = None
 
     @property
     def day(self) -> date:
@@ -92,8 +97,52 @@ class PlannedMeal:
 
     @property
     def cost_cents(self) -> int:
-        """Price with tax and fees."""
-        return self.item.cost_cents
+        """Price with tax and the fees of ordering it on its own for delivery."""
+        if self.food_cost_cents is None or self.separate_fee_cents is None:
+            return self.item.cost_cents
+        return self.food_cost_cents + self.separate_fee_cents
+
+
+@dataclass(frozen=True)
+class PlannedOrder:
+    """
+    One order of the plan: one or more meals from one restaurant on one day, delivered
+    together (or picked up). Meals in one order are at most the fee rule's window apart.
+    Attributes:
+        rtr_id: The restaurant.
+        day: The day.
+        meals: The meals in it, in slot order.
+        pickup: True if it is picked up (no delivery fee).
+        fee_cents: The fees it pays: one service fee, plus one delivery fee unless pickup.
+        separate_fee_cents: What its meals would pay in fees as separate delivery orders.
+    """
+
+    rtr_id: int
+    day: date
+    meals: tuple[PlannedMeal, ...]
+    pickup: bool
+    fee_cents: int
+    separate_fee_cents: int
+
+    @property
+    def batched(self) -> bool:
+        """True if more than one meal shares this order."""
+        return len(self.meals) > 1
+
+    @property
+    def food_cost_cents(self) -> int:
+        """Prices plus tax of its meals."""
+        return sum(m.food_cost_cents or 0 for m in self.meals)
+
+    @property
+    def total_cost_cents(self) -> int:
+        """Food, tax and fees."""
+        return self.food_cost_cents + self.fee_cents
+
+    @property
+    def savings_cents(self) -> int:
+        """Fees saved against ordering each of its meals separately for delivery."""
+        return self.separate_fee_cents - self.fee_cents
 
 
 @dataclass(frozen=True)
@@ -105,12 +154,15 @@ class PlanResult:
         meals: The planned meals in slot order; empty unless status is OPTIMAL or FEASIBLE.
         reasons: Why there is no plan (one sentence per cause); empty when there is one.
         seconds: Wall-clock time taken, including building the model.
+        orders: The meals grouped into orders, in slot order of their first meal. Each meal
+            is in exactly one order; without batching every order holds one meal.
     """
 
     status: Status
     meals: tuple[PlannedMeal, ...] = ()
     reasons: tuple[str, ...] = ()
     seconds: float = 0.0
+    orders: tuple[PlannedOrder, ...] = ()
 
     @property
     def ok(self) -> bool:
@@ -130,7 +182,26 @@ class PlanResult:
     @property
     def total_cost_cents(self) -> int:
         """What the whole plan costs, tax and fees included."""
+        if self.orders:
+            return sum(o.total_cost_cents for o in self.orders)
         return sum(m.cost_cents for m in self.meals)
+
+    @property
+    def fees_cents(self) -> int:
+        """The fees the plan pays (delivery + service, per order)."""
+        if self.orders:
+            return sum(o.fee_cents for o in self.orders)
+        return sum(m.separate_fee_cents or 0 for m in self.meals)
+
+    @property
+    def separate_fees_cents(self) -> int:
+        """The fees if every meal were its own delivery order (the M1 way)."""
+        return sum(m.separate_fee_cents or 0 for m in self.meals)
+
+    @property
+    def fee_savings_cents(self) -> int:
+        """Fees saved by batching and pickup, against ordering every meal separately."""
+        return self.separate_fees_cents - self.fees_cents
 
     def kcal_by_day(self) -> dict[date, int]:
         """Calories planned per day, days in order."""
@@ -140,8 +211,22 @@ class PlanResult:
         return totals
 
     def menu_entries(self) -> list[str]:
-        """The plan in User.generated_menu's format: "[YYYY-MM-DD,itm_id,meal]" per meal."""
-        return [f"[{m.day.isoformat()},{m.itm_id},{m.meal}]" for m in self.meals]
+        """
+        The plan in User.generated_menu's format: "[YYYY-MM-DD,itm_id,meal]" per meal. Meals in
+        a batched or picked-up order get a fourth field naming the order, "o<n>" (delivered)
+        or "p<n>" (picked up): meals with the same tag on the same day are one order.
+        """
+        tags = {}
+        for n, order in enumerate(self.orders, start=1):
+            if order.batched or order.pickup:
+                for m in order.meals:
+                    tags[m.slot.index] = f"{'p' if order.pickup else 'o'}{n}"
+        return [
+            f"[{m.day.isoformat()},{m.itm_id},{m.meal}"
+            + (f",{tags[m.slot.index]}" if m.slot.index in tags else "")
+            + "]"
+            for m in self.meals
+        ]
 
 
 def plan_week(
@@ -184,12 +269,14 @@ def plan_week(
     if status == cp_model.MODEL_INVALID:
         raise PlannerError(f"The rules built an invalid model: {ctx.model.Validate()}")
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        fees = menu.fees
         meals = tuple(
-            PlannedMeal(slot, item)
+            PlannedMeal(slot, item, ctx.food_cost_cents(item), fees.order_fee_cents(item.rtr_id))
             for slot in ctx.slots
             for item, var in ctx.picks(slot)
             if solver.BooleanValue(var)
         )
+        orders = _orders(ctx, meals, solver.BooleanValue)
         # CP-SAT reports OPTIMAL once it stops for a gap limit too; only claim a proof.
         proven = (
             status == cp_model.OPTIMAL and solver.ObjectiveValue() == solver.BestObjectiveBound()
@@ -198,6 +285,7 @@ def plan_week(
             Status.OPTIMAL if proven else Status.FEASIBLE,
             meals=meals,
             seconds=time.monotonic() - started,
+            orders=orders,
         )
     if status == cp_model.INFEASIBLE:
         # Explanations may re-solve parts of the model; give them a moment even if the
@@ -219,6 +307,38 @@ def plan_week(
         ),
         seconds=seconds,
     )
+
+
+def _orders(ctx: PlanContext, meals: tuple[PlannedMeal, ...], value) -> tuple[PlannedOrder, ...]:
+    """
+    Group the solved meals into orders: the batches the fee rule's variables chose, and every
+    other meal on its own. Pickup and fees follow the fee rule (none: every order delivered).
+    """
+    fees = ctx.menu.fees
+    rule = ctx.fee_rule
+    by_slot = {m.slot.index: m for m in meals}
+
+    def order(group: tuple[PlannedMeal, ...], rtr_id: int, day: date) -> PlannedOrder:
+        pickup = bool(rule is not None and rule.pickup(rtr_id, day))
+        return PlannedOrder(
+            rtr_id=rtr_id,
+            day=day,
+            meals=group,
+            pickup=pickup,
+            fee_cents=fees.order_fee_cents(rtr_id, pickup=pickup),
+            separate_fee_cents=sum(m.separate_fee_cents or 0 for m in group),
+        )
+
+    orders, batched = [], set()
+    for var, rtr_id, day, slots in ctx.fee_batches:
+        if value(var):
+            group = tuple(by_slot[s.index] for s in sorted(slots, key=lambda s: s.index))
+            if any(m.item.rtr_id != rtr_id for m in group):
+                raise PlannerError(f"batch for restaurant {rtr_id} holds a meal from elsewhere")
+            orders.append(order(group, rtr_id, day))
+            batched.update(s.index for s in slots)
+    orders.extend(order((m,), m.item.rtr_id, m.day) for m in meals if m.slot.index not in batched)
+    return tuple(sorted(orders, key=lambda o: o.meals[0].slot.index))
 
 
 @dataclass(frozen=True)

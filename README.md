@@ -61,6 +61,42 @@ seed 510 ([full results](eval/results/m0.md), [method](app/docs/evaluation.md)):
 Reproduce with `python -m eval.run --seed 510` (about 3 minutes, no API key). `PLANNER=llm` switches
 `/generate_plan` back to v1.
 
+### M4: fee-aware batching
+
+Every meal used to be its own delivery order, so a 21-meal week paid **$115.08** in fees
+($3.99 delivery + $1.49 service, 21 times) before any food. M4 counts fees per *order*
+([`planner/rules/fee_cost.py`](app/planner/rules/fee_cost.py)):
+
+- **Batching** (opt-in): meals from the same restaurant on the same day, at most 6 hours apart
+  (breakfast + lunch, or lunch + dinner), share one delivery. That 21-meal week drops to 14
+  orders: **$115.08 → $76.72**.
+- **Pickup** (opt-in per restaurant *and* day): no delivery fee.
+- Fees count toward the weekly budget, so batching can make a budget M1 called impossible fit.
+
+> **The fees are a synthetic model**, not real prices: the seed data gives each restaurant a
+> made-up delivery fee from $1.99 to $5.99 ([`planner/fees.py`](app/planner/fees.py)).
+
+M0's 100 users, seed 510, against M1 with batching off ([full results](eval/results/m4.md)):
+
+| Target | Goal | M4 batching | M4 batching + pickup¹ |
+|---|---|---|---|
+| Median weekly fee savings vs M1 | ≥ 25% | **26.8%** ✅ | **32.5%** ✅ |
+| Valid-week rate | no drop vs M1 (67%) | **74%** ✅ | **74%** ✅ |
+| Variety (median distinct items) | drop ≤ 2 vs M1 (20) | **19** (−1) ✅ | **19** (−1) ✅ |
+| Food-safety window violations | 0 | **0** ✅ | **0** ✅ |
+| Budgets only possible with batching | report | **7 users** | **7 users** |
+
+Median fees fall from $98.58 to $71.96 a week (21 → 15 orders); the median user pays $106.08 →
+$77.70. No user loses a valid week, and the validator, which recomputes every order's fees on
+its own, agrees with the planner on all of them.
+
+![Per-user weekly fee savings](eval/results/m4_savings.png)
+
+¹ Pickup opt-ins are synthetic: half the users opt into pickup at 5 restaurants on the weekend
+and one weekday. Reproduce with `python -m eval.m4 --seed 510` (about 10 minutes; resumes if
+stopped). The M0 table above was measured before M4 gave restaurants their own fees; rerun
+`python -m eval.run --seed 510` to refresh it.
+
 ## 💬 Plan Edits (M3)
 
 Since M3, users can change their week in plain English on the calendar ("make Thursday vegetarian

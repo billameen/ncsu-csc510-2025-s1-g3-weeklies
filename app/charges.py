@@ -12,36 +12,39 @@ orders keep displaying correctly.
 Tax is ``TAX_RATE`` of the subtotal, rounded half up to the cent, the same
 result the old float code gave (e.g. 7.25% of $10.00 = 72.5 cents -> 73 cents).
 
-The rates themselves live in ``pricing.py`` (shared with the meal planner) and
-are converted exactly to ``Decimal`` / integer cents here, once, at import.
+The tax rate and fees come from the fee model in ``planner/fees.py`` (M4), shared
+with the meal planner: each restaurant can have its own delivery and service fee, and
+restaurants without their own use the defaults below (the pre-M4 charges).
 """
-from decimal import Decimal, ROUND_HALF_UP
-
-import pricing
 from money import MoneyError, parse_cents
+from planner.fees import DEFAULT_FEES, FeeSchedule
 
-TAX_RATE = Decimal(str(pricing.TAX_RATE))
-DELIVERY_FEE_CENTS = parse_cents(pricing.DELIVERY_FEE)
-SERVICE_FEE_CENTS = parse_cents(pricing.SERVICE_FEE)
+TAX_RATE = DEFAULT_FEES.tax_rate
+DELIVERY_FEE_CENTS = DEFAULT_FEES.delivery_fee_cents
+SERVICE_FEE_CENTS = DEFAULT_FEES.service_fee_cents
 
 #: The charges every order has, in display order. ``total`` is the sum of the others.
 CHARGE_PARTS = ("subtotal", "tax", "delivery_fee", "service_fee", "tip")
 CHARGE_KEYS = CHARGE_PARTS + ("total",)
 
 
-def tax_cents(subtotal_cents: int) -> int:
+def tax_cents(subtotal_cents: int, schedule: FeeSchedule = DEFAULT_FEES) -> int:
     """Sales tax on a subtotal, rounded half up to the cent."""
     _require_cents(subtotal_cents, "subtotal")
-    return int((Decimal(subtotal_cents) * TAX_RATE).quantize(Decimal(1), rounding=ROUND_HALF_UP))
+    return schedule.tax_cents(subtotal_cents)
 
 
-def compute_charges(lines, delivery_type: str, tip_cents: int = 0) -> dict:
+def compute_charges(lines, delivery_type: str, tip_cents: int = 0, *,
+                    schedule: FeeSchedule = DEFAULT_FEES, rtr_id: int | None = None) -> dict:
     """Work out an order's charges in cents.
 
     Args:
         lines: iterable of ``(unit_price_cents, qty)`` for each item line.
         delivery_type: ``"delivery"`` (adds the delivery fee) or ``"pickup"``.
         tip_cents: tip in cents, must be >= 0.
+        schedule: the fee model (tax rate and per-restaurant fees); defaults to the
+            pre-M4 fees.
+        rtr_id: the restaurant the order is from, to look up its fees.
     Returns:
         dict with ``subtotal``, ``tax``, ``delivery_fee``, ``service_fee``,
         ``tip`` and ``total``, all ``int`` cents.
@@ -55,11 +58,12 @@ def compute_charges(lines, delivery_type: str, tip_cents: int = 0) -> dict:
             raise ValueError(f"quantity must be a positive int, got {qty!r}")
         subtotal += unit * qty
     _require_cents(tip_cents, "tip")
+    fees = schedule.for_restaurant(rtr_id)
     charges = {
         "subtotal": subtotal,
-        "tax": tax_cents(subtotal),
-        "delivery_fee": DELIVERY_FEE_CENTS if delivery_type == "delivery" else 0,
-        "service_fee": SERVICE_FEE_CENTS,
+        "tax": tax_cents(subtotal, schedule),
+        "delivery_fee": fees.delivery_fee_cents if delivery_type == "delivery" else 0,
+        "service_fee": fees.service_fee_cents,
         "tip": tip_cents,
     }
     charges["total"] = sum(charges[k] for k in CHARGE_PARTS)

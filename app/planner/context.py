@@ -3,6 +3,11 @@
 
 For every meal slot and menu item there is a 0/1 variable "pick this item for this slot".
 Rules read and constrain those variables; they never build their own.
+
+Cost: every meal costs its item price plus tax (``food_cost_cents``) plus fees. Fees are
+charged per order (see planner.fees). Unless a fee rule says otherwise each meal is its own
+delivery order; the fee_cost rule (planner.rules.fee_cost) replaces that, over the whole plan,
+with the fees of fewer orders (batching) and pickup.
 """
 
 import time
@@ -56,6 +61,9 @@ class PlanContext:
         # Slots pin_meals had to leave free because their pinned item is no longer allowed.
         self.unpinned: list[Slot] = []
         self._penalties: list[tuple[Constraint, cp_model.LinearExpr]] = []
+        self._fee_rule: Constraint | None = None
+        self._fees: cp_model.LinearExpr | None = None
+        self._fee_batches: tuple = ()
 
     # --- reading the model ---------------------------------------------------------------
 
@@ -90,10 +98,34 @@ class PlanContext:
         """Total calories picked over slots."""
         return sum(item.calories * var for slot in slots for item, var in self.picks(slot))
 
+    def food_cost_cents(self, item: MenuItem) -> int:
+        """The item's price plus tax, no fees."""
+        return item.price_cents + self.menu.fees.tax_cents(item.price_cents)
+
+    def meal_cost_cents(self, item: MenuItem) -> int:
+        """The item ordered on its own for delivery: price, tax, and its restaurant's fees."""
+        return self.food_cost_cents(item) + self.menu.fees.order_fee_cents(item.rtr_id)
+
     def cost_cents(self, slots: Iterable[Slot] | None = None) -> cp_model.LinearExpr:
-        """Total cost picked over slots (default: all), tax and fees included."""
+        """
+        Total cost picked over slots (default: all), tax and fees included.
+
+        Over the whole plan this uses the fee rule's fees if one has set them (fewer orders
+        through batching, pickup). Over a subset of slots, or with no fee rule, each meal is
+        priced as its own delivery order, which is never less than what it really costs.
+        """
+        if slots is None and self._fees is not None:
+            food = sum(
+                self.food_cost_cents(item) * var for slot in self.slots for item, var in self.picks(slot)
+            )
+            return food + self._fees
         slots = self.slots if slots is None else slots
-        return sum(item.cost_cents * var for slot in slots for item, var in self.picks(slot))
+        return sum(self.meal_cost_cents(item) * var for slot in slots for item, var in self.picks(slot))
+
+    @property
+    def fee_rule(self) -> Constraint | None:
+        """The rule that set the plan's fees with `set_fees`, if any."""
+        return self._fee_rule
 
     # --- changing the model --------------------------------------------------------------
 
@@ -103,6 +135,28 @@ class PlanContext:
         if key not in self._blocked:
             self._blocked[key] = rule
             self.model.Add(self._pick[key] == 0)
+
+    def set_fees(self, rule: Constraint, expr: cp_model.LinearExpr, batches=()) -> None:
+        """
+        Make expr the fees of the whole plan, replacing "every meal is its own delivery
+        order". Only one rule may do this, and it must run before any rule that reads
+        ``cost_cents()`` (the budget, prefer_low_cost).
+        Args:
+            rule: The rule setting the fees; it must provide ``pickup(rtr_id, day)``.
+            expr: The plan's total fees in cents.
+            batches: (variable, rtr_id, day, slots) for every possible batch: if the
+                variable is 1, those slots are one order from rtr_id.
+        """
+        if self._fee_rule is not None:
+            raise ValueError(f"{rule.name}: the fees were already set by {self._fee_rule.name}")
+        self._fee_rule = rule
+        self._fees = expr
+        self._fee_batches = tuple(batches)
+
+    @property
+    def fee_batches(self) -> tuple:
+        """The possible batches given to `set_fees` (empty if none or no fee rule)."""
+        return self._fee_batches
 
     def add_penalty(self, rule: Constraint, expr: cp_model.LinearExpr) -> None:
         """Add rule.weight * expr to the cost the solver minimizes. Soft rules only."""

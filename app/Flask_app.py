@@ -29,7 +29,9 @@ from planner.targets import (
     parse_daily_calorie_target,
     parse_weekly_budget,
 )
-from planner.menu import load_menu, meal_cost_cents
+from planner.menu import WEEKDAYS, load_menu
+from planner.fees import DEFAULT_FEES, load_fee_schedule
+from fee_prefs import FeePrefs, load_fee_prefs, save_fee_prefs
 from planner.request import InvalidPlanRequest, PlanRequest
 from planner.solver import plan_week
 from planner.edits.llm_parser import LLMEditParser
@@ -359,21 +361,28 @@ def parse_generated_menu(gen_str):
     """
     Parse a serialized generated-menu string into a date-indexed structure.
     Args:
-        gen_str (str): A string like "[YYYY-MM-DD,ID,(meal)]..." where meal is 1|2|3 (optional).
+        gen_str (str): A string like "[YYYY-MM-DD,ID,(meal),(order)]..." where meal is 1|2|3
+            (optional) and order (M4, optional) tags meals planned as one order: "o<n>" for a
+            batched delivery, "p<n>" for a pickup.
     Returns:
-        dict: Mapping 'YYYY-MM-DD' -> [{'itm_id': int, 'meal': int}, ...].
+        dict: Mapping 'YYYY-MM-DD' -> [{'itm_id': int, 'meal': int}, ...]. Tagged meals also
+        carry 'order': the tag.
     """
     if not gen_str:
         return {}
 
-    # date, id, optional meal (1,2,3)
-    pairs = re.findall(r'\[\s*(\d{4}-\d{2}-\d{2})\s*,\s*([0-9]+)\s*(?:,\s*([123])\s*)?\]', gen_str)
+    # date, id, optional meal (1,2,3), optional order tag (M4)
+    pairs = re.findall(
+        r'\[\s*(\d{4}-\d{2}-\d{2})\s*,\s*([0-9]+)\s*(?:,\s*([123])\s*(?:,\s*([op][0-9]+)\s*)?)?\]', gen_str)
     out = {}
-    for d, mid, meal in pairs:
+    for d, mid, meal, tag in pairs:
         try:
             itm_id = int(mid)
             meal_i = int(meal) if meal else 3  # default to Dinner for legacy entries
-            out.setdefault(d, []).append({'itm_id': itm_id, 'meal': meal_i})
+            entry = {'itm_id': itm_id, 'meal': meal_i}
+            if tag:
+                entry['order'] = tag
+            out.setdefault(d, []).append(entry)
         except ValueError:
             continue
     return out
@@ -489,7 +498,7 @@ def fetch_menu_items_by_ids(ids):
     return out
 
 
-def build_calendar_cells(gen_map, year, month, items_by_id, today=None):
+def build_calendar_cells(gen_map, year, month, items_by_id, today=None, fees=DEFAULT_FEES):
     """
     Build month-view calendar cells enriched with menu items per day.
     Args:
@@ -498,10 +507,14 @@ def build_calendar_cells(gen_map, year, month, items_by_id, today=None):
         month (int): The calendar month (1–12).
         items_by_id (dict): Mapping itm_id -> item detail dict from DB.
         today (date | None): The current date (defaults to date.today()); days before it are past.
+        fees (FeeSchedule): Tax and each restaurant's fees (M4).
     Returns:
         list: A flat list of calendar cell dicts with day number and a 'meals' list. Days of
-            the month also carry 'is_past', 'kcal' (calories planned that day) and 'cost_cents'
-            (what the day's meals cost delivered, tax and fees included, as the planner counts it).
+            the month also carry 'is_past', 'kcal' (calories planned that day), 'cost_cents'
+            (what the day's meals cost, tax and fees included, as the planner counts it),
+            'orders' (the meals grouped into orders: meals the planner batched share one,
+            each order with its fees), 'fees_cents' and 'fee_savings_cents' (against
+            ordering every meal separately for delivery).
     """
     today = today or date.today()
     def meal_sort_key(e):
@@ -530,7 +543,10 @@ def build_calendar_cells(gen_map, year, month, items_by_id, today=None):
                     "meal": e.get('meal', 3),
                     "item": itm,
                     "color": palette.get(itm['itm_id'], "#7aa2f7"),
+                    "order_tag": e.get('order'),
                 })
+            orders = calendar_day_orders(meals, fees)
+            food = sum(o["food_cents"] for o in orders)
 
             cells.append({
                 "day": d,
@@ -538,10 +554,60 @@ def build_calendar_cells(gen_map, year, month, items_by_id, today=None):
                 "is_past": date(year, month, d) < today,
                 "meals": meals,
                 "kcal": sum(m["item"].get("calories") or 0 for m in meals),
-                "cost_cents": sum(meal_cost_cents(int(m["item"].get("price") or 0)) for m in meals),
+                "cost_cents": food + sum(o["fee_cents"] for o in orders),
+                "orders": orders,
+                "fees_cents": sum(o["fee_cents"] for o in orders),
+                "fee_savings_cents": sum(o["separate_fee_cents"] - o["fee_cents"] for o in orders),
             })
 
     return cells
+
+
+def calendar_day_orders(meals, fees=DEFAULT_FEES):
+    """
+    Group one day's calendar meals into orders (M4). Meals sharing an order tag from the
+    planner, all from one restaurant, are one order; every other meal is its own order. A
+    "p" tag means pickup (no delivery fee).
+    Args:
+        meals (list): The day's meal dicts from build_calendar_cells ('meal', 'item', 'order_tag').
+        fees (FeeSchedule): Tax and each restaurant's fees.
+    Returns:
+        list[dict]: Orders in meal order, each with 'meals', 'rtr_id', 'restaurant_name',
+        'pickup', 'batched', 'food_cents' (prices + tax), 'fee_cents', 'separate_fee_cents'
+        (fees if each meal were its own delivery order) and 'subtotal_cents'.
+    """
+    groups = {}
+    for m in meals:
+        tag = m.get("order_tag")
+        key = ("tag", tag) if tag else ("meal", id(m))
+        groups.setdefault(key, []).append(m)
+    orders = []
+    for (kind, tag), group in groups.items():
+        rtr_ids = {int(m["item"].get("rtr_id") or 0) for m in group}
+        if len(rtr_ids) > 1:  # a tag across restaurants is not a valid order: price separately
+            orders.extend(calendar_day_orders([{**m, "order_tag": None} for m in group], fees))
+            continue
+        rtr_id = rtr_ids.pop()
+        pickup = kind == "tag" and str(tag).startswith("p")
+        prices = [int(m["item"].get("price") or 0) for m in group]
+        for m in group:  # for the calendar badges and per-meal order buttons
+            m["batched"] = len(group) > 1
+            m["pickup"] = pickup
+        orders.append({
+            "meals": group,
+            "rtr_id": rtr_id,
+            "restaurant_name": group[0]["item"].get("restaurant_name") or "",
+            "pickup": pickup,
+            "batched": len(group) > 1,
+            "subtotal_cents": sum(prices),
+            "food_cents": sum(p + fees.tax_cents(p) for p in prices),
+            "fee_cents": fees.order_fee_cents(rtr_id, pickup=pickup),
+            "separate_fee_cents": len(group) * fees.order_fee_cents(rtr_id),
+            "delivery_fee_cents": 0 if pickup else fees.for_restaurant(rtr_id).delivery_fee_cents,
+            "restaurant_delivery_fee_cents": fees.for_restaurant(rtr_id).delivery_fee_cents,
+            "service_fee_cents": fees.for_restaurant(rtr_id).service_fee_cents,
+        })
+    return sorted(orders, key=lambda o: min(m["meal"] for m in o["meals"]))
 
 
 def _is_restaurant_reviewed(conn, usr_id: int, rtr_id: int) -> bool:
@@ -583,6 +649,7 @@ def index(year, month):
     conn = create_connection(db_file)
     try:
         user = fetch_one(conn, 'SELECT * FROM "User" WHERE email = ?', (session.get("Email"),))
+        fee_schedule = load_fee_schedule(conn)
     finally:
         close_connection(conn)
 
@@ -603,8 +670,10 @@ def index(year, month):
     items_by_id = fetch_menu_items_by_ids(all_item_ids)
 
     # Build cells for the month
-    cells = build_calendar_cells(gen_map, year, month, items_by_id, today=today)
+    cells = build_calendar_cells(gen_map, year, month, items_by_id, today=today, fees=fee_schedule)
     month_cost_cents = sum(c.get("cost_cents", 0) for c in cells)
+    month_fees_cents = sum(c.get("fees_cents", 0) for c in cells)
+    month_fee_savings_cents = sum(c.get("fee_savings_cents", 0) for c in cells)
     planned_days = [c for c in cells if c.get("meals")]
     month_avg_kcal = round(sum(c["kcal"] for c in planned_days) / len(planned_days)) if planned_days else 0
 
@@ -638,6 +707,9 @@ def index(year, month):
         has_next=next_m.year <= CALENDAR_MAX_YEAR,
         calendar_cells=cells,
         month_cost_cents=month_cost_cents,
+        month_fees_cents=month_fees_cents,
+        month_fee_savings_cents=month_fee_savings_cents,
+        tax_rate=str(fee_schedule.tax_rate),
         edit_history=edit_history,
         month_avg_kcal=month_avg_kcal,
         today_year=today.year,
@@ -951,6 +1023,70 @@ def profile():
         gift_key=uuid.uuid4().hex,
         wallet_history=wallet_history,
     )
+
+# Delivery & fee settings (M4)
+@app.route('/profile/fees', methods=['GET', 'POST'])
+def fee_settings():
+    """
+    Show and save the user's fee settings for planning: batching (meals from one restaurant
+    at most 6 h apart share a delivery) and pickup (no delivery fee) at chosen restaurants on
+    chosen days. Used by /generate_plan.
+    Returns:
+        Response: The settings page; after a successful save, a redirect back to it.
+    """
+    usr_id = session.get("usr_id")
+    if not usr_id:
+        return redirect(url_for("login"))
+    conn = create_connection(db_file)
+    try:
+        fee_schedule = load_fee_schedule(conn)
+        rows = fetch_all(conn, 'SELECT rtr_id, name, status FROM "Restaurant" ORDER BY name')
+        restaurants = [
+            {"rtr_id": r, "name": n or f"Restaurant {r}",
+             "open": (st or "").strip().lower() == "open",
+             "delivery_fee_cents": fee_schedule.for_restaurant(r).delivery_fee_cents,
+             "service_fee_cents": fee_schedule.for_restaurant(r).service_fee_cents}
+            for r, n, st in rows
+        ]
+        error = None
+        if request.method == "POST":
+            known = {r["rtr_id"] for r in restaurants}
+            try:
+                chosen = [int(x) for x in request.form.getlist("pickup_restaurants")]
+                if not set(chosen) <= known:
+                    raise ValueError("unknown restaurant")
+                prefs = FeePrefs(
+                    batching=request.form.get("batching") == "on",
+                    pickup_restaurants=tuple(chosen),
+                    pickup_days=tuple(request.form.getlist("pickup_days")),
+                )
+            except ValueError:
+                error = "Those settings are not valid. Pick restaurants and days from the lists."
+                prefs = load_fee_prefs(conn, usr_id)
+            else:
+                # Pickup needs both a restaurant and a day; one without the other would never
+                # be used, so say so instead of silently saving a setting that does nothing.
+                if bool(prefs.pickup_restaurants) != bool(prefs.pickup_days):
+                    error = ("Pickup needs at least one day and at least one restaurant. "
+                             "Pick both, or clear both to turn pickup off.")
+                    prefs = load_fee_prefs(conn, usr_id)
+            if error is None:
+                save_fee_prefs(conn, usr_id, prefs)
+                return redirect(url_for("fee_settings", saved=1))
+        else:
+            prefs = load_fee_prefs(conn, usr_id)
+    finally:
+        close_connection(conn)
+    return render_template(
+        "fee_settings.html",
+        prefs=prefs,
+        restaurants=restaurants,
+        weekdays=WEEKDAYS,
+        saved=request.args.get("saved"),
+        error=error,
+        default_order_fee_cents=fee_schedule.order_fee_cents(),
+    ), (400 if error else 200)
+
 
 # Edit Profile route
 @app.route('/profile/edit', methods=['GET', 'POST'])
@@ -1338,6 +1474,15 @@ def order():
             meal = int(payload.get("meal") or 3)
         except Exception:
             meal = 3
+        # M4: a batched order (meals the planner put in one delivery) lists every meal it covers.
+        batch_meals = payload.get("meals")
+        if batch_meals is not None:
+            if (not isinstance(batch_meals, list) or not batch_meals
+                    or any(type(x) is not int or x not in (1, 2, 3) for x in batch_meals)
+                    or len(set(batch_meals)) != len(batch_meals)):
+                return jsonify({"ok": False, "error": "invalid_meals"}), 400
+            batch_meals = sorted(batch_meals)
+            meal = batch_meals[0]
 
         if rtr_id <= 0 or not items_in:
             return jsonify({"ok": False, "error": "invalid_input"}), 400
@@ -1369,6 +1514,7 @@ def order():
                 JOIN "Restaurant" r ON r.rtr_id = m.rtr_id
                 WHERE m.itm_id IN ({qmarks})
             ''', tuple(itm_ids))
+            fee_schedule = load_fee_schedule(conn)   # this restaurant's own fees (M4)
         finally:
             close_connection(conn)
 
@@ -1411,11 +1557,13 @@ def order():
             "placed_at": placed_iso,
             "restaurant_id": int(rtr_id),
             "items": detail_items,
-            "charges_cents": compute_charges(lines, delivery_type, tip_cents),
+            "charges_cents": compute_charges(lines, delivery_type, tip_cents,
+                                             schedule=fee_schedule, rtr_id=rtr_id),
             "delivery_type": delivery_type,
             "eta_minutes": int(eta_minutes),
             "date": iso_date,
-            "meal": meal
+            "meal": meal,
+            **({"meals": batch_meals} if batch_meals else {}),
         }
 
         # Pay from the wallet and save the order in one all-or-nothing ledger
@@ -1760,12 +1908,13 @@ def _generate_plan_solver():
     conn = create_connection(db_file)
     try:
         user = fetch_one(conn, '''
-            SELECT preferences, allergies, generated_menu, daily_calorie_target, weekly_budget_cents
+            SELECT preferences, allergies, generated_menu, daily_calorie_target, weekly_budget_cents, usr_id
             FROM "User" WHERE email = ?
         ''', (session.get("Email"),))
         if not user:
             return jsonify({"ok": False, "error": "User not found"}), 404
-        prefs, allergies, current_menu, kcal_target, budget_cents = user
+        prefs, allergies, current_menu, kcal_target, budget_cents, plan_usr_id = user
+        fee_prefs = load_fee_prefs(conn, plan_usr_id)   # M4: batching and pickup settings
 
         try:
             plan_request = PlanRequest.from_profile(
@@ -1774,6 +1923,7 @@ def _generate_plan_solver():
                 allergies=allergies,
                 preferences=prefs,
                 start=date.today() + timedelta(days=1),
+                options=fee_prefs.plan_options(),
             )
         except InvalidPlanRequest as e:
             return jsonify({"ok": False, "error": str(e), "fix_url": url_for("edit_profile")}), 400
@@ -1803,6 +1953,11 @@ def _generate_plan_solver():
             "planner": "solver",
             "optimal": result.optimal,
             "total_cost_cents": result.total_cost_cents,
+            # M4: "Fees: $X, saved $Y vs ordering separately"
+            "fees_cents": result.fees_cents,
+            "fee_savings_cents": result.fee_savings_cents,
+            "orders": len(result.orders),
+            "batched_orders": sum(o.batched for o in result.orders),
             "kcal_per_day": {d.isoformat(): kcal for d, kcal in result.kcal_by_day().items()},
         })
     finally:
@@ -1888,7 +2043,8 @@ def planned_days(gen_str, days):
     """
     meals_by_day = {}
     for day_str, _, meal in re.findall(
-        r'\[\s*(\d{4}-\d{2}-\d{2})\s*,\s*([0-9]+)\s*(?:,\s*([123])\s*)?\]', gen_str or ""
+        # The optional last field is M4's order tag ("o3" batched, "p3" picked up).
+        r'\[\s*(\d{4}-\d{2}-\d{2})\s*,\s*([0-9]+)\s*(?:,\s*([123])\s*)?(?:,\s*[op][0-9]+\s*)?\]', gen_str or ""
     ):
         meals_by_day.setdefault(day_str, []).append(meal)
     planned = []
@@ -1972,8 +2128,11 @@ def plan_edit():
             body["history"] = _edit_history(conn, usr_id)
             return jsonify(body), code
 
+        # M4: plan the edit with the user's batching and pickup settings, so its fees and
+        # budget match the week Auto-Plan made.
         profile = dict(daily_calorie_target=kcal_target, weekly_budget_cents=budget_cents,
-                       allergies=allergies, preferences=prefs, start=date.today() + timedelta(days=1))
+                       allergies=allergies, preferences=prefs, start=date.today() + timedelta(days=1),
+                       options=load_fee_prefs(conn, usr_id).plan_options())
         try:
             plan_request = PlanRequest.from_profile(**profile)
         except InvalidPlanRequest as e:
@@ -2072,6 +2231,7 @@ def plan_edit_accept(edit_id):
             plan_request = PlanRequest.from_profile(
                 daily_calorie_target=kcal_target, weekly_budget_cents=budget_cents,
                 allergies=allergies, preferences=prefs, start=days[0], days=len(days),
+                options=load_fee_prefs(conn, usr_id).plan_options(),
             )
             menu = load_menu(db_file)
             shifts = [to_rule(CalorieShift.model_validate(e), days, menu) for e in pending.get("shifts", [])]

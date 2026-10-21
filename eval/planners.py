@@ -67,4 +67,5 @@ def menu_from_catalog(catalog: Catalog) -> Menu:
             r.rtr_id: Restaurant(rtr_id=r.rtr_id, name="", status_open=True, hours=r.hours)
             for r in catalog.restaurants.values()
         },
+        fees=catalog.fees,
     )

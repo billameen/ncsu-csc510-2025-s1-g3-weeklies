@@ -7,8 +7,9 @@ Normalizing them is the validator's job, so its tests can prove it handles the r
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from planner.fees import DEFAULT_FEES, FeeSchedule, load_fee_schedule
 from sqlQueries import create_connection, close_connection, fetch_all
 
 RESTAURANTS_QUERY = """
@@ -46,6 +47,8 @@ class Catalog:
     # Keyed by id, in ascending id order, so seeded random choices are reproducible.
     items: dict[int, Item]
     restaurants: dict[int, Restaurant]
+    # Tax rate and each restaurant's fees (M4); the defaults are the pre-M4 fees.
+    fees: FeeSchedule = field(default=DEFAULT_FEES)
 
 
 def load_catalog(db_path: str | os.PathLike) -> Catalog:
@@ -69,6 +72,7 @@ def load_catalog(db_path: str | os.PathLike) -> Catalog:
     try:
         restaurant_rows = fetch_all(conn, RESTAURANTS_QUERY)
         item_rows = fetch_all(conn, ITEMS_QUERY)
+        fees = load_fee_schedule(conn)
     finally:
         close_connection(conn)
 
@@ -93,7 +97,7 @@ def load_catalog(db_path: str | os.PathLike) -> Catalog:
         )
         for itm_id, rtr_id, price, calories, allergens in item_rows
     }
-    return Catalog(items=items, restaurants=restaurants)
+    return Catalog(items=items, restaurants=restaurants, fees=fees)
 
 
 def _split_allergens(raw: str | None) -> tuple[str, ...]:

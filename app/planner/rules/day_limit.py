@@ -43,6 +43,9 @@ class DayLimit(Constraint):
 
     def apply(self, ctx):
         """Bound the total of each covered day."""
+        # Kept for unmet(), so it prices meals with each restaurant's own fees, as the bound
+        # (ctx.cost_cents) does, rather than the default fees.
+        self._fees = ctx.menu.fees
         for slots in self._covered(ctx).values():
             total = self._total(ctx, slots)
             ctx.model.Add(total <= self.value if self.op == "<=" else total >= self.value)
@@ -96,7 +99,12 @@ class DayLimit(Constraint):
         totals: dict = {}
         for slot, item in plan.items():
             if self.days is None or slot.day in self.days:
-                amount = item.cost_cents if self.metric == "cost" else item.calories
+                if self.metric == "calories":
+                    amount = item.calories
+                elif getattr(self, "_fees", None) is not None:
+                    amount = self._fees.meal_cost_cents(item.price_cents, item.rtr_id)
+                else:
+                    amount = item.cost_cents
                 totals[slot.day] = totals.get(slot.day, 0) + amount
         missed = {
             day: total

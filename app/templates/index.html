@@ -155,6 +155,9 @@
             <div class="cal-summary muted" id="calSummary">
               Planned this month: <strong>${{ '{:,.2f}'.format(month_cost_cents / 100) }}</strong> with tax &amp; fees
               · {{ '{:,}'.format(month_avg_kcal) }} kcal/day on average
+              <span class="fee-summary" id="feeSummary">· Fees: <strong>${{ '{:,.2f}'.format(month_fees_cents / 100) }}</strong>,
+                saved <strong>${{ '{:,.2f}'.format(month_fee_savings_cents / 100) }}</strong> vs ordering separately
+                (<a href="{{ url_for('fee_settings') }}">settings</a>)</span>
             </div>
           {% endif %}
         </div>
@@ -184,16 +187,17 @@
               {% if cell.meals %}
                 <div class="day-totals" title="Calories and delivered cost (tax and fees included) for this day">
                   {{ '{:,}'.format(cell.kcal) }} kcal · ${{ '%.2f'|format(cell.cost_cents / 100) }}
+                  {% if cell.fee_savings_cents %}<span class="day-saved" title="Fees saved by batching and pickup">· saves ${{ '%.2f'|format(cell.fee_savings_cents / 100) }}</span>{% endif %}
                 </div>
               {% endif %}
 
               {% if cell.meals and cell.meals|length %}
                 <div class="badge-stack" style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
                   {% for m in cell.meals %}
-                    <div class="badge has-item" title="{{ meal_names.get(m.meal, 'Meal') }}: {{ m.item.name }}">
+                    <div class="badge has-item{% if m.batched %} batched{% endif %}" title="{{ meal_names.get(m.meal, 'Meal') }}: {{ m.item.name }}{% if m.batched %} (delivered together){% endif %}{% if m.pickup %} (pickup){% endif %}">
                       <span class="dot" style="background: {{ m.color }};"></span>
                       <span class="muted" style="opacity:.85; font-weight:700; margin-right:6px;">{{ meal_short.get(m.meal, '?') }}</span>
-                      {{ m.item.name }}
+                      {{ m.item.name }}{% if m.batched %} <span class="batch-mark" aria-label="delivered together">🔗</span>{% endif %}{% if m.pickup %} <span class="batch-mark" aria-label="pickup">🛍️</span>{% endif %}
                     </div>
                   {% endfor %}
                 </div>
@@ -201,6 +205,37 @@
                 <!-- Hover popover content: ALL meals for the day -->
                 <div class="menu-card">
                   <h4 style="font-size: larger; font-weight: bolder;">{{ month_name }} {{ cell.day }}, {{ year }}</h4>
+                  {% if cell.orders %}
+                  <div class="day-fees muted" style="margin-bottom:8px;">
+                    Fees: <strong>${{ '%.2f'|format(cell.fees_cents / 100) }}</strong>{% if cell.fee_savings_cents %}, saved <strong>${{ '%.2f'|format(cell.fee_savings_cents / 100) }}</strong> vs ordering separately{% endif %}
+                  </div>
+                  {% for o in cell.orders if o.batched or o.pickup %}
+                  <div class="batch-order">
+                    <div style="font-weight:700;">
+                      {% if o.batched %}🔗 One {{ 'pickup' if o.pickup else 'delivery' }}{% else %}🛍️ Pickup{% endif %}:
+                      {% for m in o.meals %}{{ meal_names.get(m.meal, 'Meal') }}{% if not loop.last %} + {% endif %}{% endfor %}
+                      from {{ o.restaurant_name }}
+                    </div>
+                    <div class="meta">fees ${{ '%.2f'|format(o.fee_cents / 100) }}{% if o.separate_fee_cents > o.fee_cents %} (saves ${{ '%.2f'|format((o.separate_fee_cents - o.fee_cents) / 100) }}){% endif %}</div>
+                    {% if not cell.is_past %}
+                    <a class="order-btn order-batch-btn" href="#"
+                       aria-label="Order {% for m in o.meals %}{{ meal_names.get(m.meal, 'Meal') }}{% if not loop.last %} and {% endif %}{% endfor %} together"
+                       data-items="{{ o.meals | map(attribute='item') | map(attribute='itm_id') | join(',') }}"
+                       data-meals="{{ o.meals | map(attribute='meal') | join(',') }}"
+                       data-item-name="{{ o.meals | map(attribute='item') | map(attribute='name') | join(' + ') }}"
+                       data-date="{{ '%04d-%02d-%02d'|format(year, month, cell.day) }}"
+                       data-rtr-id="{{ o.rtr_id }}"
+                       data-rtr-name="{{ o.restaurant_name }}"
+                       data-price-cents="{{ o.subtotal_cents }}"
+                       data-delivery-fee-cents="{{ o.delivery_fee_cents }}"
+                       data-service-fee-cents="{{ o.service_fee_cents }}"
+                       data-delivery-type="{{ 'pickup' if o.pickup else 'delivery' }}">
+                      Order {% if o.batched %}together{% else %}for pickup{% endif %}
+                    </a>
+                    {% endif %}
+                  </div>
+                  {% endfor %}
+                  {% endif %}
                   <div class="meal-list" style="display:flex; flex-direction:column; gap:12px;">
                     {% for m in cell.meals %}
                       <div class="meal-line">
@@ -248,6 +283,7 @@
                           data-rtr-name="{{ m.item.restaurant_name }}"
                           data-item-name="{{ m.item.name }}"
                           data-price-cents="{{ m.item.price }}"
+                          {% for o in cell.orders if m in o.meals %}data-delivery-fee-cents="{{ o.restaurant_delivery_fee_cents }}" data-service-fee-cents="{{ o.service_fee_cents }}"{% endfor %}
                           data-delivery-type="delivery"
                         >
                           Order {{ meal_names.get(m.meal, 'Meal') }}
@@ -470,6 +506,11 @@
   }
 
   /* Order button style - enhanced */
+  .batch-order { border: 1px dashed rgba(122,162,247,.55); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; }
+  .batch-order .meta { opacity: .8; font-size: 13px; margin: 2px 0 6px; }
+  .badge.batched { border-left: 3px solid #7aa2f7; }
+  .batch-mark { font-size: 12px; }
+  .day-saved { color: var(--success, #0ca30c); }
   .order-btn {
     display: inline-block;
     padding: 10px 16px;
@@ -658,6 +699,12 @@ document.getElementById('btnGenerate').addEventListener('click', async function(
         const data = await res.json();
         
         if (data.ok) {
+            if (data.fees_cents !== undefined) {
+                // M4: "Fees: $X, saved $Y vs ordering separately"
+                const usd = c => '$' + (c / 100).toFixed(2);
+                alert("Your week is planned. Fees: " + usd(data.fees_cents) + ", saved "
+                      + usd(data.fee_savings_cents || 0) + " vs ordering separately.");
+            }
             window.location.reload(); // Refresh to show the new meals
         } else {
             alert("Couldn't plan your week: " + (data.error || "Could not generate plan"));
@@ -861,19 +908,16 @@ document.getElementById('btnGenerate').addEventListener('click', async function(
   function dollars(n){ return '$' + (Number(n||0).toFixed(2)); }
   function round2(x){ return Math.round((Number(x)||0)*100)/100; }
 
-  // Fallback computeTotals if global computeGroupTotals isn't present
-  function computeTotals(unitPrice, deliveryType){
-    const lines = [{ qty: 1, item: { unit_price: Number(unitPrice)||0 } }];
-    if (typeof window.computeGroupTotals === 'function') {
-      return window.computeGroupTotals(lines, deliveryType || 'delivery', 0);
-    }
-    const subtotal = round2(lines.reduce((a,l)=>a + (Number(l.qty||1)*Number(l.item.unit_price||0)), 0));
-    const tax = round2(subtotal * 0.0725);
-    const delivery_fee = (deliveryType==='pickup') ? 0.00 : 3.99;
-    const service_fee  = 1.49;
-    const tip = 0;
-    const total = round2(subtotal + tax + delivery_fee + service_fee + tip);
-    return { subtotal, tax, delivery_fee, service_fee, tip, total };
+  // Estimate shown before confirming; the server computes the real charges (M4: with the
+  // restaurant's own fees, which the button carries in data-*-fee-cents).
+  const TAX_RATE = Number('{{ tax_rate }}') || 0.0725;
+  function computeTotals(subtotalCents, deliveryType, deliveryFeeCents, serviceFeeCents){
+    const subtotal = (Number(subtotalCents) || 0) / 100;
+    const tax = Math.round((Number(subtotalCents) || 0) * TAX_RATE) / 100;
+    const delivery_fee = (deliveryType === 'pickup') ? 0 : (Number(deliveryFeeCents ?? 399) / 100);
+    const service_fee = Number(serviceFeeCents ?? 149) / 100;
+    const total = round2(subtotal + tax + delivery_fee + service_fee);
+    return { subtotal, tax, delivery_fee, service_fee, tip: 0, total };
   }
 
   function openModal(){ modal.setAttribute('aria-hidden','false'); }
@@ -900,9 +944,15 @@ document.getElementById('btnGenerate').addEventListener('click', async function(
     if (!btn) return;
     e.preventDefault();
 
-    // Gather data from button
-    const itmId = Number(btn.dataset.itmId);
-    const meal  = Number(btn.dataset.meal || 3);
+    // Gather data from button. A batch button (M4) carries several items and meals, which
+    // are placed as ONE order: one delivery, one service fee, one wallet debit.
+    const itmIds = btn.dataset.items
+      ? btn.dataset.items.split(',').map(Number)
+      : [Number(btn.dataset.itmId)];
+    const meals = btn.dataset.meals
+      ? btn.dataset.meals.split(',').map(Number)
+      : [Number(btn.dataset.meal || 3)];
+    const meal  = meals[0];
     const date  = btn.dataset.date;
     const rtrId = Number(btn.dataset.rtrId);
     const rtrName = btn.dataset.rtrName || '';
@@ -910,14 +960,17 @@ document.getElementById('btnGenerate').addEventListener('click', async function(
     const priceCents = Number(btn.dataset.priceCents || 0);
     const deliveryType = (btn.dataset.deliveryType || 'delivery').toLowerCase();
 
-    const unitPrice = round2(priceCents / 100.0);
-    const totals = computeTotals(unitPrice, deliveryType);
+    const totals = computeTotals(priceCents, deliveryType,
+                                 btn.dataset.deliveryFeeCents, btn.dataset.serviceFeeCents);
+    const mealName = m => (m===1 ? 'Breakfast' : m===2 ? 'Lunch' : 'Dinner');
 
     // Fill modal fields
     field('om-rtr').textContent = rtrName;
-    field('om-item').textContent = itemName + ' (x1)';
+    field('om-item').textContent = itmIds.length > 1 ? itemName : itemName + ' (x1)';
     field('om-date').textContent = date;
-    field('om-meal').textContent = (meal===1 ? 'Breakfast' : meal===2 ? 'Lunch' : 'Dinner');
+    field('om-meal').textContent = meals.map(mealName).join(' + ')
+      + (meals.length > 1 ? ' (one ' + (deliveryType === 'pickup' ? 'pickup' : 'delivery') + ')'
+                          : (deliveryType === 'pickup' ? ' (pickup)' : ''));
 
     field('om-subtotal').textContent = dollars(totals.subtotal);
     field('om-tax').textContent = dollars(totals.tax);
@@ -929,12 +982,13 @@ document.getElementById('btnGenerate').addEventListener('click', async function(
     pendingOrder = {
       idempotency_key: newIdempotencyKey(),
       restaurant_id: rtrId,
-      items: [{ itm_id: itmId, qty: 1 }],
+      items: itmIds.map(id => ({ itm_id: id, qty: 1 })),
       delivery_type: deliveryType,
       tip: 0,
       eta_minutes: 40,
       date,
-      meal
+      meal,
+      ...(meals.length > 1 ? { meals } : {})
     };
 
     openModal();

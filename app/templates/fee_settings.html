@@ -1,0 +1,103 @@
+<!-- templates/fee_settings.html (M4: fee-aware planning settings) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Delivery &amp; Fees · Weeklies</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+  <style>
+    .fee-section { margin-top: 18px; }
+    .fee-section h3 { font-size: 16px; margin: 0 0 6px; }
+    .fee-help { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+    .check-row { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; }
+    .check-row input { margin-top: 3px; }
+    .day-grid { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+    .rtr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 16px; }
+    .rtr-fee { color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="{{ url_for('index') }}"><span class="logo"></span> Weeklies</a>
+    <nav>
+      <a href="{{ url_for('index') }}">Home</a>
+      <a href="{{ url_for('profile') }}">Profile</a>
+      <a href="{{ url_for('restaurants') }}">Restaurants</a>
+      <a href="{{ url_for('orders') }}">Order</a>
+      {% if session.get('is_admin') %}
+      <a href="{{ url_for('db_view') }}">DB</a>
+      <a href="{{ url_for('admin_dashboard') }}">Admin</a>
+      {% endif %}
+      <a href="{{ url_for('logout') }}" data-confirm="Log out now?">Logout</a>
+    </nav>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="card max-w-lg">
+      <div class="card-head">
+        <h2>Delivery &amp; Fees</h2>
+        <a class="btn btn-outline btn-sm" href="{{ url_for('profile') }}">Back to profile</a>
+      </div>
+
+      <div class="card-body">
+        {% if saved %}<div class="flash success" id="feeSaved">Saved. Your next planned week will use these settings.</div>{% endif %}
+        {% if error %}<div class="flash danger">{{ error }}</div>{% endif %}
+
+        <p class="fee-help">
+          Every order pays a delivery fee and a service fee (usually ${{ '%.2f'|format(default_order_fee_cents / 100) }}
+          together), so a week of separate orders adds up. These settings let the planner put meals into
+          fewer orders. Fees shown are a synthetic model, not real prices.
+        </p>
+
+        <form method="POST" action="{{ url_for('fee_settings') }}" id="feeForm">
+          <div class="fee-section">
+            <h3>Batching</h3>
+            <label class="check-row">
+              <input type="checkbox" name="batching" id="batching" {% if prefs.batching %}checked{% endif %}>
+              <span>
+                Deliver meals from the same restaurant together when they are at most 6 hours apart
+                (breakfast + lunch, or lunch + dinner). One delivery and one service fee instead of two.
+                <span class="fee-help" style="display:block; margin:2px 0 0;">Food never waits more than 6 hours.</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="fee-section">
+            <h3>Pickup</h3>
+            <p class="fee-help">Picking up skips the delivery fee. The planner only uses pickup at the restaurants
+              and on the days you choose here.</p>
+            <div class="day-grid" role="group" aria-label="Pickup days">
+              {% for d in weekdays %}
+              <label class="check-row"><input type="checkbox" name="pickup_days" value="{{ d }}"
+                {% if d in prefs.pickup_days %}checked{% endif %}> {{ d }}</label>
+              {% endfor %}
+            </div>
+            <div class="rtr-grid" role="group" aria-label="Pickup restaurants" style="margin-top:8px;">
+              {% for r in restaurants %}
+              <label class="check-row">
+                <input type="checkbox" name="pickup_restaurants" value="{{ r.rtr_id }}"
+                  {% if r.rtr_id in prefs.pickup_restaurants %}checked{% endif %}>
+                <span>{{ r.name }}{% if not r.open %} <span class="rtr-fee">(closed)</span>{% endif %}
+                  <span class="rtr-fee" style="display:block;">delivery ${{ '%.2f'|format(r.delivery_fee_cents / 100) }}
+                    · service ${{ '%.2f'|format(r.service_fee_cents / 100) }}</span></span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div style="margin-top:20px; display:flex; gap:8px;">
+            <button type="submit" class="btn btn-primary">Save settings</button>
+            <a class="btn btn-outline" href="{{ url_for('profile') }}">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

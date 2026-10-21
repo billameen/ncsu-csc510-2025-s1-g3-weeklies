@@ -9,6 +9,7 @@ Modules:
 - `planner.context`: `PlanContext`, the model and the helpers rules use.
 - `planner.registry`: `@register`, rule discovery, and `rules_for(request)`.
 - `planner.rules`: the built-in rules, one per module.
+- `planner.fees`: `FeeSchedule`, tax and per-restaurant delivery and service fees (M4).
 - `planner.allergens`: allergen normalization ("Egg" = "Eggs").
 - `planner.targets`: parsing the calorie target and weekly budget typed on Edit Profile.
 

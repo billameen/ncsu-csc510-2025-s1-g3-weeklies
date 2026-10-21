@@ -120,4 +120,6 @@ def test_a_budget_just_below_the_cheapest_week_is_proven_quickly(seed_menu):
 
     assert result.status is Status.INFEASIBLE
     assert result.seconds < 2
-    assert "costs $227.71 with tax and fees; your weekly budget is $200.00" in result.explanation
+    # $227.71 with the flat pre-M4 fees; the seed's per-restaurant delivery fees (M4) make
+    # the cheapest week $206.71, still above the budget.
+    assert "costs $206.71 with tax and fees; your weekly budget is $200.00" in result.explanation

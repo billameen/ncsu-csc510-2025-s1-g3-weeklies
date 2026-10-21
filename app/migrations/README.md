@@ -91,6 +91,22 @@ python migrations/add_plan_edit_table.py
 
 `db/seed.sql` and the test schema in `tests/conftest.py` already include this table.
 
+### 6. `add_restaurant_fees.py`
+Adds per-restaurant fees for M4's fee-aware planning.
+
+**What it does:**
+- Creates the `RestaurantFee` table (`rtr_id`, `delivery_fee_cents`, `service_fee_cents`; NULL means the default fee)
+- Gives every restaurant without a row the seed data's synthetic delivery fee ($1.99 to $5.99); existing rows are never changed
+- Creates the `UserFeePrefs` table for each user's batching and pickup settings (no row = batching off, no pickup)
+
+The fees are a **synthetic model**, not real prices (see `planner/fees.py`). `db/seed.sql` already includes the table and rows, so this is only needed for a database built before M4.
+
+**Run:**
+```bash
+cd app
+python migrations/add_restaurant_fees.py
+```
+
 ## Running Migrations
 
 Migrations are idempotent - they can be run multiple times safely. If a migration has already been applied, it will skip the changes.
@@ -101,6 +117,8 @@ python migrations/add_ticket_table.py
 python migrations/add_admin_column.py
 python migrations/add_plan_targets.py
 python migrations/add_wallet_ledger.py
+python migrations/add_plan_edit_table.py
+python migrations/add_restaurant_fees.py
 ```
 
 ## Migration Order
@@ -111,6 +129,7 @@ If running all migrations from scratch:
 3. `add_plan_targets.py` - Refuses to run until `add_admin_column.py` has
 4. `add_wallet_ledger.py` - Can run independently (needs only the `User` table)
 5. `add_plan_edit_table.py` - Can run independently
+6. `add_restaurant_fees.py` - Can run independently (needs only the `Restaurant` table)
 
 ## Verifying Migrations
 

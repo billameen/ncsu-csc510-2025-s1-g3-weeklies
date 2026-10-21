@@ -1348,4 +1348,39 @@ CREATE TABLE IF NOT EXISTS "PlanEdit" (
     FOREIGN KEY (usr_id) REFERENCES User(usr_id)
 );
 CREATE INDEX idx_plan_edit_usr_id ON PlanEdit(usr_id, edit_id DESC);
+-- Users' fee settings for planning (M4): batching and pickup opt-ins. No row = batching off.
+CREATE TABLE IF NOT EXISTS "UserFeePrefs" (
+    usr_id             INTEGER PRIMARY KEY REFERENCES "User"(usr_id),
+    batching           INTEGER NOT NULL DEFAULT 0 CHECK (batching IN (0, 1)),
+    pickup_restaurants TEXT    NOT NULL DEFAULT '[]',
+    pickup_days        TEXT    NOT NULL DEFAULT '[]'
+);
+-- Per-restaurant fees (M4). A synthetic fee model: delivery fees from $1.99 to $5.99;
+-- NULL service fee = the default $1.49. See app/planner/fees.py.
+CREATE TABLE IF NOT EXISTS "RestaurantFee" (
+    rtr_id             INTEGER PRIMARY KEY REFERENCES "Restaurant"(rtr_id),
+    delivery_fee_cents INTEGER CHECK (delivery_fee_cents IS NULL OR
+                                      (typeof(delivery_fee_cents) = 'integer' AND delivery_fee_cents >= 0)),
+    service_fee_cents  INTEGER CHECK (service_fee_cents IS NULL OR
+                                      (typeof(service_fee_cents) = 'integer' AND service_fee_cents >= 0))
+);
+INSERT INTO RestaurantFee VALUES(1,549,NULL);
+INSERT INTO RestaurantFee VALUES(2,449,NULL);
+INSERT INTO RestaurantFee VALUES(3,349,NULL);
+INSERT INTO RestaurantFee VALUES(4,249,NULL);
+INSERT INTO RestaurantFee VALUES(5,599,NULL);
+INSERT INTO RestaurantFee VALUES(7,399,NULL);
+INSERT INTO RestaurantFee VALUES(8,299,NULL);
+INSERT INTO RestaurantFee VALUES(9,199,NULL);
+INSERT INTO RestaurantFee VALUES(10,549,NULL);
+INSERT INTO RestaurantFee VALUES(11,449,NULL);
+INSERT INTO RestaurantFee VALUES(12,349,NULL);
+INSERT INTO RestaurantFee VALUES(13,249,NULL);
+INSERT INTO RestaurantFee VALUES(14,599,NULL);
+INSERT INTO RestaurantFee VALUES(15,499,NULL);
+INSERT INTO RestaurantFee VALUES(16,399,NULL);
+INSERT INTO RestaurantFee VALUES(17,299,NULL);
+INSERT INTO RestaurantFee VALUES(18,199,NULL);
+INSERT INTO RestaurantFee VALUES(19,549,NULL);
+INSERT INTO RestaurantFee VALUES(20,449,NULL);
 COMMIT;

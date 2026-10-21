@@ -68,8 +68,9 @@ the specification: it does not import any planner code, and a test enforces that
 How the rules are applied:
 
 - **Cost:** each meal is its own delivery order: item price, plus 7.25% tax rounded half up to
-  the cent, plus the $3.99 delivery fee and $1.49 service fee, with no tip. The constants come
-  from `app/pricing.py`, the same ones checkout uses, and the cost matches checkout to the cent.
+  the cent, plus the restaurant's delivery fee and service fee ($3.99 and $1.49 unless it has
+  its own), with no tip. The rates come from the fee model in `app/planner/fees.py` (M4), the
+  same one checkout uses, and the cost matches checkout to the cent.
 - **Calories:** the allowed range is whole calories from 0.9 × target rounded up to
   1.1 × target rounded down, both ends included. A 2,100 kcal target allows 1,890 to 2,310.
 - **Allergens:** tags are compared after lowercasing and trimming spaces, and the menu's
@@ -316,6 +317,6 @@ is why the solver enforces allergies and the budget on every plan regardless.
 - **"was recorded with … not …":** a recording made with another model exists. Delete it to
   start a new one.
 - **"No B2 recording":** record one with `python -m eval.run --seed 510 --record`.
-- **The editor cannot resolve imports such as `pricing` in `eval/`:** the eval adds `app/` to
+- **The editor cannot resolve imports such as `planner.fees` in `eval/`:** the eval adds `app/` to
   the import path when it runs. To quiet the warning in VS Code, add
   `"python.analysis.extraPaths": ["app"]` to your settings.
