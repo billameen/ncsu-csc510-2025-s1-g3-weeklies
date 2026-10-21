@@ -165,10 +165,12 @@ def test_plan_user_validates_the_planners_week_on_its_own(tmp_path):
     catalog = load_catalog(str(db))
     profile = Profile(user_id=7, kcal_target=2200, budget_dollars=450, allergens=(), hard=False)
 
-    off = plan_user(profile, catalog, "m1", 510)
-    on = plan_user(profile, catalog, "m4_batching", 510)
+    # A generous limit: with coverage on, a slower machine can use up the app's 4 s just
+    # building the model, and a timeout would fail this test for the wrong reason.
+    off = plan_user(profile, catalog, "m1", 510, time_limit_s=30)
+    on = plan_user(profile, catalog, "m4_batching", 510, time_limit_s=30)
 
-    assert off["valid"] and on["valid"]
+    assert off["valid"] and on["valid"], (off, on)
     assert on["fees_cents"] == on["planner_fees_cents"] < off["fees_cents"]
     assert on["batched_orders"] > 0 and on["orders"] < off["orders"] == 21
     assert on["food_safety_violations"] == 0

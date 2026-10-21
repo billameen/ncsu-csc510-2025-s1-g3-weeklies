@@ -32,7 +32,7 @@ import time
 from pathlib import Path
 
 from planner.request import PlanRequest
-from planner.solver import plan_week
+from planner.solver import DEFAULT_TIME_LIMIT_S, plan_week
 
 from eval.catalog import Catalog, load_catalog
 from eval.planners import menu_from_catalog
@@ -76,8 +76,13 @@ def pickup_opt_in(profile: Profile, catalog: Catalog, seed: int) -> PickupOptIn:
     return PickupOptIn(frozenset(restaurants), frozenset(days))
 
 
-def plan_user(profile: Profile, catalog: Catalog, planner: str, seed: int) -> dict:
-    """Plan one user's week with one planner and validate it. Returns a JSON-able record."""
+def plan_user(profile: Profile, catalog: Catalog, planner: str, seed: int,
+              time_limit_s: float = DEFAULT_TIME_LIMIT_S) -> dict:
+    """
+    Plan one user's week with one planner and validate it. Returns a JSON-able record.
+    ``time_limit_s`` is the solver's limit (the app's 4 s by default); tests raise it so a
+    slow machine or coverage tracing cannot turn a solvable week into a timeout.
+    """
     pickup = pickup_opt_in(profile, catalog, seed) if planner == "m4_pickup" else PickupOptIn()
     options = {}
     if planner != "m1":
@@ -94,7 +99,7 @@ def plan_user(profile: Profile, catalog: Catalog, planner: str, seed: int) -> di
         options=options,
     )
     started = time.monotonic()
-    result = plan_week(request, menu_from_catalog(catalog))
+    result = plan_week(request, menu_from_catalog(catalog), time_limit_s=time_limit_s)
     seconds = time.monotonic() - started
     record = {"user_id": profile.user_id, "planner": planner, "status": result.status.value,
               "seconds": round(seconds, 3), "valid": False}
