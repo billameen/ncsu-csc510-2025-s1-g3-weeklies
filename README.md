@@ -1,4 +1,5 @@
 # 🍽️ WEEKLIES — Intelligent Meal Planning and Delivery System
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23547302.svg)](https://doi.org/10.5281/zenodo.23547302)
 [![Tests](https://github.com/billameen/ncsu-csc510-2025-s1-g3-weeklies/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/billameen/ncsu-csc510-2025-s1-g3-weeklies/actions/workflows/ci.yml)
 [![Docs](https://github.com/billameen/ncsu-csc510-2025-s1-g3-weeklies/actions/workflows/docs.yml/badge.svg?branch=main&event=push)](https://github.com/billameen/ncsu-csc510-2025-s1-g3-weeklies/actions/workflows/docs.yml)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)]()
@@ -33,25 +34,24 @@ This repository is our team's continuation of Weeklies for *CSC 510: Software En
 
 ---
 
-## Demo Video
+## 🎬 Videos
 
-A 2–5 minute walk-through of Weeklies' main features.
-
-[![Watch the Weeklies demo on YouTube](https://img.youtube.com/vi/PxjkRfjJGXs/hqdefault.jpg)](https://youtu.be/PxjkRfjJGXs)
-
-**[▶ Watch the demo (YouTube)](https://youtu.be/PxjkRfjJGXs)**
+| Teaser | Full demo |
+|:---:|:---:|
+| [![Watch the Weeklies teaser on YouTube](https://img.youtube.com/vi/6kqtTYBGfYY/hqdefault.jpg)](https://youtu.be/6kqtTYBGfYY) | [![Watch the Weeklies demo on YouTube](https://img.youtube.com/vi/PxjkRfjJGXs/hqdefault.jpg)](https://youtu.be/PxjkRfjJGXs) |
+| **[▶ Watch the teaser](https://youtu.be/6kqtTYBGfYY)** | **[▶ Watch the demo](https://youtu.be/PxjkRfjJGXs)** — a 2–5 minute walk-through of the main features |
 
 ---
 
 ## 🗺️ Roadmap
 
-<!-- TODO: replace with our milestones once finalized -->
-| # | Milestone | Status |
-|---|-----------|--------|
-| 1 | _TBD_ | ⏳ Planned |
-| 2 | _TBD_ | ⏳ Planned |
-| 3 | _TBD_ | ⏳ Planned |
-| 4 | _TBD_ | ⏳ Planned |
+| # | Milestone | Lead | Status |
+|---|-----------|------|--------|
+| M0 | [Risk evaluation](#-meal-planner-results): a validator, 100 simulated users and baseline numbers for the v1 LLM planner | Bill Ameen | ✅ Done |
+| M1 | [Constraint-solver planner](#-meal-planner-results): OR-Tools CP-SAT replaces the LLM, with daily calorie and budget rules as plug-ins | Shaan Chandra | ✅ Done |
+| M2 | [Wallet ledger](#-wallet-ledger-m2): double-entry ledger in integer cents, one charge per payment, admin refunds | Siddhant Joshi | ✅ Done |
+| M3 | [Plain-English plan edits](#-plan-edits-m3): the LLM proposes an edit, the solver decides | Shaan Chandra | ✅ Done |
+| M4 | [Fee-aware batching](#m4-fee-aware-batching): fees per order, optional batching and pickup | Siddhant Joshi | ✅ Done |
 
 ---
 
@@ -108,6 +108,31 @@ its own, agrees with the planner on all of them.
 and one weekday. Reproduce with `python -m eval.m4 --seed 510` (about 10 minutes; resumes if
 stopped). The M0 table above was measured before M4 gave restaurants their own fees; rerun
 `python -m eval.run --seed 510` to refresh it.
+
+---
+
+## 💰 Wallet Ledger (M2)
+
+The v1 wallet was one float column on the user row, updated in place, so a double-clicked "Pay",
+two gifts at once or a failed debit could create or lose money. Since M2 every money movement is
+a transaction in a double-entry ledger ([`app/ledger.py`](app/ledger.py)):
+
+- **Entries always add up to zero.** Money only moves between accounts (a user's wallet, a
+  restaurant, fees, tax, top-ups); it never appears or disappears.
+- **Integer cents, never floats.** Order charges are worked out and stored in cents, and a test
+  fails if money code uses a float.
+- **Append-only.** Database triggers block edits and deletes; refunds post a reversing
+  transaction instead.
+- **One charge per payment.** A repeated request (a double click, a refreshed form) is recognised
+  and charged only once, and a wallet can never go negative, even with concurrent gifts.
+- **Visible.** Users see their wallet history on the profile, receipts show the ledger ID, and
+  admins get a ledger check and a refund button.
+
+Existing balances move into the ledger with
+[`migrations/add_wallet_ledger.py`](app/migrations/add_wallet_ledger.py), which checks that every
+balance matches afterwards.
+
+---
 
 ## 💬 Plan Edits (M3)
 
@@ -180,6 +205,7 @@ Features inherited from Weeklies (Fall 2025):
 ├── app/
 │   ├── Flask_app.py          # all routes and helpers
 │   ├── sqlQueries.py         # DB access helpers
+│   ├── ledger.py             # M2 double-entry wallet ledger
 │   ├── planner/              # CP-SAT weekly planner; rules/ holds one plug-in per rule;
 │   │                         # edits/ turns plain-English edits into rules; prompts/ is versioned
 │   ├── menu_generation.py    # v1 LLM meal-plan generation (PLANNER=llm)
@@ -229,10 +255,28 @@ API documentation is generated with **pdoc**. To build it locally, see
 
 Developed as part of **CSC 510: Software Engineering, NC State University**.
 
-<!-- TODO: fill in team members -->
 | Member | GitHub Handle | Key Contributions |
 |--------|---------------|-------------------|
-| _TBD_ | [@billameen](https://github.com/billameen) | _TBD_ |
+| Bill Ameen | [@billameen](https://github.com/billameen) | M0 risk evaluation (validator, simulated users, baselines, eval CI); bug-fix sweep on inherited features (#12–#22) and merge regressions (#33); documentation |
+| Shaan Chandra | [@rectangle-man](https://github.com/rectangle-man) | M1 constraint-solver planner and rule plug-ins; M3 plain-English plan edits and their evaluation; planner docs and CONTRIBUTING guide |
+| Siddhant Joshi | [@sidjoshi29](https://github.com/sidjoshi29) | M2 wallet ledger; M4 fee-aware batching and pickup; license, Code of Conduct and third-party library list; teaser and demo videos |
+
+---
+
+## 🤖 AI Usage
+
+We used **Claude** (Anthropic), in chat and as the Claude Code coding agent, throughout this
+project:
+
+- **Writing code**: implementing milestone features, bug fixes and refactors.
+- **Writing tests**: drafting and extending pytest tests, including failing tests written before
+  a fix.
+- **Documentation**: drafting docs, tutorials and this README.
+- **Review and debugging**: reviewing changes, finding bugs and explaining errors.
+
+Every AI-generated change was reviewed, tested and committed by a team member, and the team made
+all design decisions. Weeklies itself also uses an LLM at runtime, separately from the above: the
+v1 planner (`PLANNER=llm`) and the M3 plan-edit parser (see [Plan Edits](#-plan-edits-m3)).
 
 ---
 
