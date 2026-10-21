@@ -12,6 +12,7 @@ import importlib
 import inspect
 import pkgutil
 import re
+import sys
 
 from planner.constraint import Constraint, ItemFilter, Kind, SoftConstraint
 
@@ -66,7 +67,10 @@ def register(cls: type[Constraint]) -> type[Constraint]:
 
 
 def _origin(cls: type) -> tuple[str, str]:
-    return cls.__module__, cls.__qualname__
+    # By source file, not module name: one file imported as both planner.rules.x and
+    # app.planner.rules.x (pdoc does this) is still the same class.
+    module_file = getattr(sys.modules.get(cls.__module__), "__file__", None)
+    return module_file or cls.__module__, cls.__qualname__
 
 
 def unregister(name: str) -> None:

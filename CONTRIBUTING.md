@@ -18,6 +18,12 @@ ruff check .            # lint
 - Schema changes go in three places by hand: a migration in `app/migrations/`,
   `app/db/seed.sql`, and the test schema in `app/tests/conftest.py`.
 
+## Dependencies
+
+Whenever you add, remove or change the version of a package in `app/requirements.txt`, update
+[THIRD_PARTY_LIBRARIES.md](THIRD_PARTY_LIBRARIES.md) in the same pull request (how to regenerate
+it is at the bottom of that file). Don't add a GPL or AGPL package without asking the team first.
+
 ## Extending the planner safely
 
 The weekly planner (`app/planner/`) decides what users eat and spend, so changes to it carry
