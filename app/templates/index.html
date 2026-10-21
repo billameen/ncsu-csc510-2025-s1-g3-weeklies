@@ -159,9 +159,13 @@
           {% endif %}
         </div>
         <div class="btnrow">
+          {% if has_prev %}
           <a class="btn" href="{{ url_for('index', year=prev_year, month=prev_month) }}">&larr; Prev</a>
+          {% endif %}
           <a class="btn btn-outline" href="{{ url_for('index') }}">Today</a>
+          {% if has_next %}
           <a class="btn" href="{{ url_for('index', year=next_year, month=next_month) }}">Next &rarr;</a>
+          {% endif %}
         </div>
       </div>
 
@@ -175,7 +179,7 @@
           {% if cell.day == 0 %}
             <div class="day-cell muted"></div>
           {% else %}
-            <div class="day-cell{% if year==today_year and month==today_month and cell.day==today_day %} today{% endif %}">
+            <div class="day-cell{% if year==today_year and month==today_month and cell.day==today_day %} today{% endif %}{% if cell.is_past %} past{% endif %}">
               <div class="day-num">{{ cell.day }}</div>
               {% if cell.meals %}
                 <div class="day-totals" title="Calories and delivered cost (tax and fees included) for this day">
@@ -229,6 +233,10 @@
                         {% endif %}
 
                         <div class="actions" style="margin-top:8px;">
+                        {% if cell.is_past %}
+                        {# Past plan entries are history only; /order also rejects past dates #}
+                        <span class="past-note">Past date</span>
+                        {% else %}
                         <a
                           class="order-btn"
                           href="#"
@@ -244,6 +252,7 @@
                         >
                           Order {{ meal_names.get(m.meal, 'Meal') }}
                         </a>
+                        {% endif %}
                       </div>
                       </div>
                     {% endfor %}
@@ -333,6 +342,18 @@
   .pe-accepted { color: #30a46c; } .pe-refused, .pe-error, .pe-impossible { color: #e5484d; }
   .pe-clarify { color: var(--primary); }
   @media (max-width: 600px) { .pe-form { flex-direction: column; } }
+  /* Past days stay visible as history but are dimmed and can't be ordered */
+  .day-cell.past {
+    opacity: .55;
+  }
+  .day-cell.past:hover {
+    opacity: 1;
+  }
+  .past-note {
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+  }
   .day-totals { font-size: 0.72rem; font-weight: 600; color: var(--muted, #a9afc1); margin-top: 2px; }
   .cal-summary { font-size: 0.85rem; margin-top: 2px; }
   .day-cell.today {
@@ -866,6 +887,12 @@ document.getElementById('btnGenerate').addEventListener('click', async function(
   window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 
   let pendingOrder = null;
+  // One-time key per order attempt (M2): a double-clicked "Pay" sends the same
+  // key twice and the server charges only once.
+  function newIdempotencyKey() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+  }
 
   // Intercept clicks on any .order-btn (works for items inside the popover)
   document.addEventListener('click', async (e) => {
@@ -900,6 +927,7 @@ document.getElementById('btnGenerate').addEventListener('click', async function(
 
     // Stash order payload for confirm
     pendingOrder = {
+      idempotency_key: newIdempotencyKey(),
       restaurant_id: rtrId,
       items: [{ itm_id: itmId, qty: 1 }],
       delivery_type: deliveryType,

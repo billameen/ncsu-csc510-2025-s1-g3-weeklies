@@ -98,19 +98,74 @@ def limit_scope(items: pd.DataFrame, num_choices: int) -> List[int]:
         choices = random.sample(choices, num_choices)
     return choices
 
-def filter_allergens(menu_items: pd.DataFrame, allergens: str) -> pd.DataFrame:
+## Allergens a user can select, mapped to the MenuItem.allergens tags each one must exclude.
+## The menu data uses its own vocabulary (e.g. "Dairy", "Nuts", "Egg"), so a selection is only
+## safe if it is translated into those tags. Sulphites is not offered: no menu data tracks it.
+ALLERGEN_TAGS = {
+    "Peanuts": {"peanuts"},
+    "Tree Nuts": {"nuts"},
+    "Milk": {"dairy"},
+    "Eggs": {"eggs", "egg"},
+    "Wheat": {"gluten"},  # conservative: excludes every gluten-tagged item
+    "Soy": {"soy"},
+    "Fish": {"fish"},
+    "Shellfish": {"shellfish"},
+    "Sesame": {"sesame"},
+    "Gluten": {"gluten"},
+    "Lactose": {"dairy"},
+}
+
+def parse_allergies(allergies: str) -> List[str]:
     """
-    Filters out menu items that contain any of the specified allergens from the provided DataFrame
+    Splits a comma-separated allergy string into trimmed, non-empty entries
     """
-    if not allergens:
+    return [x.strip() for x in (allergies or "").split(",") if x.strip()]
+
+def invalid_allergies(allergies: str) -> List[str]:
+    """
+    Returns the entries in a comma-separated allergy string that are not selectable allergens
+    """
+    known = {a.lower() for a in ALLERGEN_TAGS}
+    return [a for a in parse_allergies(allergies) if a.lower() not in known]
+
+def allergen_tags(allergies: str) -> set:
+    """
+    Translates a comma-separated allergy string into the lowercase MenuItem.allergens tags to exclude.
+    Entries that are not selectable allergens (e.g. older data) are matched as typed.
+    """
+    by_name = {name.lower(): tags for name, tags in ALLERGEN_TAGS.items()}
+    tags = set()
+    for allergy in parse_allergies(allergies):
+        tags |= by_name.get(allergy.lower(), {allergy.lower()})
+    return tags
+
+def filter_allergens(menu_items: pd.DataFrame, allergens: str, strict: bool = False) -> pd.DataFrame:
+    """
+    Filters out menu items that contain any of the specified allergens from the provided DataFrame.
+
+    strict=True is the food-safe mode the app uses: allergies are translated into menu tags via
+    ALLERGEN_TAGS (e.g. "Milk" -> "dairy"), and items with unknown allergen data (NULL/NaN/blank)
+    are removed for a user with allergies, since they cannot be shown to be safe.
+    strict=False keeps v1's original matching (allergies matched as typed, unknown items kept),
+    which the M0 evaluation's recorded B2 run depends on.
+    """
+    if strict:
+        excluded = allergen_tags(allergens)
+    else:
+        excluded = {a.lower() for a in parse_allergies(allergens)}
+    if not excluded:
         return menu_items
-        
+
     for index, rows in menu_items.iterrows():
-        if rows["allergens"] is not None:
-            item_allergens = [x.strip().lower() for x in rows['allergens'].split(',')]
-            user_allergens = [x.strip().lower() for x in allergens.split(',')]
-            if any (allergen in item_allergens for allergen in user_allergens):
+        raw = rows["allergens"]
+        # NULL becomes None or NaN depending on the pandas version, so check for a real string
+        if not isinstance(raw, str) or not raw.strip():
+            if strict:
                 menu_items.drop(index, inplace=True)
+            continue
+        item_allergens = {x.strip().lower() for x in raw.split(',')}
+        if item_allergens & excluded:
+            menu_items.drop(index, inplace=True)
     return menu_items
 
 def filter_closed_restaurants(restaurant: pd.DataFrame, weekday: str, time: int) -> pd.DataFrame:
@@ -154,12 +209,15 @@ class MenuGenerator:
     MenuGenerator class that uses an LLM to generate menu items based on user preferences and restrictions
     """
     
-    def __init__(self, tokens: int = 500, llm=None):
+    def __init__(self, tokens: int = 500, llm=None, strict_allergens: bool = False):
         """
         Initializes the MenuGenerator with menu items and restaurants from the database and initializes
         the LLM. Pass llm (anything with generate(system, prompt) -> str) to use it instead of
         building the real one, e.g. a fake in tests or recorded responses in the evaluation.
+        Pass strict_allergens=True for food-safe allergen filtering (see filter_allergens); the app
+        does, while the default keeps v1's behavior for the evaluation's recorded run.
         """
+        self.strict_allergens = strict_allergens
         conn = create_connection(db_file)
         # Ensure we only fetch active items
         self.menu_items = pd.read_sql_query("SELECT * FROM MenuItem WHERE instock = 1", conn)
@@ -180,7 +238,7 @@ class MenuGenerator:
         combined = filter_closed_restaurants(combined, weekday, order_time)
         
         ## Removes items that contain allergens
-        combined = filter_allergens(combined, allergens)
+        combined = filter_allergens(combined, allergens, strict=self.strict_allergens)
 
         ## Randomly selects ITEM_CHOICES number of items to present to the LLM
         choices = limit_scope(combined, num_choices)

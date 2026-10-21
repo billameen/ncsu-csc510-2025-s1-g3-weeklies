@@ -111,6 +111,54 @@ function initOrderStatusButtons() {
 }
 
 // ============================================================================
+// Refunds (M2 wallet ledger)
+// ============================================================================
+
+/**
+ * Refund an order in full. The server reverses the order's ledger transaction,
+ * and refunding the same order again returns the same refund.
+ * @param {number} ordId - Order ID to refund
+ * @param {HTMLButtonElement} button - The clicked Refund button
+ */
+async function refundOrder(ordId, button) {
+  button.disabled = true;
+  try {
+    const response = await fetch(`/admin/orders/${ordId}/refund`, { method: 'POST' });
+    const data = await response.json();
+
+    if (response.ok && data.ok) {
+      const dollars = (data.refunded_cents / 100).toFixed(2);
+      showNotification(`Order #${ordId} refunded: $${dollars} returned to the customer`, 'success');
+      const badge = document.createElement('p');
+      badge.className = 'order-refunded';
+      badge.textContent = 'Refunded';
+      button.replaceWith(badge);
+    } else {
+      showNotification(data.error || 'Refund failed', 'error');
+      button.disabled = false;
+    }
+  } catch (error) {
+    console.error('Error refunding order:', error);
+    showNotification('Network error. Please try again.', 'error');
+    button.disabled = false;
+  }
+}
+
+/**
+ * Initialize event listeners for refund buttons
+ */
+function initRefundButtons() {
+  document.querySelectorAll('.order-card .btn-refund').forEach(button => {
+    button.addEventListener('click', () => {
+      const ordId = parseInt(button.closest('.order-card').dataset.ordId);
+      if (confirm(`Refund order #${ordId} in full? This returns the money to the customer's wallet.`)) {
+        refundOrder(ordId, button);
+      }
+    });
+  });
+}
+
+// ============================================================================
 // Ticket Status Management
 // ============================================================================
 
@@ -289,7 +337,7 @@ function showErrorNotification(message) {
  * Update the count badges for each order status column
  */
 function updateOrderCounts() {
-  const statuses = ['ordered', 'preparing', 'delivering', 'delivered'];
+  const statuses = ['ordered', 'preparing', 'delivering', 'delivered', 'other'];
   
   statuses.forEach(status => {
     const cards = document.querySelectorAll(`#cards-${status} .order-card`);
@@ -327,6 +375,7 @@ function initAdminDashboard() {
   
   // Initialize order status button handlers
   initOrderStatusButtons();
+  initRefundButtons();
   
   // Initialize ticket action button handlers
   initTicketActionButtons();

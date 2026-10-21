@@ -4,6 +4,8 @@ import json
 from datetime import datetime
 import pytest
 from sqlQueries import create_connection, close_connection, execute_query, fetch_one
+import ledger
+from wallet_helpers import set_wallet_cents, wallet_cents, wallet_cents_by_email
 from urllib.parse import parse_qs, urlsplit
 
 # --- Helper to create a second user for gift/mixed-restaurant tests ---
@@ -52,11 +54,7 @@ def test_order_post_fails_on_insufficient_funds(client, seed_minimal_data, login
 
     # 1. Set user's wallet balance low (e.g., $0.01 = 1 cent)
     low_balance_cents = 1
-    conn = create_connection(temp_db_path)
-    try:
-        execute_query(conn, 'UPDATE "User" SET wallet = ? WHERE usr_id = ?', (low_balance_cents, usr_id))
-    finally:
-        close_connection(conn)
+    set_wallet_cents(temp_db_path, usr_id, low_balance_cents)
 
     # Re-login to update session wallet value
     client.post("/login", data={"email": seed_minimal_data["usr_email"], "password": "secret123"})
@@ -81,8 +79,7 @@ def test_order_post_fails_on_insufficient_funds(client, seed_minimal_data, login
     # 4. Assert that wallet balance is UNCHANGED and NO order was placed (atomic rollback)
     conn = create_connection(temp_db_path)
     try:
-        final_wallet_row = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))
-        final_wallet_cents = final_wallet_row[0]
+        final_wallet_cents = wallet_cents(temp_db_path, usr_id)
         order_count_row = fetch_one(conn, 'SELECT COUNT(*) FROM "Order" WHERE usr_id = ?', (usr_id,))
         order_count = order_count_row[0]
     finally:
@@ -303,13 +300,9 @@ def test_wallet_gift_fails_on_insufficient_funds_atomicity(client, seed_minimal_
     
     # 1. Set sender's wallet to $1.00 (100 cents)
     low_balance_cents = 100
-    conn = create_connection(temp_db_path)
-    try:
-        execute_query(conn, 'UPDATE "User" SET wallet = ? WHERE usr_id = ?', (low_balance_cents, sender_id))
-        sender_initial_wallet = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (sender_id,))[0]
-        recipient_initial_wallet = fetch_one(conn, 'SELECT wallet FROM "User" WHERE email = ?', (recipient_email,))[0]
-    finally:
-        close_connection(conn)
+    set_wallet_cents(temp_db_path, sender_id, low_balance_cents)
+    sender_initial_wallet = wallet_cents(temp_db_path, sender_id)
+    recipient_initial_wallet = wallet_cents_by_email(temp_db_path, recipient_email)
     
     # 2. Attempt to gift $50.00 (5000 cents)
     gift_amount = 50.00
@@ -324,12 +317,8 @@ def test_wallet_gift_fails_on_insufficient_funds_atomicity(client, seed_minimal_
     assert '/profile?wallet_error=insufficient_funds' in redirect_url, "Should redirect to profile with insufficient_funds error"
 
     # 4. Assert both wallets are UNCHANGED (atomic failure)
-    conn = create_connection(temp_db_path)
-    try:
-        sender_final_wallet = fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (sender_id,))[0]
-        recipient_final_wallet = fetch_one(conn, 'SELECT wallet FROM "User" WHERE email = ?', (recipient_email,))[0]
-    finally:
-        close_connection(conn)
+    sender_final_wallet = wallet_cents(temp_db_path, sender_id)
+    recipient_final_wallet = wallet_cents_by_email(temp_db_path, recipient_email)
 
     assert sender_final_wallet == sender_initial_wallet, "Sender wallet should not be debited"
     assert recipient_final_wallet == recipient_initial_wallet, "Recipient wallet should not be credited"

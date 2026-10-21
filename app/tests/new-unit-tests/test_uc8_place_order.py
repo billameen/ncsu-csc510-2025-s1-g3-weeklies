@@ -16,6 +16,7 @@ import pytest
 from werkzeug.security import generate_password_hash
 
 from sqlQueries import close_connection, create_connection, execute_query, fetch_one
+import ledger
 
 PASSWORD = "secret123"
 
@@ -63,7 +64,7 @@ def _make_restaurant_with_item(temp_db_path, name, price_cents=1000):
 def _wallet_cents(temp_db_path, usr_id):
     conn = create_connection(temp_db_path)
     try:
-        return fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))[0]
+        return ledger.wallet_balance(conn, usr_id)
     finally:
         close_connection(conn)
 
@@ -108,16 +109,21 @@ def test_placing_a_json_order_debits_the_wallet_and_stores_the_computed_charges(
     ord_id, details, status = _latest_order(temp_db_path, usr_id)
     assert ord_id == body["ord_id"]
     assert status == "Ordered"
-    charges = json.loads(details)["charges"]
+    stored = json.loads(details)
+    # Charges are stored as integer cents (M2), never float dollars.
     # 2 x $10.00 = $20.00 subtotal, 7.25% tax, $3.99 delivery, $1.49 service, $2.00 tip.
-    assert charges == {
-        "subtotal": 20.00,
-        "tax": 1.45,
-        "delivery_fee": 3.99,
-        "service_fee": 1.49,
-        "tip": 2.00,
-        "total": 28.93,
+    assert stored["charges_cents"] == {
+        "subtotal": 2000,
+        "tax": 145,
+        "delivery_fee": 399,
+        "service_fee": 149,
+        "tip": 200,
+        "total": 2893,
     }
+    assert all(type(v) is int for v in stored["charges_cents"].values())
+    assert "charges" not in stored
+    assert stored["items"][0]["unit_price_cents"] == 1000
+    assert stored["items"][0]["line_total_cents"] == 2000
     assert _wallet_cents(temp_db_path, usr_id) == 10_000 - 2893
     with client.session_transaction() as sess:
         assert sess["Wallet"] == 10_000 - 2893
@@ -261,3 +267,48 @@ def test_a_stale_session_wallet_cannot_buy_an_order_the_database_balance_cannot_
 
 
 # This proves an order is charged against the database balance, not a stale session copy, and the session is corrected.
+
+
+@pytest.mark.parametrize("bad_date", ["2020-01-15", "not-a-date", "2026-13-01"])
+def test_an_order_for_a_past_or_malformed_date_is_rejected(client, temp_db_path, bad_date):
+    """The calendar sends each plan entry's date with the order. A past-dated
+    entry used to be orderable, and the date was stored unchecked."""
+    email = f"uc8-date-{bad_date}@example.test"
+    usr_id = _make_user(temp_db_path, email, wallet_cents=100_000)
+    rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, f"UC8 Date {bad_date} Cafe", price_cents=1000)
+    _login(client, email)
+
+    response = client.post(
+        "/order",
+        json={"restaurant_id": rtr_id, "items": [{"itm_id": itm_id, "qty": 1}], "date": bad_date},
+    )
+
+    assert response.status_code == 400
+    assert response.get_json() == {"ok": False, "error": "invalid_date"}
+    assert _latest_order(temp_db_path, usr_id) is None
+    assert _wallet_cents(temp_db_path, usr_id) == 100_000
+
+
+# This proves an order dated in the past, or with an unparseable date, is refused before any charge.
+
+
+@pytest.mark.parametrize("when", ["today", "omitted"])
+def test_an_order_for_today_or_with_no_date_is_accepted(client, temp_db_path, when):
+    from datetime import date
+
+    email = f"uc8-date-ok-{when}@example.test"
+    usr_id = _make_user(temp_db_path, email, wallet_cents=100_000)
+    rtr_id, itm_id = _make_restaurant_with_item(temp_db_path, f"UC8 Date OK {when} Cafe", price_cents=1000)
+    _login(client, email)
+
+    payload = {"restaurant_id": rtr_id, "items": [{"itm_id": itm_id, "qty": 1}]}
+    if when == "today":
+        payload["date"] = date.today().isoformat()
+    response = client.post("/order", json=payload)
+
+    assert response.status_code == 200
+    _, details, _ = _latest_order(temp_db_path, usr_id)
+    assert json.loads(details)["date"] == date.today().isoformat()
+
+
+# This proves today's plan entries, and orders without a date, are still accepted and stored with today's date.

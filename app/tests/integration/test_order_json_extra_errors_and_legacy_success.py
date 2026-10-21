@@ -1,4 +1,5 @@
 from sqlQueries import create_connection, close_connection, fetch_all
+from wallet_helpers import set_wallet_cents
 
 
 def _first_menu_item_id(db_path, rtr_id):
@@ -60,6 +61,7 @@ def test_orders_json_item_specific_not_found(client, temp_db_path, seed_minimal_
 def test_legacy_get_order_is_not_allowed(client, temp_db_path, seed_minimal_data, login_session):
     rtr_id = seed_minimal_data["rtr_id"]
     itm_id = _first_menu_item_id(temp_db_path, rtr_id)
+    set_wallet_cents(temp_db_path, seed_minimal_data["usr_id"], 100_000)  # orders are paid for now
 
     resp = client.get(
         f"/order?itm_id={itm_id}&qty=2&delivery=delivery&tip=1.50&eta=30&date=2025-11-10&meal=2",

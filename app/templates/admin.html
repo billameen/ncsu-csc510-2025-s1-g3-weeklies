@@ -82,8 +82,20 @@
 
     @media (min-width: 1200px) {
       .kanban-board {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, minmax(0, 1fr));
       }
+    }
+
+    .order-receipt {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 13px;
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .order-receipt:hover {
+      text-decoration: underline;
     }
 
     .kanban-column {
@@ -183,6 +195,48 @@
       color: var(--success);
       font-size: 15px;
     }
+
+    .order-refunded {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--danger, #b42318);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .btn-refund {
+      margin-top: 4px;
+      padding: 4px 10px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--danger, #b42318);
+      background: transparent;
+      color: var(--danger, #b42318);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-refund:hover {
+      background: var(--danger, #b42318);
+      color: white;
+    }
+
+    .btn-refund:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .ledger-status {
+      margin: 0 0 16px;
+      padding: 10px 14px;
+      border-radius: var(--radius-xs);
+      font-weight: 700;
+      border: 1px solid var(--border);
+    }
+
+    .ledger-status.ok { background: #ecfdf3; color: #067647; border-color: #abefc6; }
+    .ledger-status.bad { background: #fef3f2; color: #b42318; border-color: #fecdca; }
+    .ledger-detail { font-weight: 400; margin-left: 8px; }
 
     .order-actions {
       display: flex;
@@ -556,6 +610,22 @@
       <h1>Admin Dashboard</h1>
     </div>
 
+    <!-- Wallet ledger health (M2): every transaction sums to zero, no wallet is negative -->
+    {% if ledger_check %}
+    <div class="ledger-status {{ 'ok' if ledger_check.ok else 'bad' }}" id="ledgerStatus">
+      {% if ledger_check.ok %}
+        Ledger balanced ✅ <span class="ledger-detail">all entries sum to {{ ledger_total }}, no negative wallets</span>
+      {% else %}
+        Ledger NOT balanced ❌
+        <span class="ledger-detail">
+          entries sum to {{ ledger_total }}
+          {% if ledger_check.unbalanced_txn_ids %}· unbalanced transactions: {{ ledger_check.unbalanced_txn_ids|join(', ') }}{% endif %}
+          {% if ledger_check.negative_user_accounts %}· negative wallets: {{ ledger_check.negative_user_accounts|join(', ') }}{% endif %}
+        </span>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <!-- Navigation Tabs -->
     <nav class="admin-tabs">
       <button class="tab active" data-tab="orders">
@@ -593,6 +663,12 @@
                   <p class="customer-name">{{ order.customer_name }}</p>
                   <p class="restaurant-name">{{ order.restaurant_name }}</p>
                   <p class="order-total">{{ order.total }}</p>
+                  {% if order.refunded %}
+                  <p class="order-refunded">Refunded</p>
+                  {% elif order.refundable %}
+                  <button class="btn-refund" type="button">Refund</button>
+                  {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
                 </div>
                 <div class="order-actions">
                   <button class="btn-status" data-next-status="Preparing">
@@ -631,6 +707,12 @@
                   <p class="customer-name">{{ order.customer_name }}</p>
                   <p class="restaurant-name">{{ order.restaurant_name }}</p>
                   <p class="order-total">{{ order.total }}</p>
+                  {% if order.refunded %}
+                  <p class="order-refunded">Refunded</p>
+                  {% elif order.refundable %}
+                  <button class="btn-refund" type="button">Refund</button>
+                  {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
                 </div>
                 <div class="order-actions">
                   <button class="btn-status" data-next-status="Delivering">
@@ -669,6 +751,12 @@
                   <p class="customer-name">{{ order.customer_name }}</p>
                   <p class="restaurant-name">{{ order.restaurant_name }}</p>
                   <p class="order-total">{{ order.total }}</p>
+                  {% if order.refunded %}
+                  <p class="order-refunded">Refunded</p>
+                  {% elif order.refundable %}
+                  <button class="btn-refund" type="button">Refund</button>
+                  {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
                 </div>
                 <div class="order-actions">
                   <button class="btn-status" data-next-status="Delivered">
@@ -704,6 +792,12 @@
                   <p class="customer-name">{{ order.customer_name }}</p>
                   <p class="restaurant-name">{{ order.restaurant_name }}</p>
                   <p class="order-total">{{ order.total }}</p>
+                  {% if order.refunded %}
+                  <p class="order-refunded">Refunded</p>
+                  {% elif order.refundable %}
+                  <button class="btn-refund" type="button">Refund</button>
+                  {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
                 </div>
                 <div class="order-actions">
                   <p style="color: var(--success); font-size: 13px; margin: 0;">✓ Completed</p>
@@ -714,6 +808,46 @@
             <div class="empty-state">
               <div class="empty-state-icon">✅</div>
               <p>No delivered orders</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Other Column: statuses the board has no column for (e.g. Cancelled) -->
+        <div class="kanban-column" data-status="Other">
+          <h3>
+            Other
+            <span class="count" id="count-other">0</span>
+          </h3>
+          <div class="order-cards" id="cards-other">
+            {% if orders_by_status.get('Other') %}
+              {% for order in orders_by_status['Other'] %}
+              <div class="order-card" data-ord-id="{{ order.ord_id }}">
+                <div class="order-header">
+                  <span class="order-id">#{{ order.ord_id }}</span>
+                  <span class="order-time">{{ order.placed_at }}</span>
+                </div>
+                <div class="order-details">
+                  <p class="customer-name">{{ order.customer_name }}</p>
+                  <p class="restaurant-name">{{ order.restaurant_name }}</p>
+                  <p class="order-total">{{ order.total }}</p>
+                  {% if order.refunded %}
+                  <p class="order-refunded">Refunded</p>
+                  {% elif order.refundable %}
+                  <button class="btn-refund" type="button">Refund</button>
+                  {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
+                </div>
+                <div class="order-actions">
+                  {# No status buttons: models.OrderStatus allows no transitions from these statuses #}
+                  <p style="color: var(--muted); font-size: 13px; margin: 0;">Status: {{ order.status }}</p>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+            <div class="empty-state">
+              <div class="empty-state-icon">📋</div>
+              <p>No other orders</p>
             </div>
             {% endif %}
           </div>
@@ -747,7 +881,7 @@
             {% if ticket.response %}
             <div class="ticket-message" style="background: rgba(41, 196, 138, 0.1); border-color: rgba(41, 196, 138, 0.3);">
               <strong>Response:</strong><br>
-              {{ ticket.response }}
+              <span style="white-space: pre-line;">{{ ticket.response }}</span>
             </div>
             {% endif %}
             <div class="ticket-response">

@@ -335,9 +335,19 @@
     return { subtotal, tax, delivery_fee, service_fee, tip, total };
   }
 
+  // One-time key per order attempt (M2): a double-clicked "Pay" sends the same
+  // key twice and the server charges only once.
+  function newIdempotencyKey() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+  }
+  const pendingOrderKeys = {};   // restaurant id -> key of the order being placed
+
   async function placeGroupOrder(rtrId, lines, deliveryType, tipDollar) {
+    pendingOrderKeys[rtrId] = pendingOrderKeys[rtrId] || newIdempotencyKey();
     // Build payload for POST
     const payload = {
+      idempotency_key: pendingOrderKeys[rtrId],
       restaurant_id: Number(rtrId),
       items: lines.map(l => ({
         itm_id: Number(l.item.itm_id),
@@ -357,8 +367,14 @@
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error('Order failed');
+      if (!res.ok) {
+        // The server answered and refused this order, so nothing was charged:
+        // the next attempt (maybe with a changed cart) gets a new key.
+        if (res.status >= 400 && res.status < 500) delete pendingOrderKeys[rtrId];
+        throw new Error('Order failed');
+      }
       const data = await res.json(); // expects {ok:true, ord_id:...}
+      delete pendingOrderKeys[rtrId];
       showToast('Order placed!');
       // Remove this restaurant's lines from cart (or clear all if single-restaurant policy)
       const cart = readCart().filter(l => Number(l.restaurant_id) !== Number(rtrId));

@@ -13,6 +13,7 @@ import pytest
 from werkzeug.security import generate_password_hash
 
 from sqlQueries import close_connection, create_connection, execute_query, fetch_one
+import ledger
 
 PASSWORD = "secret123"
 
@@ -34,7 +35,7 @@ def _make_user(temp_db_path, email, wallet_cents=0):
 def _wallet_cents(temp_db_path, usr_id):
     conn = create_connection(temp_db_path)
     try:
-        return fetch_one(conn, 'SELECT wallet FROM "User" WHERE usr_id = ?', (usr_id,))[0]
+        return ledger.wallet_balance(conn, usr_id)
     finally:
         close_connection(conn)
 

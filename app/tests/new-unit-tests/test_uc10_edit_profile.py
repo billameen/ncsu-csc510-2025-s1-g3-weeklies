@@ -9,6 +9,7 @@ The route guards on ``session['usr_id']``. ``POST /login`` sets that key, so
 no extra ``GET /profile`` round trip is needed before editing. Each test
 creates its own user because ``temp_db_path`` is session-scoped.
 """
+import pytest
 from werkzeug.security import generate_password_hash
 
 from sqlQueries import close_connection, create_connection, execute_query, fetch_one
@@ -69,64 +70,116 @@ def test_editing_the_profile_writes_the_new_values_to_both_the_database_and_the_
 # This proves a valid profile edit persists phone, preferences and allergies to the User row and mirrors them into the active session before redirecting.
 
 
-def test_submitting_an_empty_allergies_field_silently_keeps_the_stored_allergy(client, temp_db_path):
-    """Each field is resolved with an ``or`` fallback to the current value:
-
-        new_allergies = request.form.get('allergies') or user['allergies']
-
-    An empty submitted string is falsy, so it never reaches the UPDATE. The
-    route reports success either way, so the form gives no sign the value was
-    ignored.
+def test_submitting_empty_allergies_and_preferences_clears_them(client, temp_db_path):
+    """Fields used to be resolved with an ``or`` fallback to the current value,
+    so an empty submission silently kept the old allergy. Only an absent field
+    falls back now; a present-but-empty one clears the value.
     """
     usr_id = _make_user(temp_db_path, "uc10-clear@example.test", allergies="peanuts")
     _login(client, "uc10-clear@example.test")
 
     response = client.post(
         "/profile/edit",
-        data={"phone": "9195550300", "preferences": "vegetarian", "allergies": ""},
+        data={"phone": "9195550300", "preferences": "", "allergies": ""},
         follow_redirects=False,
     )
 
     assert response.status_code == 302
     assert "/profile" in response.headers["Location"]
-    assert _profile_fields(temp_db_path, usr_id)[2] == "peanuts"
+    assert _profile_fields(temp_db_path, usr_id) == ("9195550300", "", "")
     with client.session_transaction() as sess:
-        assert sess["Allergies"] == "peanuts"
+        assert sess["Allergies"] == ""
+        assert sess["Preferences"] == ""
 
 
-# This proves a user who clears the allergies box is told the edit succeeded while the old allergy stays on file -- there is no way to remove an allergy once entered, and allergies feed meal generation, so this is a safety-relevant defect.
+# This proves a user can remove every allergy and preference, and the cleared values reach both the database and the session.
 
 
-def test_the_phone_validation_enforced_at_registration_is_not_enforced_on_edit(client, temp_db_path):
-    """POST /register normalises phone with ``re.sub(r"\\D+", "", phone)`` and
-    rejects anything under seven digits. POST /profile/edit applies neither
-    rule and writes the raw submitted string.
+def test_omitted_fields_and_an_empty_phone_keep_their_stored_values(client, temp_db_path):
+    usr_id = _make_user(temp_db_path, "uc10-keep@example.test", allergies="peanuts")
+    _login(client, "uc10-keep@example.test")
+
+    response = client.post("/profile/edit", data={"phone": ""}, follow_redirects=False)
+
+    assert response.status_code == 302
+    assert _profile_fields(temp_db_path, usr_id) == ("9195550300", "vegetarian", "peanuts")
+
+
+# This proves fields absent from the form keep their stored values, and an empty phone does not wipe the number collected at registration.
+
+
+@pytest.mark.parametrize("allergies", ["peenuts", "Peanuts,Sulphites"])
+def test_an_unknown_allergy_on_edit_is_rejected_and_nothing_is_saved(client, temp_db_path, allergies):
+    email = f"uc10-unknown-{allergies.lower().replace(',', '-')}@example.test"
+    usr_id = _make_user(temp_db_path, email, allergies="peanuts")
+    _login(client, email)
+
+    response = client.post(
+        "/profile/edit",
+        data={"phone": "9195550300", "preferences": "vegetarian", "allergies": allergies},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 400
+    assert "Unknown allergy" in response.get_data(as_text=True)
+    assert _profile_fields(temp_db_path, usr_id)[2] == "peanuts"
+
+
+# This proves an allergy the meal-plan filter cannot match is refused on edit instead of being saved and silently ignored.
+
+@pytest.mark.parametrize("phone", ["not-a-phone", "555-12", "abc 123 def"])
+def test_an_invalid_phone_is_rejected_on_edit_just_as_it_is_at_registration(client, temp_db_path, phone):
+    """POST /register and POST /profile/edit share ``_normalize_phone``: both
+    strip non-digits and require at least seven, with the same error message.
     """
-    usr_id = _make_user(temp_db_path, "uc10-phone@example.test", phone="9195550300")
-    _login(client, "uc10-phone@example.test")
+    email = f"uc10-phone-{phone.replace(' ', '-')}@example.test"
+    usr_id = _make_user(temp_db_path, email, phone="9195550300")
+    _login(client, email)
 
     rejected_at_registration = client.post(
         "/register",
         data={
             "fname": "Uc10",
             "lname": "Tester",
-            "email": "uc10-phone-reg@example.test",
-            "phone": "not-a-phone",
+            "email": f"reg-{email}",
+            "phone": phone,
             "password": PASSWORD,
             "confirm_password": PASSWORD,
         },
     )
     assert rejected_at_registration.status_code == 200
-    assert "valid phone number" in rejected_at_registration.get_data(as_text=True)
+    assert "Please enter a valid phone number" in rejected_at_registration.get_data(as_text=True)
 
-    accepted_at_edit = client.post(
+    rejected_at_edit = client.post(
         "/profile/edit",
-        data={"phone": "not-a-phone", "preferences": "vegetarian", "allergies": "peanuts"},
+        data={"phone": phone, "preferences": "vegetarian", "allergies": "peanuts"},
         follow_redirects=False,
     )
 
-    assert accepted_at_edit.status_code == 302
-    assert _profile_fields(temp_db_path, usr_id)[0] == "not-a-phone"
+    assert rejected_at_edit.status_code == 400
+    assert "Please enter a valid phone number" in rejected_at_edit.get_data(as_text=True)
+    assert _profile_fields(temp_db_path, usr_id)[0] == "9195550300"
+    with client.session_transaction() as sess:
+        assert sess["Phone"] == "9195550300"
 
 
-# This proves the same phone string is rejected on the create path and stored verbatim on the update path, so registration validation can be bypassed by editing afterwards -- a real defect.
+# This proves a phone rejected at registration is also rejected on edit, with the same message, and the stored number is left alone.
+
+
+def test_a_formatted_phone_on_edit_is_stored_as_digits_like_registration(client, temp_db_path):
+    usr_id = _make_user(temp_db_path, "uc10-format@example.test", phone="9195550300")
+    _login(client, "uc10-format@example.test")
+
+    response = client.post(
+        "/profile/edit",
+        data={"phone": "(919) 555-0123", "preferences": "vegetarian", "allergies": "peanuts"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    assert _profile_fields(temp_db_path, usr_id)[0] == "9195550123"
+    with client.session_transaction() as sess:
+        assert sess["Phone"] == "9195550123"
+
+
+# This proves a phone edited with punctuation is saved in the same digits-only format /register uses, in both the database and the session.

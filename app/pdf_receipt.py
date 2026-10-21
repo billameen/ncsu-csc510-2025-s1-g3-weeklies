@@ -9,6 +9,8 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 
 from sqlQueries import create_connection, close_connection, fetch_one, fetch_all
+from charges import item_cents, order_charges_cents
+from money import format_cents
 
 
 def _safe_str(x):
@@ -50,6 +52,32 @@ def _dt_display(iso_str):
         return datetime.fromisoformat(iso_str).strftime("%Y-%m-%d %H:%M")
     except Exception:
         return iso_str
+
+
+def receipt_ledger_lines(conn, details: dict) -> list:
+    """
+    Ledger references printed on a receipt (M2): the ID of the ledger transaction
+    that paid for the order and, if the order was refunded, the refund's ID.
+    Orders placed before the ledger existed have none.
+    Args:
+        conn (sqlite3.Connection): Active database connection.
+        details (dict): The order's parsed details JSON.
+    Returns:
+        list[str]: Zero, one or two lines of text.
+    """
+    txn_id = (details or {}).get("ledger_txn_id")
+    if not txn_id:
+        return []
+    lines = [f"Ledger transaction #{txn_id}"]
+    try:
+        row = conn.execute(
+            'SELECT txn_id FROM "LedgerTransaction" WHERE reverses_txn_id = ?', (txn_id,)
+        ).fetchone()
+    except Exception:
+        row = None
+    if row:
+        lines.append(f"Refunded in full (ledger transaction #{row[0]})")
+    return lines
 
 
 def generate_order_receipt_pdf(db_file: str, ord_id: int) -> bytes:
@@ -94,13 +122,22 @@ def generate_order_receipt_pdf(db_file: str, ord_id: int) -> bytes:
         notes = _safe_str(j.get("notes"))
 
         items = j.get("items") or []
-        charges = j.get("charges") or {}
-        subtotal = charges.get("subtotal")
-        tax = charges.get("tax")
-        delivery_fee = charges.get("delivery_fee")
-        service_fee = charges.get("service_fee")
-        tip = charges.get("tip")
-        total = charges.get("total") or charges.get("grand_total") or charges.get("amount")
+        # Charges in integer cents: new orders store "charges_cents", older orders
+        # stored float dollars under "charges" (see charges.py). A charge an old
+        # order never recorded is left off the receipt, as before.
+        cents = order_charges_cents(j)
+        stored = j.get("charges_cents") if isinstance(j.get("charges_cents"), dict) else (j.get("charges") or {})
+
+        def _shown(key):
+            return format_cents(cents[key]) if key in stored else None
+
+        subtotal = _shown("subtotal")
+        tax = _shown("tax")
+        delivery_fee = _shown("delivery_fee")
+        service_fee = _shown("service_fee")
+        tip = _shown("tip")
+        total = format_cents(cents["total"]) if stored else ""
+        ledger_lines = receipt_ledger_lines(conn, j)
 
         # --------- Build PDF ----------
         buf = BytesIO()
@@ -116,8 +153,10 @@ def generate_order_receipt_pdf(db_file: str, ord_id: int) -> bytes:
         c.setFillColor(colors.grey)
         c.drawString(margin, y - 14, f"Status: {_safe_str(status)}")
         c.drawRightString(width - margin, y - 14, f"Placed: {placed_at}")
+        for i, line in enumerate(ledger_lines):
+            c.drawString(margin, y - 26 - 12 * i, line)
         c.setFillColor(colors.black)
-        y -= 30
+        y -= 30 + 12 * len(ledger_lines)
 
         # Parties
         c.setFont("Helvetica-Bold", 12)
@@ -158,8 +197,9 @@ def generate_order_receipt_pdf(db_file: str, ord_id: int) -> bytes:
         for it in items:
             qty = _safe_str(it.get("qty"))
             name = _safe_str(it.get("name"))
-            unit = _money(it.get("unit_price"))
-            line = _money(it.get("line_total"))
+            unit_cents, line_cents = item_cents(it)
+            unit = format_cents(unit_cents)
+            line = format_cents(line_cents)
 
             c.drawString(margin, y, qty)
             c.drawString(margin + 40, y, name[:60])
@@ -184,7 +224,7 @@ def generate_order_receipt_pdf(db_file: str, ord_id: int) -> bytes:
             Draw a label-value row for a charge line.
             Args:
                 label (str): Description of the charge (e.g., 'Tax', 'Subtotal').
-                value (float): Amount associated with the charge.
+                value (str | None): The formatted amount, or None to skip the row.
             Returns:
                 None
             """
@@ -192,7 +232,7 @@ def generate_order_receipt_pdf(db_file: str, ord_id: int) -> bytes:
             if value is None or value == "":
                 return
             c.drawRightString(width - margin - 140, y, label)
-            c.drawRightString(width - margin, y, _money(value))
+            c.drawRightString(width - margin, y, value)
             y -= 14
 
         row("Subtotal", subtotal)
@@ -203,7 +243,7 @@ def generate_order_receipt_pdf(db_file: str, ord_id: int) -> bytes:
 
         c.setFont("Helvetica-Bold", 11)
         c.drawRightString(width - margin - 140, y, "Total")
-        c.drawRightString(width - margin, y, _money(total))
+        c.drawRightString(width - margin, y, total)
         y -= 18
 
         # Footer notes
