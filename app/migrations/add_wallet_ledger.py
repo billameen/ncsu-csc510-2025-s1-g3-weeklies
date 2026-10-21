@@ -44,6 +44,7 @@ def get_db_path():
 
 @dataclass
 class MigrationReport:
+    """What one run moved into the ledger, and anything that did not match."""
     users: int = 0
     opened: int = 0             # opening transactions written by this run
     already_open: int = 0       # users that already had an opening transaction
@@ -56,6 +57,7 @@ class MigrationReport:
 
     @property
     def ok(self):
+        """True when the ledger balances and every old balance matches its opening entry."""
         return (self.ledger_ok and not self.mismatches and not self.errors
                 and self.opening_total_cents == self.column_total_cents)
 
@@ -112,6 +114,7 @@ def migrate(conn, write=True):
 
 
 def print_report(report, write=True):
+    """Print a MigrationReport; `write=False` labels it as a --check run."""
     print("✓ Ledger tables ready" if write else "(check only: nothing written)")
     print(f"  Users:                     {report.users}")
     print(f"  Opening balances written:  {report.opened}")
@@ -129,6 +132,10 @@ def print_report(report, write=True):
 
 
 def main(argv=None):
+    """
+    Migrate and verify the database given as an argument, or the app's. `--check` only
+    verifies and writes nothing. Returns the exit code.
+    """
     args = list(sys.argv[1:] if argv is None else argv)
     write = "--check" not in args
     paths = [a for a in args if not a.startswith("--")]

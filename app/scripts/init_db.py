@@ -83,6 +83,7 @@ def init_db(db_file=DB_FILE, seed_file=SEED_FILE, force=False):
 
 
 def main():
+    """Build the database from db/seed.sql; `--force` overwrites an existing one."""
     force = "--force" in sys.argv
     if init_db(force=force):
         print(f"Created {DB_FILE} from {SEED_FILE}")

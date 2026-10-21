@@ -1,3 +1,12 @@
+"""
+Weeklies Flask application: every route and its helpers.
+
+Routes cover accounts (`/login`, `/register`, `/profile*`), restaurants and ordering
+(`/restaurants`, `/order`, `/orders`), the wallet (`/profile/wallet/*`, M2 ledger), weekly
+planning (`/generate_plan`, `/plan/edit*`, `/profile/fees`), insights, support tickets, PDF
+receipts and the admin dashboard (`/admin*`). Database access goes through `sqlQueries`.
+Run it with `flask run` from `app/`.
+"""
 import os
 import re
 import sys
@@ -48,14 +57,17 @@ PLANNERS = ("solver", "llm")
 
 # ----------MANAGE ORDER STATUS--------------
 class OrderStatus(Enum):
+    """Order status strings as stored in the "Order" table."""
     ORDERED =  'Ordered'
     PREPARING = 'Preparing'
     DELIVERED = 'Delivered'
 
     def get_lowercase(self):
+        """The status in lower case, e.g. 'ordered'."""
         return self.value.lower()
     
     def get_uppercase(self):
+        """The status in upper case, e.g. 'ORDERED'."""
         return self.value.upper()
 
 app = Flask(__name__)
@@ -1854,6 +1866,11 @@ def db_view():
     )
 
 def parse_args() -> argparse.Namespace:
+    """
+    Parse command-line options for running the app directly with `python Flask_app.py`.
+    Returns:
+        argparse.Namespace: `host` (default 127.0.0.1) and `port` (default 5000).
+    """
     parser = argparse.ArgumentParser(description="Flask App for Meal Planner")
     parser.add_argument('--host', type=str, default='127.0.0.1', help='Host to run the Flask app on')
     parser.add_argument('--port', type=int, default=5000, help='Port to run the Flask app on')

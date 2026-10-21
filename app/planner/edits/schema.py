@@ -231,6 +231,7 @@ class _Condition(_Scoped):
         return self
 
     def condition_key(self) -> tuple:
+        """The condition as a comparable tuple, with names normalized (see `key`)."""
         return (self.field, self.op, _value_key(self.value))
 
 
@@ -293,6 +294,7 @@ class Filter(_Condition):
     type: Literal["filter"]
 
     def key(self):
+        """A tuple that is equal for two parses of the same edit, however they were written."""
         return (self.type, *self.condition_key(), self.day_codes(), self.meal_codes())
 
 
@@ -308,6 +310,7 @@ class Include(_Condition):
         return _no_bool(value)
 
     def key(self):
+        """A tuple that is equal for two parses of the same edit, however they were written."""
         return (
             self.type,
             *self.condition_key(),
@@ -351,6 +354,7 @@ class DayLimit(_Scoped):
         return self
 
     def key(self):
+        """A tuple that is equal for two parses of the same edit, however they were written."""
         return (self.type, self.metric, self.op, self.value, self.day_codes())
 
 
@@ -410,6 +414,7 @@ class Prefer(_Scoped):
         return self
 
     def key(self):
+        """A tuple that is equal for two parses of the same edit, however they were written."""
         return (
             self.type,
             self.goal,
@@ -446,6 +451,7 @@ class CalorieShift(_Scoped):
         return self
 
     def key(self):
+        """A tuple that is equal for two parses of the same edit, however they were written."""
         return (self.type, self.kcal_delta, self.day_codes(), self.meal_codes())
 
 

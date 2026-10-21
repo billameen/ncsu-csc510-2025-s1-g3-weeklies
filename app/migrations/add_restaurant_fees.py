@@ -30,6 +30,7 @@ from planner.fees import ensure_fee_schema, synthetic_delivery_fee_cents  # noqa
 
 
 def get_db_path():
+    """Path to the app's database, app/CSC510_DB.db."""
     return os.path.join(APP_DIR, "CSC510_DB.db")
 
 
@@ -51,6 +52,7 @@ def migrate(conn) -> int:
 
 
 def main(argv=None):
+    """Run the migration on the database given as the first argument, or the app's. Returns the exit code."""
     args = list(sys.argv[1:] if argv is None else argv)
     db_path = args[0] if args else get_db_path()
     if not os.path.exists(db_path):

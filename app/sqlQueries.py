@@ -1,3 +1,10 @@
+"""
+SQLite helpers: the only way the app reads and writes `CSC510_DB.db`.
+
+Connections (`create_connection`, `close_connection`), queries (`execute_query`, `fetch_one`,
+`fetch_all`) and the support-ticket helpers (`create_ticket`, `get_tickets_by_user`,
+`get_all_tickets`, `update_ticket_status`, `update_ticket_response`).
+"""
 import sqlite3
 
 
