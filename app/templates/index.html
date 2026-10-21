@@ -102,6 +102,49 @@
       </div>
     </div>
 
+    <!-- Plain-English plan edits (M3) -->
+    <section class="card mb-3 plan-edit" aria-labelledby="planEditTitle">
+      <div class="card-body">
+        <h2 class="h6 mb-1" id="planEditTitle">Change your week</h2>
+        <p class="muted pe-hint">Say what you'd like. The planner keeps your allergies, calorie target and budget, and nothing changes until you accept.</p>
+        <form id="planEditForm" class="pe-form" autocomplete="off">
+          <input class="input" id="planEditText" name="text" maxlength="300"
+                 placeholder="e.g. make Thursday vegetarian under $10" aria-label="Describe a change to your plan">
+          <button class="btn btn-primary" id="planEditSubmit" type="submit">Preview</button>
+        </form>
+        <div class="pe-examples" aria-label="Example requests">
+          {% for example in ["Make Thursday vegetarian under $10", "Keep each day under $40", "Pizza on Friday night", "No pork this week", "Cheaper lunches if possible"] %}
+            <button type="button" class="pe-chip" data-example="{{ example }}">{{ example }}</button>
+          {% endfor %}
+        </div>
+        <div id="planEditStatus" class="pe-status" role="status" aria-live="polite"></div>
+        <div id="planEditResult" class="pe-result" hidden>
+          <p id="planEditNote" class="pe-note" hidden></p>
+          <div class="table-wrap">
+            <table class="table pe-diff">
+              <thead><tr><th>Day</th><th>Meal</th><th>Now</th><th>After</th><th>Price</th></tr></thead>
+              <tbody id="planEditRows"></tbody>
+            </table>
+          </div>
+          <p id="planEditTotals" class="pe-totals"></p>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="planEditAccept" type="button">Accept</button>
+            <button class="btn btn-outline" id="planEditDiscard" type="button">Discard</button>
+          </div>
+        </div>
+        <div class="pe-history">
+          <h3 class="pe-history-title">Recent edits</h3>
+          <ul id="planEditHistory" class="pe-history-list">
+            {% for h in edit_history %}
+              <li><span class="pe-badge pe-{{ h.status }}">{{ h.status }}</span> {{ h.request }}</li>
+            {% else %}
+              <li class="muted">No edits yet.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </section>
+
     <!-- Calendar -->
     <div class="calendar-wrap calendar-wide">
       <!-- Unified calendar toolbar -->
@@ -275,6 +318,30 @@
     box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(91, 140, 255, 0.2);
     border-color: rgba(91, 140, 255, 0.3);
   }
+  /* Plan edits */
+  .plan-edit .pe-hint { margin: 0 0 10px; font-size: .9rem; }
+  .plan-edit .pe-form { display: flex; gap: 8px; max-width: none; margin: 0; }
+  .pe-form .input { flex: 1; min-width: 0; }
+  .pe-examples { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+  .pe-chip { font: inherit; font-size: .8rem; padding: 4px 10px; border-radius: 999px; cursor: pointer;
+             border: 1px solid var(--border); background: transparent; color: var(--muted); }
+  .pe-chip:hover { color: var(--primary); border-color: var(--primary); }
+  .pe-status { min-height: 1.4em; margin: 8px 0; font-size: .9rem; }
+  .pe-status.pe-error { color: #e5484d; }
+  .pe-status.pe-question { color: var(--primary); font-weight: 600; }
+  .pe-note { margin: 0 0 8px; padding: 8px 10px; border-left: 3px solid #f5a524; font-size: .9rem; }
+  .pe-diff td, .pe-diff th { font-size: .88rem; }
+  .pe-diff .pe-old { color: var(--muted); text-decoration: line-through; }
+  .pe-totals { font-weight: 600; margin: 8px 0; }
+  .pe-history { margin-top: 12px; }
+  .pe-history-title { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 4px; }
+  .pe-history-list { list-style: none; margin: 0; padding: 0; font-size: .88rem; }
+  .pe-history-list li { padding: 2px 0; }
+  .pe-badge { display: inline-block; min-width: 72px; font-size: .72rem; font-weight: 700; text-transform: uppercase;
+              color: var(--muted); }
+  .pe-accepted { color: #30a46c; } .pe-refused, .pe-error, .pe-impossible { color: #e5484d; }
+  .pe-clarify { color: var(--primary); }
+  @media (max-width: 600px) { .pe-form { flex-direction: column; } }
   /* Past days stay visible as history but are dimmed and can't be ordered */
   .day-cell.past {
     opacity: .55;
@@ -459,6 +526,122 @@
 </style>
 
 <script>
+// ---- Plan edits ----
+(function () {
+  const form = document.getElementById('planEditForm');
+  if (!form) return;
+  const text = document.getElementById('planEditText');
+  const submit = document.getElementById('planEditSubmit');
+  const status = document.getElementById('planEditStatus');
+  const result = document.getElementById('planEditResult');
+  const note = document.getElementById('planEditNote');
+  const rows = document.getElementById('planEditRows');
+  const totals = document.getElementById('planEditTotals');
+  const history = document.getElementById('planEditHistory');
+  let pendingId = null;
+
+  const money = (n) => '$' + Number(n).toFixed(2);
+  function el(tag, cls, content) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (content !== undefined) node.textContent = content;
+    return node;
+  }
+  function setStatus(message, kind) {
+    status.textContent = message || '';
+    status.className = 'pe-status' + (kind ? ' pe-' + kind : '');
+  }
+  function renderHistory(items) {
+    if (!items) return;
+    history.replaceChildren();
+    if (!items.length) { history.appendChild(el('li', 'muted', 'No edits yet.')); return; }
+    for (const h of items) {
+      const li = el('li');
+      li.appendChild(el('span', 'pe-badge pe-' + h.status, h.status));
+      li.appendChild(document.createTextNode(' ' + h.request));
+      history.appendChild(li);
+    }
+  }
+  function clearPreview() { pendingId = null; result.hidden = true; rows.replaceChildren(); note.hidden = true; }
+
+  function renderPreview(body) {
+    pendingId = body.edit_id;
+    rows.replaceChildren();
+    for (const c of body.changes) {
+      const tr = el('tr');
+      tr.appendChild(el('td', '', c.day));
+      tr.appendChild(el('td', '', c.meal + (c.unavailable ? ' (no longer available)' : '')));
+      tr.appendChild(el('td', 'pe-old', c.before ? c.before.name : '-'));
+      tr.appendChild(el('td', '', c.after.name));
+      const diff = c.after.price - (c.before ? c.before.price : 0);
+      tr.appendChild(el('td', '', (diff >= 0 ? '+' : '-') + money(Math.abs(diff))));
+      rows.appendChild(tr);
+    }
+    if (!body.changes.length) {
+      const tr = el('tr'); const td = el('td', 'muted', 'Your plan already meets this; nothing changes.');
+      td.colSpan = 5; tr.appendChild(td); rows.appendChild(tr);
+    }
+    const kcalChanged = body.kcal.filter(k => k.before !== k.after)
+      .map(k => k.day + ' ' + k.before.toLocaleString() + ' → ' + k.after.toLocaleString() + ' kcal');
+    totals.textContent = 'Week: ' + money(body.cost_before) + ' → ' + money(body.cost_after) +
+      ' with tax & fees' + (kcalChanged.length ? ' · ' + kcalChanged.join(' · ') : '');
+    if (body.status === 'closest') {
+      const misses = (body.unmet || []).join('; ');
+      note.textContent = "Couldn't do exactly that. " + body.message + ' Closest option' +
+        (misses ? ', which still misses: ' + misses + '.' : '.');
+      note.hidden = false;
+    } else { note.hidden = true; }
+    result.hidden = false;
+  }
+
+  async function post(url, payload) {
+    const res = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'},
+                                  body: payload ? JSON.stringify(payload) : '{}'});
+    let body = {};
+    try { body = await res.json(); } catch (e) { body = {status: 'error', message: 'Something went wrong (' + res.status + ').'}; }
+    return body;
+  }
+
+  document.querySelectorAll('.pe-chip').forEach(chip => chip.addEventListener('click', () => {
+    text.value = chip.dataset.example; text.focus();
+  }));
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearPreview();
+    submit.disabled = true; submit.textContent = 'Thinking…';
+    setStatus('Working out your edit…');
+    try {
+      const body = await post("{{ url_for('plan_edit') }}", {text: text.value});
+      renderHistory(body.history);
+      if (body.status === 'preview' || body.status === 'closest') {
+        setStatus(body.changes.length ? 'Here is what would change:' : '');
+        renderPreview(body);
+      } else if (body.status === 'clarify') {
+        setStatus(body.message, 'question');
+      } else {
+        setStatus(body.message || 'Something went wrong.', 'error');
+      }
+    } catch (err) {
+      setStatus('Network error. Please try again.', 'error');
+    } finally {
+      submit.disabled = false; submit.textContent = 'Preview';
+    }
+  });
+
+  document.getElementById('planEditAccept').addEventListener('click', async () => {
+    if (!pendingId) return;
+    const body = await post('/plan/edit/' + pendingId + '/accept');
+    if (body.ok) { setStatus('Saved.'); window.location.reload(); }
+    else { clearPreview(); setStatus(body.message, 'error'); renderHistory(body.history); }
+  });
+  document.getElementById('planEditDiscard').addEventListener('click', async () => {
+    if (!pendingId) return;
+    const body = await post('/plan/edit/' + pendingId + '/discard');
+    clearPreview(); setStatus('Discarded. Your plan is unchanged.'); renderHistory(body.history);
+  });
+})();
+
 document.getElementById('btnGenerate').addEventListener('click', async function() {
     if(!confirm("Plan the next 7 days within your calorie target and weekly budget? This replaces any meals already planned for those days.")) return;
 

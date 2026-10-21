@@ -51,6 +51,7 @@ jobs:
           pip install -r app/requirements.txt
 
       - name: Build the database
+        id: db
         run: python app/scripts/init_db.py # CSC510_DB.db is gitignored; seed.sql is tracked
 
       - name: Take the baseline from main
@@ -61,7 +62,15 @@ jobs:
             echo "No eval/results/m0.json on main yet; the regression check is skipped."
           fi
 
+      # M3 plan edits (issue #8): replays recorded LLM answers, no key. Fails the job if any
+      # edit breaks a rule or changes a meal outside the edit. Runs first so the M0 report
+      # below includes its table.
+      - name: Run the plan-edit eval
+        run: python -m eval.edits --out "$RESULTS"
+
+      # Runs even if the plan-edit eval failed, so the summary still shows both tables.
       - name: Run the eval
+        if: ${{ !cancelled() && steps.db.outcome == 'success' }}
         run: |
           set -e
           args=(--seed 510 --out "$RESULTS")
@@ -74,9 +83,13 @@ jobs:
         if: always()
         run: |
           if [ -f "$RESULTS/m0.md" ]; then
-            cat "$RESULTS/m0.md" >> "$GITHUB_STEP_SUMMARY"
+            cat "$RESULTS/m0.md" >> "$GITHUB_STEP_SUMMARY" # includes m3.md when it exists
           else
             echo "The eval produced no results; see the Run the eval step." >> "$GITHUB_STEP_SUMMARY"
+            if [ -f "$RESULTS/m3.md" ]; then
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              cat "$RESULTS/m3.md" >> "$GITHUB_STEP_SUMMARY"
+            fi
           fi
           if [ ! -s "$BASELINE" ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"

@@ -76,6 +76,21 @@ python migrations/add_wallet_ledger.py --check    # verify only, writes nothing
 ```
 Exits with code 1 and lists the users involved if anything does not match.
 
+### 5. `add_plan_edit_table.py`
+Adds the history of plain-English plan edits.
+
+**What it does:**
+- Creates the `PlanEdit` table (request text, status, detail, timestamp per user)
+- Adds an index for fetching a user's latest edits
+
+**Run:**
+```bash
+cd app
+python migrations/add_plan_edit_table.py
+```
+
+`db/seed.sql` and the test schema in `tests/conftest.py` already include this table.
+
 ## Running Migrations
 
 Migrations are idempotent - they can be run multiple times safely. If a migration has already been applied, it will skip the changes.
@@ -95,6 +110,7 @@ If running all migrations from scratch:
 2. `add_admin_column.py` - Must run before `add_plan_targets.py`
 3. `add_plan_targets.py` - Refuses to run until `add_admin_column.py` has
 4. `add_wallet_ledger.py` - Can run independently (needs only the `User` table)
+5. `add_plan_edit_table.py` - Can run independently
 
 ## Verifying Migrations
 

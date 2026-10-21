@@ -30,6 +30,7 @@ import menu_generation
 
 from eval.baselines import RecordingError, RecordingLLM, ReplayLLM, random_safe, v1_llm
 from eval.catalog import Catalog, load_catalog
+from eval.console import console_safe_output
 from eval.feasibility import is_feasible
 from eval.planners import NoValidWeek, m1_solver
 from eval.profiles import Profile, generate_profiles
@@ -324,6 +325,7 @@ def _live_llm():
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    console_safe_output()
     parser = argparse.ArgumentParser(description="Run the M0 evaluation (GitHub issue #5).")
     parser.add_argument("--seed", type=int, default=510)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="where m0.json/.md go")
@@ -356,14 +358,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     report = run(args.seed, catalog, profiles, m0_planners(ReplayLLM(RECORDING)))
 
     markdown = render_markdown(report)
+    # The plan-edit results (python -m eval.edits, M3) are part of the M0 report when present.
+    edits_md = args.out / "m3.md"
+    if edits_md.exists():
+        markdown += "\n" + edits_md.read_text(encoding="utf-8")
     args.out.mkdir(parents=True, exist_ok=True)
-    (args.out / "m0.json").write_text(json.dumps(report, indent=2) + "\n")
-    (args.out / "m0.md").write_text(markdown)
+    (args.out / "m0.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    (args.out / "m0.md").write_text(markdown, encoding="utf-8")
     print(markdown)
 
     if args.baseline:
         problems = check_regression(
-            report["planners"], json.loads(args.baseline.read_text())["planners"]
+            report["planners"], json.loads(args.baseline.read_text(encoding="utf-8"))["planners"]
         )
         for problem in problems:
             print(f"Regression: {problem}", file=sys.stderr)

@@ -7,6 +7,11 @@
 - **Meal planner**: planner/ (OR-Tools CP-SAT). `/generate_plan` calls `planner.solver.plan_week`;
   each rule is a plug-in in planner/rules/ (see [Planner Rules](./planner-rules.html)).
   `PLANNER=llm` switches back to the v1 LLM planner in menu_generation.py.  
+- **Plan edits**: planner/edits/ turns a sentence into typed edits (guard, LLM or regex parser,
+  Pydantic schema), planner/edits/resolve.py turns them into rule plug-ins, and
+  planner/edits/replan.py re-plans only the affected meals. Routes: `/plan/edit` and its
+  accept and discard routes. Prompts are versioned in planner/prompts/ (see
+  [The LLM Proposes, the Solver Decides](./llm-proposes-solver-decides.html)).  
 - **Evaluation**: eval/ at the repository root (see [How We Evaluate](./evaluation.html)).  
 
 This document intentionally focuses on what’s present today.
