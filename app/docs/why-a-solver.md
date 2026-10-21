@@ -78,8 +78,9 @@ it has not proven that no better plan exists. Every rule is a plug-in; see
 
 - Preferences match whole words in item names and descriptions ("spicy" matches "Spicy
   Ramen"). There is no notion of cuisine or taste beyond that.
-- Each meal is priced as its own delivery order, with both fees. Sharing a delivery between
-  meals is milestone M4.
+- Unless the user turns on batching (M4), each meal is priced as its own delivery order, with
+  both fees. With batching, meals from the same restaurant on the same day, at most 6 hours
+  apart, share one order's fees (see `fee_cost` in [Planner Rules](./planner-rules.html)).
 - Meal times are fixed at 10:00, 14:00 and 20:00.
 
 ## Next: Project 3 ideas

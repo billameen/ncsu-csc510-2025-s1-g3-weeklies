@@ -1,3 +1,9 @@
+"""
+LLM provider wrapper used by the v1 planner (`PLANNER=llm`) and the plan-edit parser.
+
+`LLM` picks a provider when it is created: OpenAI (`gpt-4o-mini`) if `OPENAI_API_KEY` is set
+(read from `.env`), otherwise a local HuggingFace model on CUDA, MPS or CPU.
+"""
 import os
 import time
 import torch

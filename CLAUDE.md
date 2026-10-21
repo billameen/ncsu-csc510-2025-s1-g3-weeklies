@@ -49,12 +49,20 @@ source of truth. Build/reset it with `python app/scripts/init_db.py [--force]`; 
 demo data, refresh the seed with `sqlite3 app/CSC510_DB.db ".dump --newlines" > app/db/seed.sql`
 (`--newlines` keeps sqlite3 3.50+ from writing `unistr()`, which CI's older SQLite cannot load).
 
-**DB migrations** (manual, ad hoc scripts — no migration framework/Alembic):
+**DB migrations** (manual, ad hoc, idempotent scripts — no migration framework/Alembic; run in
+this order, see `app/migrations/README.md`):
 ```bash
 cd app
-python migrations/add_ticket_table.py    # idempotent
-python migrations/add_admin_column.py    # idempotent
+python migrations/add_ticket_table.py
+python migrations/add_admin_column.py     # must run before add_plan_targets.py
+python migrations/add_plan_targets.py
+python migrations/add_wallet_ledger.py    # --check verifies without writing
+python migrations/add_plan_edit_table.py
+python migrations/add_restaurant_fees.py
 ```
+
+**Evaluation** (from repo root, no API key): `python -m eval.run --seed 510` (M0/M1, ~3 min),
+`python -m eval.edits` (M3 plan edits), `python -m eval.m4 --seed 510` (M4 fees, ~10 min).
 
 ## Architecture
 
@@ -76,11 +84,22 @@ python migrations/add_admin_column.py    # idempotent
   and allowed transitions (`Ordered -> Preparing -> Delivering -> Delivered`, plus shortcuts). It is not
   used by `Flask_app.py`'s own `OrderStatus` enum of the same name.
 
-- **`app/menu_generation.py`** (`MenuGenerator` + helpers) builds weekly personalized meal plans: filters
-  menu items by allergens, filters restaurants by open hours/weekday, and limits scope before generation.
-  Invoked from the `/generate_plan` route.
+- **`app/planner/`** plans the week with an OR-Tools CP-SAT solver: `/generate_plan` calls
+  `planner.solver.plan_week`. Every requirement is a `Constraint` plug-in in `planner/rules/`
+  (hard or soft, with an `explain()` for infeasible weeks); see `app/docs/planner-rules.md`.
+  `planner/edits/` turns plain-English plan edits into rule plug-ins (guard, LLM or regex parser,
+  versioned prompts in `planner/prompts/`) and re-plans only affected meals (`/plan/edit`).
+  `planner/fees.py` holds per-restaurant fees, charged per order by the `fee_cost` rule.
 
-- **`app/llm_toolkit.py`** (`LLM` class) is used by menu generation for plan text. It auto-selects a
+- **`app/menu_generation.py`** (`MenuGenerator` + helpers) is the v1 LLM planner, used only when
+  `PLANNER=llm`; the evaluation keeps it as baseline B2, so don't remove or change it.
+
+- **`app/ledger.py`** is the M2 double-entry wallet ledger: every money movement is a transaction
+  whose entries sum to zero; balances are sums of entries; rows are append-only (DB triggers).
+  **`app/money.py`** parses/formats integer cents — money is never a float.
+  **`app/fee_prefs.py`** stores each user's batching/pickup settings (`UserFeePrefs`).
+
+- **`app/llm_toolkit.py`** (`LLM` class) is used by the v1 planner and the plan-edit parser. It auto-selects a
   provider at init: OpenAI (`gpt-4o-mini`) if `OPENAI_API_KEY` is set (via `.env`/`load_dotenv`), otherwise
   falls back to a local HuggingFace model with CUDA/MPS acceleration.
 
@@ -98,8 +117,8 @@ python migrations/add_admin_column.py    # idempotent
 
 ## Tests
 
-`app/tests/` is split into `smoke/`, `unit/`, `integration/`, `e2e/`, `llm/`, matching the markers
-declared in `pytest.ini`. `conftest.py` provides:
+`app/tests/` is split into `smoke/`, `unit/`, `integration/`, `e2e/`, `llm/` (matching the markers
+declared in `pytest.ini`), plus `planner/` (one file per rule) and `eval/`. `conftest.py` provides:
 - `app`/`client`: builds a session-scoped temp SQLite DB from `SCHEMA_SQL` and a Flask test client.
 - `seed_minimal_data`: seeds one restaurant, two in-stock menu items, one user (idempotent).
 - `login_session` / `admin_session`: log in as the seeded user / an admin user via `POST /login`.

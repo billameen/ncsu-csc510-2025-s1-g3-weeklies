@@ -114,10 +114,12 @@ class PostResult:
 # --- Accounts -----------------------------------------------------------------
 
 def user_account(usr_id) -> str:
+    """The account name of a user's wallet, e.g. ``user:7``."""
     return f"user:{int(usr_id)}"
 
 
 def restaurant_account(rtr_id) -> str:
+    """The account name of money owed to a restaurant, e.g. ``restaurant:3``."""
     return f"restaurant:{int(rtr_id)}"
 
 
@@ -313,6 +315,7 @@ class LedgerCheck:
 
     @property
     def ok(self) -> bool:
+        """True when everything sums to 0, every transaction balances and no wallet is negative."""
         return (self.total_cents == 0 and not self.unbalanced_txn_ids
                 and not self.negative_user_accounts)
 

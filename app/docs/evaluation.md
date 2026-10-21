@@ -6,8 +6,9 @@ reports whether each planner keeps it. The hypotheses and their thresholds come 
 [issue #5](https://github.com/billameen/ncsu-csc510-2025-s1-g3-weeklies/issues/5) and were
 fixed before the first run.
 
-The current numbers are in `eval/results/m0.md` (and `m0.json`). This page explains how they
-are produced and how to read them.
+The current numbers are in `eval/results/m0.md` (and `m0.json`), with the plan-edit results
+in `m3.md` and the fee-batching results in `m4.md`. This page explains how they are produced
+and how to read them.
 
 ## Run it
 
@@ -203,8 +204,8 @@ the first run, and a change to the simulated users or the validity rules needs i
 
 Write it as a function `(profile, catalog, seed) -> meals | NoValidWeek | None`, add a
 `Planner("M3", your_function)` to the list in `m0_planners` in `eval/run.py`, and it becomes
-a new column in the results. Re-run the eval and commit the results when M3 and M4 land, and
-whenever a change to `app/planner` affects plans (a rule or weight that is on by default).
+a new column in the results. Re-run the eval and commit the results whenever a change to
+`app/planner` affects plans (a rule or weight that is on by default).
 M1 is already in the list.
 
 ## Plan edits (M3)
@@ -294,6 +295,36 @@ pattern gained "exist". So the guard's refusal rate on this set is partly measur
 example it was fixed for. New adversarial phrasings may still get through the guard, which
 is why the solver enforces allergies and the budget on every plan regardless.
 
+## Fee-aware batching (M4)
+
+`python -m eval.m4 --seed 510` evaluates fee-aware batching (issue #9) on M0's 100 users and
+writes `m4.json`, `m4.md` and the chart `m4_savings.png` (needs matplotlib). It takes about
+10 minutes. Each user's results are appended to `eval/results/m4_runs.jsonl` (not committed)
+as they finish, so a stopped run resumes where it left off; `--max-seconds N` stops after N
+seconds and reports what is done, and `--fresh` starts over. It is not run in CI; the tests in
+`app/tests/eval/test_m4.py` are.
+
+- **Planners:** M1 with batching off (every meal its own order, the baseline), M4 with
+  batching, and M4 with batching and pickup. All three plan from the app's seed menu with its
+  per-restaurant fees, which are a synthetic model, not real prices.
+- **Pickup opt-ins** are synthetic too: half the users opt into pickup at 5 restaurants on the
+  weekend and one weekday (`pickup_opt_in`).
+- **Checks:** every week goes through the M0 validator, and `validate_orders` checks the orders
+  on its own: every meal in exactly one order, each order from one restaurant on one day, no
+  order's meals more than 6 hours apart (the food-safety window), and pickup only where the
+  user opted in. It recomputes every order's fees rather than trusting the planner's.
+
+| Metric | Pass if |
+|---|---|
+| Median weekly fee savings vs M1 | ≥ 25%, over users with a valid week from both planners |
+| Valid-week rate | no lower than M1's |
+| Variety (median distinct items) | at most 2 below M1's |
+| Food-safety window and order violations | 0 |
+| Budgets only possible with batching | reported, no threshold |
+
+`m4.md` also reports each planner's median fees, median orders and p95 planning time, and a
+median user's fees under each planner.
+
 ## Code map
 
 | File | Purpose |
@@ -305,6 +336,7 @@ is why the solver enforces allergies and the budget on every plan regardless.
 | `eval/baselines.py` | B1, B2, and recording and replaying LLM responses |
 | `eval/planners.py` | M1, the solver, behind the eval's planner interface |
 | `eval/edits.py` | The M3 plan-edit evaluation |
+| `eval/m4.py` | The M4 fee-batching evaluation |
 | `eval/data/edit_requests.json` | The 82 labelled plan-edit requests |
 | `eval/run.py` | Metrics, the regression check, the report and the command |
 | `app/tests/eval/` | The tests: `pytest app/tests/eval` |

@@ -1,4 +1,7 @@
-# pdf_receipt.py
+"""
+Order receipts as PDFs, drawn with ReportLab: `generate_order_receipt_pdf(db_file, ord_id)`
+returns the bytes served by `/orders/<id>/receipt.pdf`, including the order's ledger IDs (M2).
+"""
 import json
 from io import BytesIO
 from datetime import datetime

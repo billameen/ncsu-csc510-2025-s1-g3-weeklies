@@ -48,6 +48,7 @@ class FeePrefs:
 
 
 def ensure_fee_prefs_schema(conn) -> None:
+    """Create the UserFeePrefs table if it does not exist (databases built before M4)."""
     conn.executescript(SCHEMA_SQL)
 
 
@@ -71,6 +72,7 @@ def load_fee_prefs(conn, usr_id) -> FeePrefs:
 
 
 def save_fee_prefs(conn, usr_id, prefs: FeePrefs) -> None:
+    """Insert or replace the user's fee settings and commit."""
     ensure_fee_prefs_schema(conn)
     conn.execute(
         '''INSERT INTO "UserFeePrefs" (usr_id, batching, pickup_restaurants, pickup_days)

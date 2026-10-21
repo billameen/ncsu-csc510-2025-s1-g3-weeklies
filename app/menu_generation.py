@@ -1,3 +1,10 @@
+"""
+The v1 LLM meal planner (`MenuGenerator`), used only when the app runs with `PLANNER=llm`.
+
+It filters menu items by the user's allergens and restaurants by opening hours, then asks the
+LLM to pick each meal. Since M1 the solver in `planner/` plans the week by default; v1 stays as
+the evaluation's baseline B2.
+"""
 import os
 import pandas as pd
 import datetime

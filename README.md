@@ -33,13 +33,13 @@ This repository is our team's continuation of Weeklies for *CSC 510: Software En
 
 ## 🗺️ Roadmap
 
-<!-- TODO: replace with our milestones once finalized -->
 | # | Milestone | Status |
 |---|-----------|--------|
-| 1 | _TBD_ | ⏳ Planned |
-| 2 | _TBD_ | ⏳ Planned |
-| 3 | _TBD_ | ⏳ Planned |
-| 4 | _TBD_ | ⏳ Planned |
+| M0 | Risk evaluation: plan validator, 100 simulated users, v1 LLM baseline ([how we evaluate](app/docs/evaluation.md)) | ✅ Done |
+| M1 | Constraint-solver planner: daily calories, weekly budget, allergens ([why a solver](app/docs/why-a-solver.md)) | ✅ Done |
+| M2 | Double-entry wallet ledger ([below](#-wallet-ledger-m2)) | ✅ Done |
+| M3 | Plan edits in plain English ([below](#-plan-edits-m3)) | ✅ Done |
+| M4 | Fee-aware batching and pickup ([below](#m4-fee-aware-batching)) | ✅ Done |
 
 ---
 
@@ -96,6 +96,27 @@ its own, agrees with the planner on all of them.
 and one weekday. Reproduce with `python -m eval.m4 --seed 510` (about 10 minutes; resumes if
 stopped). The M0 table above was measured before M4 gave restaurants their own fees; rerun
 `python -m eval.run --seed 510` to refresh it.
+
+## 💰 Wallet Ledger (M2)
+
+The wallet used to be a single balance column on `User`, updated in float dollars, which lost
+cents, let two concurrent gifts overdraw a wallet, and let a failed debit leave an order in
+place. Since M2 every movement of money (top-up, gift, order, refund) is a double-entry
+transaction in an append-only ledger ([`ledger.py`](app/ledger.py)):
+
+- Each transaction's entries add up to zero, so money only moves between accounts (a user's
+  wallet, a restaurant, fees, tax, top-ups); it never appears or disappears.
+- A balance is the sum of that wallet's entries, and a wallet can never go negative.
+- Ledger rows are never edited or deleted (database triggers enforce this). A refund is a new,
+  reversing transaction.
+- Every amount is an integer number of cents ([`money.py`](app/money.py) explains why money is
+  never a float).
+- Each money form carries a one-time idempotency key, so a double click charges once.
+
+Users see their wallet history on their profile, and receipts show each order's ledger ID. The
+admin dashboard checks the ledger on every load (all entries sum to zero, no negative wallets)
+and has a **Refund** button per order. Existing balances move into the ledger with
+`python migrations/add_wallet_ledger.py` ([migrations](app/migrations/README.md)).
 
 ## 💬 Plan Edits (M3)
 
@@ -168,6 +189,8 @@ Features inherited from Weeklies (Fall 2025):
 ├── app/
 │   ├── Flask_app.py          # all routes and helpers
 │   ├── sqlQueries.py         # DB access helpers
+│   ├── ledger.py  money.py   # M2 double-entry wallet ledger; integer-cent money helpers
+│   ├── fee_prefs.py          # M4 per-user batching and pickup settings
 │   ├── planner/              # CP-SAT weekly planner; rules/ holds one plug-in per rule;
 │   │                         # edits/ turns plain-English edits into rules; prompts/ is versioned
 │   ├── menu_generation.py    # v1 LLM meal-plan generation (PLANNER=llm)
@@ -179,9 +202,9 @@ Features inherited from Weeklies (Fall 2025):
 │   ├── scripts/init_db.py    # builds app/CSC510_DB.db from db/seed.sql
 │   ├── migrations/           # one-off, idempotent schema changes
 │   ├── tests/                # smoke / unit / integration / e2e / llm / planner / eval
-│   ├── docs/                 # architecture, evaluation, planner rules, why a solver
+│   ├── docs/                 # architecture, evaluation, planner rules, why a solver, plan edits
 │   └── requirements.txt
-├── eval/                     # M0 evaluation: validator, simulated users, planners, results
+├── eval/                     # evaluation: validator, simulated users, planners, M0/M3/M4 results
 ├── .github/workflows/        # ci.yml (tests), eval.yml (M0 eval), docs.yml (pdoc → GitHub Pages)
 ├── scripts/build_docs.py
 ├── INSTALLATION.md  CONTRIBUTING.md
@@ -217,10 +240,11 @@ API documentation is generated with **pdoc**. To build it locally, see
 
 Developed as part of **CSC 510: Software Engineering, NC State University**.
 
-<!-- TODO: fill in team members -->
 | Member | GitHub Handle | Key Contributions |
 |--------|---------------|-------------------|
-| _TBD_ | [@billameen](https://github.com/billameen) | _TBD_ |
+| Bill Ameen | [@billameen](https://github.com/billameen) | M0 risk evaluation (validator, simulated users, LLM baselines, eval CI); repository setup; use-case tests; bug fixes |
+| Shaan Chandra | [@schand33](https://github.com/schand33) | M1 constraint-solver planner and rule plug-ins; M3 plain-English plan edits; planner docs and tutorials |
+| Siddhant Joshi | [@sidjoshi29](https://github.com/sidjoshi29) | M2 double-entry wallet ledger; M4 fee-aware batching, pickup and per-restaurant fees |
 
 ---
 
