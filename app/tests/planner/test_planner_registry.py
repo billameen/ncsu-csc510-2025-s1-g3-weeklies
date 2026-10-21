@@ -252,3 +252,17 @@ def test_a_same_named_class_from_another_module_cannot_replace_a_builtin_rule():
     with pytest.raises(PluginError, match="already taken by planner.rules.in_stock.InStock"):
         register(InStock)
     assert registry.get("in_stock").__module__ == "planner.rules.in_stock"
+
+
+def test_a_rule_file_imported_under_a_second_module_name_still_registers(monkeypatch):
+    """pdoc imports app.planner.rules.x while the app imports planner.rules.x: same file."""
+    import importlib.util
+
+    import planner.rules.daily_calories as builtin
+
+    alias = "app.planner.rules.daily_calories"
+    spec = importlib.util.spec_from_file_location(alias, builtin.__file__)
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, alias, module)  # as a real import would, before running it
+    spec.loader.exec_module(module)  # registers its DailyCalories again; must not raise
+    assert registry.get("daily_calories").__qualname__ == "DailyCalories"
