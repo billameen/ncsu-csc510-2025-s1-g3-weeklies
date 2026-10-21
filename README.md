@@ -10,6 +10,8 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Lint: ruff](https://img.shields.io/badge/lint-ruff-46a2f1?logo=ruff&logoColor=white)](https://github.com/astral-sh/ruff)
 
+**[▶ Watch the teaser](https://youtu.be/6kqtTYBGfYY)** · [Full demo (YouTube)](https://youtu.be/PxjkRfjJGXs)
+
 ---
 
 ## 🧠 Project Overview
@@ -28,6 +30,16 @@ This repository is our team's continuation of Weeklies for *CSC 510: Software En
 > [Weeklies codebase](https://github.com/Aum3010/ncsu-csc510-2025-s1-g3-weeklies) by Aum Pandya,
 > Pranav Bhagwat, and Tayo Olukotun, which itself extended earlier work by Section 001 Group 9
 > (Taylor J. Brown, Kunal Jindal, Ashritha Bugada, Daniel Dong). Thank you to both teams.
+
+---
+
+## Demo Video
+
+A 2–5 minute walk-through of Weeklies' main features.
+
+[![Watch the Weeklies demo on YouTube](https://img.youtube.com/vi/PxjkRfjJGXs/hqdefault.jpg)](https://youtu.be/PxjkRfjJGXs)
+
+**[▶ Watch the demo (YouTube)](https://youtu.be/PxjkRfjJGXs)**
 
 ---
 
