@@ -31,7 +31,7 @@ This repository is our team's continuation of Weeklies for *CSC 510: Software En
 
 ---
 
-## 🎬 Demo Video
+## Demo Video
 
 A 2–5 minute walk-through of Weeklies' main features.
 
