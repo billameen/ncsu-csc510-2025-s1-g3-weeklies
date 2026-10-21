@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home · Weeklies</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="{{ url_for('index') }}"><span class="logo"></span> Weeklies</a>
+    <nav>
+      <a href="{{ url_for('index') }}">Home</a>
+      <a href="{{ url_for('profile') }}">Profile</a>
+      <a href="{{ url_for('restaurants') }}">Restaurants</a>
+      <a href="{{ url_for('orders') }}">Order</a>
+      <a href="{{ url_for('insights') }}">Insights</a>
+      <!-- <a href="{{ url_for('db_view') }}">DB</a> -->
+      {% if session.get('is_admin') %}
+      <a href="{{ url_for('admin_dashboard') }}">Admin</a>
+      {% endif %}
+      <a href="{{ url_for('logout') }}" data-confirm="Log out now?">Logout</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Order Confirm Modal -->
+<div id="orderModal" class="order-modal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="order-modal__backdrop"></div>
+  <div class="order-modal__dialog" role="document">
+    <div class="order-modal__head">
+      <h3 class="order-modal__title">Confirm your order</h3>
+      <button type="button" class="order-modal__close" aria-label="Close">&times;</button>
+    </div>
+    <div class="order-modal__body">
+      <div class="order-summary">
+        <div class="row"><span class="lbl">Restaurant</span><span class="val" id="om-rtr"></span></div>
+        <div class="row"><span class="lbl">Item</span><span class="val" id="om-item"></span></div>
+        <div class="row"><span class="lbl">Date</span><span class="val" id="om-date"></span></div>
+        <div class="row"><span class="lbl">Meal</span><span class="val" id="om-meal"></span></div>
+        <hr />
+        <div class="row"><span class="lbl">Subtotal</span><span class="val" id="om-subtotal"></span></div>
+        <div class="row"><span class="lbl">Tax</span><span class="val" id="om-tax"></span></div>
+        <div class="row"><span class="lbl">Delivery fee</span><span class="val" id="om-delivery"></span></div>
+        <div class="row"><span class="lbl">Service fee</span><span class="val" id="om-service"></span></div>
+        <div class="row total"><span class="lbl">Total</span><span class="val" id="om-total"></span></div>
+      </div>
+    </div>
+    <div class="order-modal__foot">
+      <button type="button" class="btn btn-outline" id="om-cancel">Cancel</button>
+      <button type="button" class="btn" id="om-confirm">Place order</button>
+    </div>
+  </div>
+</div>
+
+<main class="main">
+  <div class="container">
+    <div class="page-title" style="align-items:center; justify-content:space-between;">
+      <h1 class="mb-0">Menu Calendar</h1>
+      <div class="greet" style="color: var(--muted); font-weight:600;">Welcome, {{ username }}.</div>
+      <button id="btnGenerate" class="btn btn-primary" style="background: linear-gradient(135deg, #667eea, #764ba2); border:none;">
+          ✨ Auto-Plan Week
+      </button>
+    </div>
+
+    {% set meal_names = {1: 'Breakfast', 2: 'Lunch', 3: 'Dinner'} %}
+    {% set meal_short = {1: 'B', 2: 'L', 3: 'D'} %}
+    {% set has_any = today_menu and (today_menu|length) %}
+
+    <!-- Compact Today's Menu -->
+    <div class="card mb-3 compact">
+      <div class="card-body">
+        <h2 class="h6 mb-1">Today’s Menu ({{ today_year }}-{{ '%02d'|format(today_month) }}-{{ '%02d'|format(today_day) }})</h2>
+        {% if has_any %}
+          <ul class="list">
+            {% for entry in today_menu %}
+              <li class="list-item">
+                <strong>{{ meal_names.get(entry.meal, 'Meal') }}:</strong>
+                {{ entry.item.name }}
+                <span class="muted"> · {{ entry.item.restaurant_name }} · ${{ '%.2f'|format(entry.item.price/100) }} · {{ entry.item.calories }} cal</span>
+                {% if entry.item.restaurant_address or entry.item.restaurant_hours or entry.item.restaurant_phone %}
+                  <div style="margin-top: 4px; font-size: 0.85rem; color: var(--muted, #a9afc1);">
+                    {% if entry.item.restaurant_address %}
+                      <span>📍 {{ entry.item.restaurant_address }}</span>
+                    {% endif %}
+                    {% if entry.item.restaurant_hours %}
+                      <span class="rest-hours" data-hours="{{ entry.item.restaurant_hours }}">🕐 {{ entry.item.restaurant_hours }}</span>
+                    {% endif %}
+                    {% if entry.item.restaurant_phone %}
+                      <span>📞 {{ entry.item.restaurant_phone }}</span>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted mb-0">No menu has been set for today.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Plain-English plan edits (M3) -->
+    <section class="card mb-3 plan-edit" aria-labelledby="planEditTitle">
+      <div class="card-body">
+        <h2 class="h6 mb-1" id="planEditTitle">Change your week</h2>
+        <p class="muted pe-hint">Say what you'd like. The planner keeps your allergies, calorie target and budget, and nothing changes until you accept.</p>
+        <form id="planEditForm" class="pe-form" autocomplete="off">
+          <input class="input" id="planEditText" name="text" maxlength="300"
+                 placeholder="e.g. make Thursday vegetarian under $10" aria-label="Describe a change to your plan">
+          <button class="btn btn-primary" id="planEditSubmit" type="submit">Preview</button>
+        </form>
+        <div class="pe-examples" aria-label="Example requests">
+          {% for example in ["Make Thursday vegetarian under $10", "Keep each day under $40", "Pizza on Friday night", "No pork this week", "Cheaper lunches if possible"] %}
+            <button type="button" class="pe-chip" data-example="{{ example }}">{{ example }}</button>
+          {% endfor %}
+        </div>
+        <div id="planEditStatus" class="pe-status" role="status" aria-live="polite"></div>
+        <div id="planEditResult" class="pe-result" hidden>
+          <p id="planEditNote" class="pe-note" hidden></p>
+          <div class="table-wrap">
+            <table class="table pe-diff">
+              <thead><tr><th>Day</th><th>Meal</th><th>Now</th><th>After</th><th>Price</th></tr></thead>
+              <tbody id="planEditRows"></tbody>
+            </table>
+          </div>
+          <p id="planEditTotals" class="pe-totals"></p>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="planEditAccept" type="button">Accept</button>
+            <button class="btn btn-outline" id="planEditDiscard" type="button">Discard</button>
+          </div>
+        </div>
+        <div class="pe-history">
+          <h3 class="pe-history-title">Recent edits</h3>
+          <ul id="planEditHistory" class="pe-history-list">
+            {% for h in edit_history %}
+              <li><span class="pe-badge pe-{{ h.status }}">{{ h.status }}</span> {{ h.request }}</li>
+            {% else %}
+              <li class="muted">No edits yet.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Calendar -->
+    <div class="calendar-wrap calendar-wide">
+      <!-- Unified calendar toolbar -->
+      <div class="calendar-toolbar" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin: 8px 0 14px;">
+        <div>
+          <div class="cal-title" style="font-weight:700; font-size:1.25rem;">{{ month_name }} {{ year }}</div>
+          {% if month_cost_cents %}
+            <div class="cal-summary muted" id="calSummary">
+              Planned this month: <strong>${{ '{:,.2f}'.format(month_cost_cents / 100) }}</strong> with tax &amp; fees
+              · {{ '{:,}'.format(month_avg_kcal) }} kcal/day on average
+              <span class="fee-summary" id="feeSummary">· Fees: <strong>${{ '{:,.2f}'.format(month_fees_cents / 100) }}</strong>,
+                saved <strong>${{ '{:,.2f}'.format(month_fee_savings_cents / 100) }}</strong> vs ordering separately
+                (<a href="{{ url_for('fee_settings') }}">settings</a>)</span>
+            </div>
+          {% endif %}
+        </div>
+        <div class="btnrow">
+          {% if has_prev %}
+          <a class="btn" href="{{ url_for('index', year=prev_year, month=prev_month) }}">&larr; Prev</a>
+          {% endif %}
+          <a class="btn btn-outline" href="{{ url_for('index') }}">Today</a>
+          {% if has_next %}
+          <a class="btn" href="{{ url_for('index', year=next_year, month=next_month) }}">Next &rarr;</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="cal-grid">
+        {% for dow in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] %}
+          <div class="cal-dow">{{ dow }}</div>
+        {% endfor %}
+
+        {# Each cell expects cell.meals: [{meal:1|2|3, item:{...}, color:'#hex'}, ...] #}
+        {% for cell in calendar_cells %}
+          {% if cell.day == 0 %}
+            <div class="day-cell muted"></div>
+          {% else %}
+            <div class="day-cell{% if year==today_year and month==today_month and cell.day==today_day %} today{% endif %}{% if cell.is_past %} past{% endif %}">
+              <div class="day-num">{{ cell.day }}</div>
+              {% if cell.meals %}
+                <div class="day-totals" title="Calories and delivered cost (tax and fees included) for this day">
+                  {{ '{:,}'.format(cell.kcal) }} kcal · ${{ '%.2f'|format(cell.cost_cents / 100) }}
+                  {% if cell.fee_savings_cents %}<span class="day-saved" title="Fees saved by batching and pickup">· saves ${{ '%.2f'|format(cell.fee_savings_cents / 100) }}</span>{% endif %}
+                </div>
+              {% endif %}
+
+              {% if cell.meals and cell.meals|length %}
+                <div class="badge-stack" style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+                  {% for m in cell.meals %}
+                    <div class="badge has-item{% if m.batched %} batched{% endif %}" title="{{ meal_names.get(m.meal, 'Meal') }}: {{ m.item.name }}{% if m.batched %} (delivered together){% endif %}{% if m.pickup %} (pickup){% endif %}">
+                      <span class="dot" style="background: {{ m.color }};"></span>
+                      <span class="muted" style="opacity:.85; font-weight:700; margin-right:6px;">{{ meal_short.get(m.meal, '?') }}</span>
+                      {{ m.item.name }}{% if m.batched %} <span class="batch-mark" aria-label="delivered together">🔗</span>{% endif %}{% if m.pickup %} <span class="batch-mark" aria-label="pickup">🛍️</span>{% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+
+                <!-- Hover popover content: ALL meals for the day -->
+                <div class="menu-card">
+                  <h4 style="font-size: larger; font-weight: bolder;">{{ month_name }} {{ cell.day }}, {{ year }}</h4>
+                  {% if cell.orders %}
+                  <div class="day-fees muted" style="margin-bottom:8px;">
+                    Fees: <strong>${{ '%.2f'|format(cell.fees_cents / 100) }}</strong>{% if cell.fee_savings_cents %}, saved <strong>${{ '%.2f'|format(cell.fee_savings_cents / 100) }}</strong> vs ordering separately{% endif %}
+                  </div>
+                  {% for o in cell.orders if o.batched or o.pickup %}
+                  <div class="batch-order">
+                    <div style="font-weight:700;">
+                      {% if o.batched %}🔗 One {{ 'pickup' if o.pickup else 'delivery' }}{% else %}🛍️ Pickup{% endif %}:
+                      {% for m in o.meals %}{{ meal_names.get(m.meal, 'Meal') }}{% if not loop.last %} + {% endif %}{% endfor %}
+                      from {{ o.restaurant_name }}
+                    </div>
+                    <div class="meta">fees ${{ '%.2f'|format(o.fee_cents / 100) }}{% if o.separate_fee_cents > o.fee_cents %} (saves ${{ '%.2f'|format((o.separate_fee_cents - o.fee_cents) / 100) }}){% endif %}</div>
+                    {% if not cell.is_past %}
+                    <a class="order-btn order-batch-btn" href="#"
+                       aria-label="Order {% for m in o.meals %}{{ meal_names.get(m.meal, 'Meal') }}{% if not loop.last %} and {% endif %}{% endfor %} together"
+                       data-items="{{ o.meals | map(attribute='item') | map(attribute='itm_id') | join(',') }}"
+                       data-meals="{{ o.meals | map(attribute='meal') | join(',') }}"
+                       data-item-name="{{ o.meals | map(attribute='item') | map(attribute='name') | join(' + ') }}"
+                       data-date="{{ '%04d-%02d-%02d'|format(year, month, cell.day) }}"
+                       data-rtr-id="{{ o.rtr_id }}"
+                       data-rtr-name="{{ o.restaurant_name }}"
+                       data-price-cents="{{ o.subtotal_cents }}"
+                       data-delivery-fee-cents="{{ o.delivery_fee_cents }}"
+                       data-service-fee-cents="{{ o.service_fee_cents }}"
+                       data-delivery-type="{{ 'pickup' if o.pickup else 'delivery' }}">
+                      Order {% if o.batched %}together{% else %}for pickup{% endif %}
+                    </a>
+                    {% endif %}
+                  </div>
+                  {% endfor %}
+                  {% endif %}
+                  <div class="meal-list" style="display:flex; flex-direction:column; gap:12px;">
+                    {% for m in cell.meals %}
+                      <div class="meal-line">
+                        <div class="meal-title" style="font-weight:700; margin-bottom:2px;">
+                          {{ meal_names.get(m.meal, 'Meal') }} — {{ m.item.name }}
+                        </div>
+                        <div class="meta">
+                          {{ m.item.restaurant_name }}
+                          · ${{ '%.2f'|format(m.item.price/100) }}
+                          · {{ m.item.calories }} cal
+                        </div>
+                        {% if m.item.restaurant_address or m.item.restaurant_hours or m.item.restaurant_phone %}
+                          <div class="tags" style="margin-top: 4px;">
+                            {% if m.item.restaurant_address %}
+                              <span>📍 {{ m.item.restaurant_address }}</span>
+                            {% endif %}
+                            {% if m.item.restaurant_hours %}
+                              <span class="rest-hours" style="margin-left: 8px;" data-hours="{{ m.item.restaurant_hours }}">🕐 {{ m.item.restaurant_hours }}</span>
+                            {% endif %}
+                            {% if m.item.restaurant_phone %}
+                              <span style="margin-left: 8px;">📞 {{ m.item.restaurant_phone }}</span>
+                            {% endif %}
+                          </div>
+                        {% endif %}
+                        {% if m.item.allergens %}
+                          <div class="tags">Allergens: {{ m.item.allergens }}</div>
+                        {% endif %}
+                        {% if m.item.description %}
+                          <div class="tags">{{ m.item.description }}</div>
+                        {% endif %}
+
+                        <div class="actions" style="margin-top:8px;">
+                        {% if cell.is_past %}
+                        {# Past plan entries are history only; /order also rejects past dates #}
+                        <span class="past-note">Past date</span>
+                        {% else %}
+                        <a
+                          class="order-btn"
+                          href="#"
+                          aria-label="Order {{ meal_names.get(m.meal, 'Meal') }}"
+                          data-itm-id="{{ m.item.itm_id }}"
+                          data-meal="{{ m.meal }}"
+                          data-date="{{ '%04d-%02d-%02d'|format(year, month, cell.day) }}"
+                          data-rtr-id="{{ m.item.rtr_id }}"
+                          data-rtr-name="{{ m.item.restaurant_name }}"
+                          data-item-name="{{ m.item.name }}"
+                          data-price-cents="{{ m.item.price }}"
+                          {% for o in cell.orders if m in o.meals %}data-delivery-fee-cents="{{ o.restaurant_delivery_fee_cents }}" data-service-fee-cents="{{ o.service_fee_cents }}"{% endfor %}
+                          data-delivery-type="delivery"
+                        >
+                          Order {{ meal_names.get(m.meal, 'Meal') }}
+                        </a>
+                        {% endif %}
+                      </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+              {# no else => empty block when no meals #}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">© {{ year }} Weeklies</div>
+</footer>
+
+<style>
+  .calendar-wrap { margin-top: 24px; }
+  .greet { 
+    font-weight: 700; 
+    font-size: 1.1rem; 
+    opacity: .95;
+    background: linear-gradient(135deg, rgba(91, 140, 255, 0.15), rgba(126, 214, 255, 0.1));
+    padding: 8px 16px;
+    border-radius: 10px;
+    display: inline-block;
+  }
+  .cal-grid { 
+    display: grid; 
+    grid-template-columns: repeat(7, 1fr); 
+    gap: 12px; 
+    padding: 4px;
+  }
+  .cal-dow { 
+    text-align: center; 
+    font-weight: 700; 
+    font-size: 0.85rem;
+    opacity: 0.85; 
+    padding: 12px 0; 
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--primary, #5b8cff);
+  }
+
+  .day-cell {
+    position: relative;
+    background: linear-gradient(145deg, #0f1419, #0b0f14);
+    border: 1px solid rgba(255,255,255,.06);
+    min-height: 125px;
+    border-radius: 14px;
+    padding: 10px;
+    overflow: visible;
+    z-index: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .day-cell:hover { 
+    z-index: 50; 
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(91, 140, 255, 0.2);
+    border-color: rgba(91, 140, 255, 0.3);
+  }
+  /* Plan edits */
+  .plan-edit .pe-hint { margin: 0 0 10px; font-size: .9rem; }
+  .plan-edit .pe-form { display: flex; gap: 8px; max-width: none; margin: 0; }
+  .pe-form .input { flex: 1; min-width: 0; }
+  .pe-examples { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+  .pe-chip { font: inherit; font-size: .8rem; padding: 4px 10px; border-radius: 999px; cursor: pointer;
+             border: 1px solid var(--border); background: transparent; color: var(--muted); }
+  .pe-chip:hover { color: var(--primary); border-color: var(--primary); }
+  .pe-status { min-height: 1.4em; margin: 8px 0; font-size: .9rem; }
+  .pe-status.pe-error { color: #e5484d; }
+  .pe-status.pe-question { color: var(--primary); font-weight: 600; }
+  .pe-note { margin: 0 0 8px; padding: 8px 10px; border-left: 3px solid #f5a524; font-size: .9rem; }
+  .pe-diff td, .pe-diff th { font-size: .88rem; }
+  .pe-diff .pe-old { color: var(--muted); text-decoration: line-through; }
+  .pe-totals { font-weight: 600; margin: 8px 0; }
+  .pe-history { margin-top: 12px; }
+  .pe-history-title { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 4px; }
+  .pe-history-list { list-style: none; margin: 0; padding: 0; font-size: .88rem; }
+  .pe-history-list li { padding: 2px 0; }
+  .pe-badge { display: inline-block; min-width: 72px; font-size: .72rem; font-weight: 700; text-transform: uppercase;
+              color: var(--muted); }
+  .pe-accepted { color: #30a46c; } .pe-refused, .pe-error, .pe-impossible { color: #e5484d; }
+  .pe-clarify { color: var(--primary); }
+  @media (max-width: 600px) { .pe-form { flex-direction: column; } }
+  /* Past days stay visible as history but are dimmed and can't be ordered */
+  .day-cell.past {
+    opacity: .55;
+  }
+  .day-cell.past:hover {
+    opacity: 1;
+  }
+  .past-note {
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .day-totals { font-size: 0.72rem; font-weight: 600; color: var(--muted, #a9afc1); margin-top: 2px; }
+  .cal-summary { font-size: 0.85rem; margin-top: 2px; }
+  .day-cell.today {
+    border-color: rgba(126, 214, 255, .6);
+    box-shadow: 0 0 0 2px rgba(126, 214, 255, .4), 0 8px 24px rgba(126, 214, 255, .2), inset 0 1px 0 rgba(255,255,255,.05);
+    background: linear-gradient(145deg, rgba(126,214,255,.12), rgba(91,140,255,.08));
+  }
+  .day-num { 
+    font-size: 1rem; 
+    font-weight: 700;
+    opacity: .9;
+    margin-bottom: 6px;
+    color: var(--text, #e8eaf2);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 10px; 
+    border-radius: 10px; 
+    font-size: 0.8rem;
+    font-weight: 600; 
+    margin-top: 6px; 
+    background: linear-gradient(135deg, rgba(91, 140, 255, 0.15), rgba(126, 214, 255, 0.1));
+    border: 1px solid rgba(91, 140, 255, 0.25); 
+    cursor: default;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .badge.has-item { 
+    color: #fff; 
+  }
+  .badge:hover {
+    transform: translateX(2px);
+    box-shadow: 0 4px 10px rgba(91, 140, 255, 0.25);
+  }
+  .badge .dot { 
+    display: inline-block; 
+    width: 8px; 
+    height: 8px; 
+    border-radius: 50%; 
+    margin-right: 6px; 
+    vertical-align: middle;
+    box-shadow: 0 0 6px currentColor;
+  }
+
+  .btnrow { display: flex; gap: 10px; }
+  .btn { 
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(91, 140, 255, 0.3);
+  }
+
+  /* Keep per-day card hidden; script will read its HTML */
+  .menu-card { display: none; }
+
+  /* Popover injected by script */
+  .menu-popover {
+    position: fixed; 
+    z-index: 9999;
+    width: min(400px, 92vw); 
+    background: linear-gradient(145deg, #0f1419, #0a0d12);
+    border: 1px solid rgba(91, 140, 255, 0.3);
+    border-radius: 16px; 
+    padding: 20px;
+    box-shadow: 0 24px 48px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.05);
+    color: #fff; 
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+  }
+  .menu-popover.visible { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+    pointer-events: auto; 
+  }
+  .menu-popover h4 { 
+    margin: 0 0 12px; 
+    font-size: 1.15rem; 
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff, rgba(255,255,255,.8));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .menu-popover .meta { 
+    font-size: 0.9rem; 
+    opacity: .85; 
+  }
+  .menu-popover .tags { 
+    margin-top: 10px; 
+    font-size: 0.8rem; 
+    opacity: .9; 
+    padding: 6px 10px;
+    background: rgba(91, 140, 255, 0.08);
+    border-radius: 8px;
+    border: 1px solid rgba(91, 140, 255, 0.15);
+  }
+  .menu-popover .arrow {
+    position: fixed; 
+    width: 14px; 
+    height: 14px;
+    background: linear-gradient(145deg, #0f1419, #0a0d12);
+    border-left: 1px solid rgba(91, 140, 255, 0.3);
+    border-top: 1px solid rgba(91, 140, 255, 0.3);
+    transform: rotate(45deg); 
+    z-index: 10000;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  }
+
+  /* Order button style - enhanced */
+  .batch-order { border: 1px dashed rgba(122,162,247,.55); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; }
+  .batch-order .meta { opacity: .8; font-size: 13px; margin: 2px 0 6px; }
+  .badge.batched { border-left: 3px solid #7aa2f7; }
+  .batch-mark { font-size: 12px; }
+  .day-saved { color: var(--success, #0ca30c); }
+  .order-btn {
+    display: inline-block;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(91, 140, 255, 0.5);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, rgba(91, 140, 255, 0.2), rgba(126, 214, 255, 0.15));
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    box-shadow: 0 4px 12px rgba(91, 140, 255, 0.2);
+  }
+  .order-btn:hover { 
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(91, 140, 255, 0.35);
+    border-color: rgba(91, 140, 255, 0.7);
+  }
+  .order-btn:active { 
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(91, 140, 255, 0.25);
+  }
+
+  /* Today's menu card enhancement */
+  .card.compact {
+    background: linear-gradient(145deg, #0f1419, #0b0f14);
+    border: 1px solid rgba(91, 140, 255, 0.15);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+  .card.compact .card-body {
+    padding: 18px;
+  }
+
+  /* Modal */
+  .order-modal { position: fixed; inset: 0; display: none; z-index: 10000; }
+  .order-modal[aria-hidden="false"] { display: block; }
+  .order-modal__backdrop {
+    position: absolute; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(2px);
+  }
+  .order-modal__dialog {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: min(520px, 92vw); background: #0e162b; color: #fff;
+    border: 1px solid rgba(255,255,255,.2); border-radius: 12px; box-shadow: 0 22px 45px rgba(0,0,0,.55);
+  }
+  .order-modal__head, .order-modal__foot { padding: 12px 14px; display:flex; align-items:center; justify-content:space-between; }
+  .order-modal__title { margin: 0; font-size: 1.05rem; }
+  .order-modal__close { background: transparent; border: none; color: #fff; font-size: 1.25rem; cursor: pointer; }
+  .order-modal__body { padding: 10px 14px 2px; }
+  .order-summary .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; }
+  .order-summary .row.total { font-weight: 800; border-top: 1px dashed rgba(255,255,255,.2); margin-top: 6px; padding-top: 10px; }
+  .order-summary .lbl { opacity: .9; }
+  .order-summary hr { border: none; border-top: 1px solid rgba(255,255,255,.12); margin: 10px 0; }
+</style>
+
+<script>
+// ---- Plan edits ----
+(function () {
+  const form = document.getElementById('planEditForm');
+  if (!form) return;
+  const text = document.getElementById('planEditText');
+  const submit = document.getElementById('planEditSubmit');
+  const status = document.getElementById('planEditStatus');
+  const result = document.getElementById('planEditResult');
+  const note = document.getElementById('planEditNote');
+  const rows = document.getElementById('planEditRows');
+  const totals = document.getElementById('planEditTotals');
+  const history = document.getElementById('planEditHistory');
+  let pendingId = null;
+
+  const money = (n) => '$' + Number(n).toFixed(2);
+  function el(tag, cls, content) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (content !== undefined) node.textContent = content;
+    return node;
+  }
+  function setStatus(message, kind) {
+    status.textContent = message || '';
+    status.className = 'pe-status' + (kind ? ' pe-' + kind : '');
+  }
+  function renderHistory(items) {
+    if (!items) return;
+    history.replaceChildren();
+    if (!items.length) { history.appendChild(el('li', 'muted', 'No edits yet.')); return; }
+    for (const h of items) {
+      const li = el('li');
+      li.appendChild(el('span', 'pe-badge pe-' + h.status, h.status));
+      li.appendChild(document.createTextNode(' ' + h.request));
+      history.appendChild(li);
+    }
+  }
+  function clearPreview() { pendingId = null; result.hidden = true; rows.replaceChildren(); note.hidden = true; }
+
+  function renderPreview(body) {
+    pendingId = body.edit_id;
+    rows.replaceChildren();
+    for (const c of body.changes) {
+      const tr = el('tr');
+      tr.appendChild(el('td', '', c.day));
+      tr.appendChild(el('td', '', c.meal + (c.unavailable ? ' (no longer available)' : '')));
+      tr.appendChild(el('td', 'pe-old', c.before ? c.before.name : '-'));
+      tr.appendChild(el('td', '', c.after.name));
+      const diff = c.after.price - (c.before ? c.before.price : 0);
+      tr.appendChild(el('td', '', (diff >= 0 ? '+' : '-') + money(Math.abs(diff))));
+      rows.appendChild(tr);
+    }
+    if (!body.changes.length) {
+      const tr = el('tr'); const td = el('td', 'muted', 'Your plan already meets this; nothing changes.');
+      td.colSpan = 5; tr.appendChild(td); rows.appendChild(tr);
+    }
+    const kcalChanged = body.kcal.filter(k => k.before !== k.after)
+      .map(k => k.day + ' ' + k.before.toLocaleString() + ' → ' + k.after.toLocaleString() + ' kcal');
+    totals.textContent = 'Week: ' + money(body.cost_before) + ' → ' + money(body.cost_after) +
+      ' with tax & fees' + (kcalChanged.length ? ' · ' + kcalChanged.join(' · ') : '');
+    if (body.status === 'closest') {
+      const misses = (body.unmet || []).join('; ');
+      note.textContent = "Couldn't do exactly that. " + body.message + ' Closest option' +
+        (misses ? ', which still misses: ' + misses + '.' : '.');
+      note.hidden = false;
+    } else { note.hidden = true; }
+    result.hidden = false;
+  }
+
+  async function post(url, payload) {
+    const res = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'},
+                                  body: payload ? JSON.stringify(payload) : '{}'});
+    let body = {};
+    try { body = await res.json(); } catch (e) { body = {status: 'error', message: 'Something went wrong (' + res.status + ').'}; }
+    return body;
+  }
+
+  document.querySelectorAll('.pe-chip').forEach(chip => chip.addEventListener('click', () => {
+    text.value = chip.dataset.example; text.focus();
+  }));
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearPreview();
+    submit.disabled = true; submit.textContent = 'Thinking…';
+    setStatus('Working out your edit…');
+    try {
+      const body = await post("{{ url_for('plan_edit') }}", {text: text.value});
+      renderHistory(body.history);
+      if (body.status === 'preview' || body.status === 'closest') {
+        setStatus(body.changes.length ? 'Here is what would change:' : '');
+        renderPreview(body);
+      } else if (body.status === 'clarify') {
+        setStatus(body.message, 'question');
+      } else {
+        setStatus(body.message || 'Something went wrong.', 'error');
+      }
+    } catch (err) {
+      setStatus('Network error. Please try again.', 'error');
+    } finally {
+      submit.disabled = false; submit.textContent = 'Preview';
+    }
+  });
+
+  document.getElementById('planEditAccept').addEventListener('click', async () => {
+    if (!pendingId) return;
+    const body = await post('/plan/edit/' + pendingId + '/accept');
+    if (body.ok) { setStatus('Saved.'); window.location.reload(); }
+    else { clearPreview(); setStatus(body.message, 'error'); renderHistory(body.history); }
+  });
+  document.getElementById('planEditDiscard').addEventListener('click', async () => {
+    if (!pendingId) return;
+    const body = await post('/plan/edit/' + pendingId + '/discard');
+    clearPreview(); setStatus('Discarded. Your plan is unchanged.'); renderHistory(body.history);
+  });
+})();
+
+document.getElementById('btnGenerate').addEventListener('click', async function() {
+    if(!confirm("Plan the next 7 days within your calorie target and weekly budget? This replaces any meals already planned for those days.")) return;
+
+    const btn = this;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = "Planning your week…";
+
+    try {
+        const res = await fetch("{{ url_for('generate_plan') }}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"}
+        });
+        const data = await res.json();
+        
+        if (data.ok) {
+            if (data.fees_cents !== undefined) {
+                // M4: "Fees: $X, saved $Y vs ordering separately"
+                const usd = c => '$' + (c / 100).toFixed(2);
+                alert("Your week is planned. Fees: " + usd(data.fees_cents) + ", saved "
+                      + usd(data.fee_savings_cents || 0) + " vs ordering separately.");
+            }
+            window.location.reload(); // Refresh to show the new meals
+        } else {
+            alert("Couldn't plan your week: " + (data.error || "Could not generate plan"));
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Network error.");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+});
+
+(function () {
+// Format hours to readable format - 
+  function formatHours(hoursStr) {
+    if (!hoursStr) return '';
+
+    // 1. Try to parse as JSON first
+    try {
+      const hoursObj = JSON.parse(hoursStr);
+      
+      const dayMap = { "M": "Mon", "T": "Tue", "W": "Wed", "Th": "Thu", "F": "Fri", "Sa": "Sat", "Su": "Sun" };
+      const dayOrder = ["M", "T", "W", "Th", "F", "Sa", "Su"];
+      
+      const fmtTime = (val) => {
+        let h = Math.floor(val / 100);
+        let m = val % 100;
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        if (h > 12) h -= 12;
+        if (h === 0) h = 12;
+        return `${h}:${m.toString().padStart(2, '0')} ${ampm}`;
+      };
+
+      let lines = [];
+      dayOrder.forEach(key => {
+        const times = hoursObj[key];
+        if (Array.isArray(times) && times.length >= 2) {
+          let timeRanges = [];
+          for(let i = 0; i < times.length; i += 2) {
+            if (times[i+1] !== undefined) {
+              timeRanges.push(`${fmtTime(times[i])}–${fmtTime(times[i+1])}`);
+            }
+          }
+          if (timeRanges.length > 0) {
+            lines.push(`${dayMap[key] || key}: ${timeRanges.join(', ')}`);
+          }
+        }
+      });
+      
+      return lines.join(' · ');
+
+    } catch (e) {
+      // 2. Legacy Fallback (Regex for old text format)
+      let hours = hoursStr.trim();
+      hours = hours
+        .replace(/monday/gi, 'M').replace(/tuesday/gi, 'T').replace(/wednesday/gi, 'W')
+        .replace(/thursday/gi, 'Th').replace(/friday/gi, 'F').replace(/saturday/gi, 'Sa')
+        .replace(/sunday/gi, 'Su')
+        .replace(/mon(?!\w)/gi, 'M').replace(/tue(?!\w)/gi, 'T').replace(/wed(?!\w)/gi, 'W')
+        .replace(/thu(?!\w)/gi, 'Th').replace(/fri(?!\w)/gi, 'F').replace(/sat(?!\w)/gi, 'Sa')
+        .replace(/sun(?!\w)/gi, 'Su');
+      hours = hours.replace(/([MTWThFSaSu])\s*-\s*([MTWThFSaSu])/g, '$1$2');
+      hours = hours.replace(/\s*-\s*/g, ' to ').replace(/\s*:\s*/g, ':');
+      hours = hours.replace(/(\d+)\s*(AM|PM)/gi, (match, num, period) => num + ' ' + period.toLowerCase());
+      return hours.replace(/\s+/g, ' ').trim();
+    }
+  }
+  // ======== Calendar Popover (existing) ========
+  const popover = document.createElement('div');
+  popover.className = 'menu-popover';
+  const arrow = document.createElement('div');
+  arrow.className = 'arrow';
+  document.body.appendChild(popover);
+  document.body.appendChild(arrow);
+
+  let currentTarget = null, hideTimer = null;
+
+  function clamp(v, min, max){ return Math.min(Math.max(v,min),max); }
+
+  function showPopoverFor(dayCell) {
+    const card = dayCell.querySelector('.menu-card');
+    if (!card) return;
+    popover.innerHTML = card.innerHTML;
+
+    popover.style.visibility = 'hidden';
+    popover.classList.add('visible');
+    document.body.offsetHeight; // reflow
+
+    // Format hours in popover content
+    popover.querySelectorAll('.rest-hours[data-hours]').forEach(el => {
+      const hrs = el.getAttribute('data-hours');
+      if (hrs) {
+        const formatted = formatHours(hrs);
+        if (formatted) el.textContent = '🕐 ' + formatted;
+      }
+    });
+
+    const rect = dayCell.getBoundingClientRect();
+    const pW = popover.offsetWidth, pH = popover.offsetHeight;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const margin=8, side=8;
+
+    // Prefer below; flip above if needed
+    let top = rect.bottom + margin, placeAbove=false;
+    if (top + pH + side > vh) {
+      top = rect.top - pH - margin;
+      placeAbove = true;
+      if (top < side) top = side;
+    }
+
+    // Center horizontally over the day
+    let left = rect.left + rect.width/2 - pW/2;
+    left = clamp(left, side, vw - pW - side);
+
+    popover.style.left = `${Math.round(left)}px`;
+    popover.style.top = `${Math.round(top)}px`;
+    popover.style.visibility='visible';
+
+    // Arrow position/orientation
+    const arrowSize=12, centerX=rect.left+rect.width/2;
+    let arrowLeft = clamp(centerX - arrowSize/2, side, vw - arrowSize - side);
+    let arrowTop;
+    if (placeAbove) {
+      arrowTop = popover.getBoundingClientRect().bottom - 1;
+      arrow.style.transform='rotate(225deg)';
+    } else {
+      arrowTop = popover.getBoundingClientRect().top - arrowSize + 1;
+      arrow.style.transform='rotate(45deg)';
+    }
+    arrow.style.left = `${Math.round(arrowLeft)}px`;
+    arrow.style.top = `${Math.round(arrowTop)}px`;
+    arrow.style.display='block';
+
+    currentTarget=dayCell;
+  }
+
+  function hidePopover(immediate=false){
+    if(immediate){
+      popover.classList.remove('visible');
+      popover.style.visibility='hidden';
+      arrow.style.display='none';
+      currentTarget=null;
+      return;
+    }
+    clearTimeout(hideTimer);
+    hideTimer=setTimeout(()=>{
+      popover.classList.remove('visible');
+      popover.style.visibility='hidden';
+      arrow.style.display='none';
+      currentTarget=null;
+    },120);
+  }
+
+  const grid=document.querySelector('.cal-grid');
+  if (grid) {
+    grid.addEventListener('mouseenter', e=>{
+      const cell=e.target.closest('.day-cell'); if(!cell) return;
+      clearTimeout(hideTimer);
+      showPopoverFor(cell);
+    }, true);
+
+    grid.addEventListener('mouseleave', e=>{
+      const cell=e.target.closest('.day-cell'); if(!cell) return;
+      hidePopover(false);
+    }, true);
+  }
+
+  popover.addEventListener('mouseenter', ()=>clearTimeout(hideTimer));
+  popover.addEventListener('mouseleave', ()=>hidePopover(false));
+
+  // keep position in sync on scroll/resize
+  function repositionIfNeeded(){
+    if(currentTarget && popover.classList.contains('visible')) showPopoverFor(currentTarget);
+  }
+  window.addEventListener('scroll', repositionIfNeeded, true);
+  window.addEventListener('resize', repositionIfNeeded);
+
+  // Esc to close popover
+  window.addEventListener('keydown', e=>{ if(e.key==='Escape') hidePopover(true); });
+
+  // Format hours in the page on load
+  document.querySelectorAll('.rest-hours[data-hours]').forEach(el => {
+    const hrs = el.getAttribute('data-hours');
+    if (hrs) {
+      const formatted = formatHours(hrs);
+      if (formatted) el.textContent = '🕐 ' + formatted;
+    }
+  });
+
+
+  // ======== Order Confirm Modal (new) ========
+  const modal = document.getElementById('orderModal');
+  if (!modal) return; // Modal markup must exist in the page
+
+  const omClose = modal.querySelector('.order-modal__close');
+  const omCancel = modal.querySelector('#om-cancel');
+  const omConfirm = modal.querySelector('#om-confirm');
+
+  const field = id => modal.querySelector('#' + id);
+  function dollars(n){ return '$' + (Number(n||0).toFixed(2)); }
+  function round2(x){ return Math.round((Number(x)||0)*100)/100; }
+
+  // Estimate shown before confirming; the server computes the real charges (M4: with the
+  // restaurant's own fees, which the button carries in data-*-fee-cents).
+  const TAX_RATE = Number('{{ tax_rate }}') || 0.0725;
+  function computeTotals(subtotalCents, deliveryType, deliveryFeeCents, serviceFeeCents){
+    const subtotal = (Number(subtotalCents) || 0) / 100;
+    const tax = Math.round((Number(subtotalCents) || 0) * TAX_RATE) / 100;
+    const delivery_fee = (deliveryType === 'pickup') ? 0 : (Number(deliveryFeeCents ?? 399) / 100);
+    const service_fee = Number(serviceFeeCents ?? 149) / 100;
+    const total = round2(subtotal + tax + delivery_fee + service_fee);
+    return { subtotal, tax, delivery_fee, service_fee, tip: 0, total };
+  }
+
+  function openModal(){ modal.setAttribute('aria-hidden','false'); }
+  function closeModal(){ modal.setAttribute('aria-hidden','true'); }
+
+  omClose.addEventListener('click', closeModal);
+  omCancel.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e)=>{ 
+    if (e.target === modal || e.target === modal.querySelector('.order-modal__backdrop')) closeModal(); 
+  });
+  window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+  let pendingOrder = null;
+  // One-time key per order attempt (M2): a double-clicked "Pay" sends the same
+  // key twice and the server charges only once.
+  function newIdempotencyKey() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+  }
+
+  // Intercept clicks on any .order-btn (works for items inside the popover)
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.order-btn');
+    if (!btn) return;
+    e.preventDefault();
+
+    // Gather data from button. A batch button (M4) carries several items and meals, which
+    // are placed as ONE order: one delivery, one service fee, one wallet debit.
+    const itmIds = btn.dataset.items
+      ? btn.dataset.items.split(',').map(Number)
+      : [Number(btn.dataset.itmId)];
+    const meals = btn.dataset.meals
+      ? btn.dataset.meals.split(',').map(Number)
+      : [Number(btn.dataset.meal || 3)];
+    const meal  = meals[0];
+    const date  = btn.dataset.date;
+    const rtrId = Number(btn.dataset.rtrId);
+    const rtrName = btn.dataset.rtrName || '';
+    const itemName = btn.dataset.itemName || '';
+    const priceCents = Number(btn.dataset.priceCents || 0);
+    const deliveryType = (btn.dataset.deliveryType || 'delivery').toLowerCase();
+
+    const totals = computeTotals(priceCents, deliveryType,
+                                 btn.dataset.deliveryFeeCents, btn.dataset.serviceFeeCents);
+    const mealName = m => (m===1 ? 'Breakfast' : m===2 ? 'Lunch' : 'Dinner');
+
+    // Fill modal fields
+    field('om-rtr').textContent = rtrName;
+    field('om-item').textContent = itmIds.length > 1 ? itemName : itemName + ' (x1)';
+    field('om-date').textContent = date;
+    field('om-meal').textContent = meals.map(mealName).join(' + ')
+      + (meals.length > 1 ? ' (one ' + (deliveryType === 'pickup' ? 'pickup' : 'delivery') + ')'
+                          : (deliveryType === 'pickup' ? ' (pickup)' : ''));
+
+    field('om-subtotal').textContent = dollars(totals.subtotal);
+    field('om-tax').textContent = dollars(totals.tax);
+    field('om-delivery').textContent = dollars(totals.delivery_fee);
+    field('om-service').textContent = dollars(totals.service_fee);
+    field('om-total').textContent = dollars(totals.total);
+
+    // Stash order payload for confirm
+    pendingOrder = {
+      idempotency_key: newIdempotencyKey(),
+      restaurant_id: rtrId,
+      items: itmIds.map(id => ({ itm_id: id, qty: 1 })),
+      delivery_type: deliveryType,
+      tip: 0,
+      eta_minutes: 40,
+      date,
+      meal,
+      ...(meals.length > 1 ? { meals } : {})
+    };
+
+    openModal();
+  });
+
+  omConfirm.addEventListener('click', async () => {
+    if (!pendingOrder) return;
+    try {
+      const res = await fetch('{{ url_for("order") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pendingOrder)
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        closeModal();
+        // redirect to profile with ?ordered=<id> like legacy flow
+        window.location.href = '{{ url_for("profile") }}' + (data.ord_id ? ('?ordered=' + data.ord_id) : '');
+      } else {
+        closeModal();
+        alert('Sorry, we could not place your order. Please try again.');
+      }
+    } catch (err) {
+      closeModal();
+      alert('Network error placing order.');
+    } finally {
+      pendingOrder = null;
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

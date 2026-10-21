@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard · Weeklies</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    /* Admin Dashboard Specific Styles */
+    .admin-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 var(--space-5);
+    }
+
+    /* Tab Navigation */
+    .admin-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: var(--space-5);
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0;
+    }
+
+    .admin-tabs .tab {
+      padding: 12px 24px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: -2px;
+    }
+
+    .admin-tabs .tab:hover {
+      color: var(--text);
+      background: var(--hint);
+    }
+
+    .admin-tabs .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      margin-left: 8px;
+      background: var(--primary);
+      color: white;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .admin-tabs .tab:not(.active) .tab-badge {
+      background: var(--muted);
+    }
+
+    /* Tab Content */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Kanban Board */
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--space-4);
+      margin-top: var(--space-4);
+    }
+
+    @media (min-width: 1200px) {
+      .kanban-board {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+    }
+
+    .order-receipt {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 13px;
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .order-receipt:hover {
+      text-decoration: underline;
+    }
+
+    .kanban-column {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space-4);
+      min-height: 400px;
+    }
+
+    .kanban-column h3 {
+      margin: 0 0 var(--space-4);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .kanban-column h3 .count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 24px;
+      padding: 0 8px;
+      background: var(--hint);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .order-cards {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    /* Order Card */
+    .order-card {
+      background: linear-gradient(145deg, var(--elev), var(--surface));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-3);
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+
+    .order-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      border-color: var(--primary);
+    }
+
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-2);
+    }
+
+    .order-id {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--primary);
+    }
+
+    .order-time {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .order-details {
+      margin-bottom: var(--space-3);
+    }
+
+    .order-details p {
+      margin: 4px 0;
+      font-size: 14px;
+    }
+
+    .customer-name {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .restaurant-name {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .order-total {
+      font-weight: 700;
+      color: var(--success);
+      font-size: 15px;
+    }
+
+    .order-refunded {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--danger, #b42318);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .btn-refund {
+      margin-top: 4px;
+      padding: 4px 10px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--danger, #b42318);
+      background: transparent;
+      color: var(--danger, #b42318);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-refund:hover {
+      background: var(--danger, #b42318);
+      color: white;
+    }
+
+    .btn-refund:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .ledger-status {
+      margin: 0 0 16px;
+      padding: 10px 14px;
+      border-radius: var(--radius-xs);
+      font-weight: 700;
+      border: 1px solid var(--border);
+    }
+
+    .ledger-status.ok { background: #ecfdf3; color: #067647; border-color: #abefc6; }
+    .ledger-status.bad { background: #fef3f2; color: #b42318; border-color: #fecdca; }
+    .ledger-detail { font-weight: 400; margin-left: 8px; }
+
+    .order-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .btn-status {
+      padding: 8px 12px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--border);
+      background: var(--hint);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .btn-status:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .btn-status:active {
+      transform: translateY(0);
+    }
+    
+    .btn-status:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: var(--hint);
+      color: var(--muted);
+    }
+    
+    .btn-status:disabled:hover {
+      background: var(--hint);
+      color: var(--muted);
+      border-color: var(--border);
+      transform: none;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: var(--space-6) var(--space-4);
+      color: var(--muted);
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      opacity: 0.3;
+      margin-bottom: var(--space-2);
+    }
+
+    /* Tickets Section */
+    .tickets-list {
+      display: grid;
+      gap: var(--space-4);
+      margin-top: var(--space-4);
+    }
+
+    /* Ticket Card */
+    .ticket-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space-4);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .ticket-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-3);
+    }
+
+    .ticket-id {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--primary);
+    }
+
+    .ticket-status {
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-open {
+      background: rgba(91, 140, 255, 0.2);
+      color: #5b8cff;
+      border: 1px solid rgba(91, 140, 255, 0.4);
+    }
+
+    .status-in-progress {
+      background: rgba(255, 204, 102, 0.2);
+      color: #ffcc66;
+      border: 1px solid rgba(255, 204, 102, 0.4);
+    }
+
+    .status-resolved {
+      background: rgba(41, 196, 138, 0.2);
+      color: #29c48a;
+      border: 1px solid rgba(41, 196, 138, 0.4);
+    }
+
+    .status-closed {
+      background: rgba(169, 175, 193, 0.2);
+      color: #a9afc1;
+      border: 1px solid rgba(169, 175, 193, 0.4);
+    }
+
+    .ticket-details {
+      margin-bottom: var(--space-3);
+    }
+
+    .ticket-details p {
+      margin: 6px 0;
+      font-size: 14px;
+    }
+
+    .ticket-message {
+      background: var(--hint);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      padding: var(--space-3);
+      margin: var(--space-3) 0;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .ticket-time {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .ticket-response {
+      margin-top: var(--space-3);
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--border);
+    }
+
+    .ticket-response textarea {
+      width: 100%;
+      height: 80px;
+      min-height: 80px;
+      max-height: 80px;
+      padding: 10px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 14px;
+      resize: none;
+      margin-bottom: 12px;
+      font-family: inherit;
+      line-height: 1.5;
+      box-sizing: border-box;
+    }
+    
+    .ticket-response textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(91, 140, 255, 0.1);
+    }
+
+    .ticket-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .ticket-actions .btn-respond {
+      grid-column: 1 / -1;
+    }
+
+    .btn-respond {
+      padding: 8px 16px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--primary);
+      background: var(--primary);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-respond:hover {
+      background: var(--primary-600);
+      transform: translateY(-1px);
+    }
+
+    /* Notification Toast */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 1000;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+
+    .notification.show {
+      display: block;
+    }
+
+    .notification.success {
+      background: var(--success);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .notification.error {
+      background: var(--danger);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* Pagination */
+    .pagination {
+      margin-top: var(--space-5);
+      padding: var(--space-4);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .pagination-info {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: var(--space-3);
+    }
+
+    .pagination-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+
+    .pagination-btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--border);
+      background: var(--hint);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .pagination-btn:hover:not(.disabled) {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .pagination-btn.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .pagination-pages {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .pagination-page {
+      min-width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .pagination-page:hover:not(.active) {
+      background: var(--hint);
+      border-color: var(--primary);
+    }
+
+    .pagination-page.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .pagination-ellipsis {
+      color: var(--muted);
+      padding: 0 4px;
+      font-size: 14px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .kanban-board {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-tabs .tab {
+        padding: 10px 16px;
+        font-size: 14px;
+      }
+
+      .pagination-controls {
+        flex-direction: column;
+        gap: var(--space-3);
+      }
+
+      .pagination-pages {
+        order: -1;
+      }
+    }
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="{{ url_for('index') }}">
+      <span class="logo"></span> Weeklies Admin
+    </a>
+    <nav>
+      <a href="{{ url_for('index') }}">← Back to App</a>
+    </nav>
+  </div>
+</header>
+
+<main class="main">
+  <div class="admin-container">
+    <div class="page-title">
+      <h1>Admin Dashboard</h1>
+    </div>
+
+    <!-- Wallet ledger health (M2): every transaction sums to zero, no wallet is negative -->
+    {% if ledger_check %}
+    <div class="ledger-status {{ 'ok' if ledger_check.ok else 'bad' }}" id="ledgerStatus">
+      {% if ledger_check.ok %}
+        Ledger balanced ✅ <span class="ledger-detail">all entries sum to {{ ledger_total }}, no negative wallets</span>
+      {% else %}
+        Ledger NOT balanced ❌
+        <span class="ledger-detail">
+          entries sum to {{ ledger_total }}
+          {% if ledger_check.unbalanced_txn_ids %}· unbalanced transactions: {{ ledger_check.unbalanced_txn_ids|join(', ') }}{% endif %}
+          {% if ledger_check.negative_user_accounts %}· negative wallets: {{ ledger_check.negative_user_accounts|join(', ') }}{% endif %}
+        </span>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Navigation Tabs -->
+    <nav class="admin-tabs">
+      <button class="tab active" data-tab="orders">
+        Orders
+        {% if orders_by_status %}
+        <span class="tab-badge">{{ orders_by_status.get('Ordered', [])|length + orders_by_status.get('Preparing', [])|length + orders_by_status.get('Delivering', [])|length }}</span>
+        {% endif %}
+      </button>
+      <button class="tab" data-tab="tickets">
+        Support Tickets
+        {% if tickets %}
+        <span class="tab-badge">{{ tickets|length }}</span>
+        {% endif %}
+      </button>
+    </nav>
+
+    <!-- Orders Section (Kanban Board) -->
+    <section id="orders-section" class="tab-content active">
+      <div class="kanban-board">
+        <!-- Ordered Column -->
+        <div class="kanban-column" data-status="Ordered">
+          <h3>
+            Ordered
+            <span class="count" id="count-ordered">0</span>
+          </h3>
+          <div class="order-cards" id="cards-ordered">
+            {% if orders_by_status.get('Ordered') %}
+              {% for order in orders_by_status['Ordered'] %}
+              <div class="order-card" data-ord-id="{{ order.ord_id }}">
+                <div class="order-header">
+                  <span class="order-id">#{{ order.ord_id }}</span>
+                  <span class="order-time">{{ order.placed_at }}</span>
+                </div>
+                <div class="order-details">
+                  <p class="customer-name">{{ order.customer_name }}</p>
+                  <p class="restaurant-name">{{ order.restaurant_name }}</p>
+                  <p class="order-total">{{ order.total }}</p>
+                  {% if order.refunded %}
+                  <p class="order-refunded">Refunded</p>
+                  {% elif order.refundable %}
+                  <button class="btn-refund" type="button">Refund</button>
+                  {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
+                </div>
+                <div class="order-actions">
+                  <button class="btn-status" data-next-status="Preparing">
+                    Mark as Preparing
+                  </button>
+                  <button class="btn-status" data-next-status="Delivered">
+                    Mark as Delivered
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+            <div class="empty-state">
+              <div class="empty-state-icon">📋</div>
+              <p>No orders in this status</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Preparing Column -->
+        <div class="kanban-column" data-status="Preparing">
+          <h3>
+            Preparing
+            <span class="count" id="count-preparing">0</span>
+          </h3>
+          <div class="order-cards" id="cards-preparing">
+            {% if orders_by_status.get('Preparing') %}
+              {% for order in orders_by_status['Preparing'] %}
+              <div class="order-card" data-ord-id="{{ order.ord_id }}">
+                <div class="order-header">
+                  <span class="order-id">#{{ order.ord_id }}</span>
+                  <span class="order-time">{{ order.placed_at }}</span>
+                </div>
+                <div class="order-details">
+                  <p class="customer-name">{{ order.customer_name }}</p>
+                  <p class="restaurant-name">{{ order.restaurant_name }}</p>
+                  <p class="order-total">{{ order.total }}</p>
+                  {% if order.refunded %}
+                  <p class="order-refunded">Refunded</p>
+                  {% elif order.refundable %}
+                  <button class="btn-refund" type="button">Refund</button>
+                  {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
+                </div>
+                <div class="order-actions">
+                  <button class="btn-status" data-next-status="Delivering">
+                    Mark as Delivering
+                  </button>
+                  <button class="btn-status" data-next-status="Delivered">
+                    Mark as Delivered
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+            <div class="empty-state">
+              <div class="empty-state-icon">👨‍🍳</div>
+              <p>No orders being prepared</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Delivering Column -->
+        <div class="kanban-column" data-status="Delivering">
+          <h3>
+            Delivering
+            <span class="count" id="count-delivering">0</span>
+          </h3>
+          <div class="order-cards" id="cards-delivering">
+            {% if orders_by_status.get('Delivering') %}
+              {% for order in orders_by_status['Delivering'] %}
+              <div class="order-card" data-ord-id="{{ order.ord_id }}">
+                <div class="order-header">
+                  <span class="order-id">#{{ order.ord_id }}</span>
+                  <span class="order-time">{{ order.placed_at }}</span>
+                </div>
+                <div class="order-details">
+                  <p class="customer-name">{{ order.customer_name }}</p>
+                  <p class="restaurant-name">{{ order.restaurant_name }}</p>
+                  <p class="order-total">{{ order.total }}</p>
+                  {% if order.refunded %}
+                  <p class="order-refunded">Refunded</p>
+                  {% elif order.refundable %}
+                  <button class="btn-refund" type="button">Refund</button>
+                  {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
+                </div>
+                <div class="order-actions">
+                  <button class="btn-status" data-next-status="Delivered">
+                    Mark as Delivered
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+            <div class="empty-state">
+              <div class="empty-state-icon">🚚</div>
+              <p>No orders out for delivery</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Delivered Column -->
+        <div class="kanban-column" data-status="Delivered">
+          <h3>
+            Delivered
+            <span class="count" id="count-delivered">0</span>
+          </h3>
+          <div class="order-cards" id="cards-delivered">
+            {% if orders_by_status.get('Delivered') %}
+              {% for order in orders_by_status['Delivered'] %}
+              <div class="order-card" data-ord-id="{{ order.ord_id }}">
+                <div class="order-header">
+                  <span class="order-id">#{{ order.ord_id }}</span>
+                  <span class="order-time">{{ order.placed_at }}</span>
+                </div>
+                <div class="order-details">
+                  <p class="customer-name">{{ order.customer_name }}</p>
+                  <p class="restaurant-name">{{ order.restaurant_name }}</p>
+                  <p class="order-total">{{ order.total }}</p>
+                  {% if order.refunded %}
+                  <p class="order-refunded">Refunded</p>
+                  {% elif order.refundable %}
+                  <button class="btn-refund" type="button">Refund</button>
+                  {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
+                </div>
+                <div class="order-actions">
+                  <p style="color: var(--success); font-size: 13px; margin: 0;">✓ Completed</p>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+            <div class="empty-state">
+              <div class="empty-state-icon">✅</div>
+              <p>No delivered orders</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Other Column: statuses the board has no column for (e.g. Cancelled) -->
+        <div class="kanban-column" data-status="Other">
+          <h3>
+            Other
+            <span class="count" id="count-other">0</span>
+          </h3>
+          <div class="order-cards" id="cards-other">
+            {% if orders_by_status.get('Other') %}
+              {% for order in orders_by_status['Other'] %}
+              <div class="order-card" data-ord-id="{{ order.ord_id }}">
+                <div class="order-header">
+                  <span class="order-id">#{{ order.ord_id }}</span>
+                  <span class="order-time">{{ order.placed_at }}</span>
+                </div>
+                <div class="order-details">
+                  <p class="customer-name">{{ order.customer_name }}</p>
+                  <p class="restaurant-name">{{ order.restaurant_name }}</p>
+                  <p class="order-total">{{ order.total }}</p>
+                  {% if order.refunded %}
+                  <p class="order-refunded">Refunded</p>
+                  {% elif order.refundable %}
+                  <button class="btn-refund" type="button">Refund</button>
+                  {% endif %}
+                  <a class="order-receipt" href="{{ url_for('order_receipt', ord_id=order.ord_id) }}">Receipt (PDF)</a>
+                </div>
+                <div class="order-actions">
+                  {# No status buttons: models.OrderStatus allows no transitions from these statuses #}
+                  <p style="color: var(--muted); font-size: 13px; margin: 0;">Status: {{ order.status }}</p>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+            <div class="empty-state">
+              <div class="empty-state-icon">📋</div>
+              <p>No other orders</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tickets Section -->
+    <section id="tickets-section" class="tab-content">
+      <div class="tickets-list">
+        {% if tickets %}
+          {% for ticket in tickets %}
+          <div class="ticket-card" data-ticket-id="{{ ticket.ticket_id }}">
+            <div class="ticket-header">
+              <span class="ticket-id">#{{ ticket.ticket_id }}</span>
+              <span class="ticket-status status-{{ ticket.status|lower|replace(' ', '-') }}">
+                {{ ticket.status }}
+              </span>
+            </div>
+            <div class="ticket-details">
+              <p><strong>Customer:</strong> {{ ticket.customer_name }}</p>
+              <p><strong>Order:</strong> <a href="#" style="color: var(--primary); text-decoration: none;" onclick="alert('Order details: #{{ ticket.ord_id }}'); return false;">#{{ ticket.ord_id }}</a></p>
+              <p class="ticket-time">Created: {{ ticket.created_at }}</p>
+              {% if ticket.updated_at and ticket.updated_at != ticket.created_at %}
+              <p class="ticket-time">Updated: {{ ticket.updated_at }}</p>
+              {% endif %}
+            </div>
+            <div class="ticket-message">
+              {{ ticket.message }}
+            </div>
+            {% if ticket.response %}
+            <div class="ticket-message" style="background: rgba(41, 196, 138, 0.1); border-color: rgba(41, 196, 138, 0.3);">
+              <strong>Response:</strong><br>
+              <span style="white-space: pre-line;">{{ ticket.response }}</span>
+            </div>
+            {% endif %}
+            <div class="ticket-response">
+              <textarea 
+                placeholder="Enter your response to the customer..." 
+                id="response-{{ ticket.ticket_id }}"
+              ></textarea>
+              <div class="ticket-actions">
+                <button class="btn-respond" data-ticket-id="{{ ticket.ticket_id }}">
+                  Send Response
+                </button>
+                <button 
+                  class="btn-status" 
+                  data-ticket-id="{{ ticket.ticket_id }}"
+                  data-status="In Progress"
+                  {% if ticket.status == 'In Progress' %}disabled{% endif %}
+                >
+                  Mark In Progress
+                </button>
+                <button 
+                  class="btn-status" 
+                  data-ticket-id="{{ ticket.ticket_id }}"
+                  data-status="Resolved"
+                  {% if ticket.status == 'Resolved' or ticket.status == 'Closed' %}disabled{% endif %}
+                >
+                  Mark Resolved
+                </button>
+                <button 
+                  class="btn-status" 
+                  data-ticket-id="{{ ticket.ticket_id }}"
+                  data-status="Closed"
+                  {% if ticket.status == 'Closed' %}disabled{% endif %}
+                  style="grid-column: 1 / -1;"
+                >
+                  Mark Closed
+                </button>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">🎫</div>
+          <p>No support tickets submitted yet</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Pagination Controls -->
+      {% if total_pages > 1 %}
+      <div class="pagination">
+        <div class="pagination-info">
+          Showing page {{ current_page }} of {{ total_pages }} ({{ total_tickets }} total tickets)
+        </div>
+        <div class="pagination-controls">
+          {% if current_page > 1 %}
+          <a href="{{ url_for('admin_dashboard', page=current_page - 1) }}" class="pagination-btn">
+            ← Previous
+          </a>
+          {% else %}
+          <span class="pagination-btn disabled">← Previous</span>
+          {% endif %}
+
+          <div class="pagination-pages">
+            {% for page_num in range(1, total_pages + 1) %}
+              {% if page_num == current_page %}
+                <span class="pagination-page active">{{ page_num }}</span>
+              {% elif page_num == 1 or page_num == total_pages or (page_num >= current_page - 2 and page_num <= current_page + 2) %}
+                <a href="{{ url_for('admin_dashboard', page=page_num) }}" class="pagination-page">{{ page_num }}</a>
+              {% elif page_num == current_page - 3 or page_num == current_page + 3 %}
+                <span class="pagination-ellipsis">...</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+
+          {% if current_page < total_pages %}
+          <a href="{{ url_for('admin_dashboard', page=current_page + 1) }}" class="pagination-btn">
+            Next →
+          </a>
+          {% else %}
+          <span class="pagination-btn disabled">Next →</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </section>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">© 2025 Weeklies</div>
+</footer>
+
+<!-- Notification Toast -->
+<div id="notification" class="notification"></div>
+
+<!-- Admin Dashboard JavaScript -->
+<script src="{{ url_for('static', filename='admin.js') }}"></script>
+
+</body>
+</html>

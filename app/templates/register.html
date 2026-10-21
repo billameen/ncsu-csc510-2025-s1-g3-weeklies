@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register · Weeklies</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="{{ url_for('index') }}">
+      <span class="logo" aria-hidden="true"></span> Weeklies
+    </a>
+    <nav>
+      <a href="{{ url_for('login') }}">Login</a>
+    </nav>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container auth">
+    {% if error %}
+      <div class="flash danger error">{{ error }}</div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header" style="font-size: 24px; font-weight: bold;">Create your account</div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('register') }}" id="registerForm" novalidate>
+          <!-- STEP 1: Basic info -->
+          <div class="step">
+            <h2 class="section-title" style="margin-top:-20px">Your details</h2>
+            <p class="muted">We’ll use this to set up your profile.</p>
+            <div class="form-row form-row--2">
+              <div>
+                <label for="fname">First name</label>
+                <!-- more generic placeholder -->
+                <input class="input" id="fname" name="fname" type="text" placeholder="First name" required>
+              </div>
+              <div>
+                <label for="lname">Last name</label>
+                <!-- more generic placeholder -->
+                <input class="input" id="lname" name="lname" type="text" placeholder="Last name" required>
+              </div>
+            </div>
+            <div class="form-row form-row--2">
+              <div>
+                <label for="email">Email</label>
+                <input class="input" id="email" name="email" type="email" placeholder="you@example.com" required>
+              </div>
+              <div>
+                <label for="phone">Phone</label>
+                <input class="input" id="phone" name="phone" type="tel" placeholder="(555) 555-5555" required>
+              </div>
+            </div>
+            <div class="form-row form-row--2">
+              <div>
+                <label for="password">Password</label>
+                <input class="input" id="password" name="password" type="password" placeholder="Enter a password" minlength="6" required>
+                <div class="help-text">Min 6 characters.</div>
+              </div>
+              <div>
+                <label for="confirm_password">Confirm password</label>
+                <input class="input" id="confirm_password" name="confirm_password" type="password" placeholder="Re-enter password" minlength="6" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 2: Allergies -->
+          <div class="step">
+            <h2 class="section-title">Allergies</h2>
+            <p class="muted">Select any allergens that apply.</p>
+            <div class="allergen-grid" id="allergenGrid">
+              {# ALLERGEN_OPTIONS is a Jinja global built from menu_generation.ALLERGEN_TAGS #}
+              {% for a in ALLERGEN_OPTIONS %}
+              <label class="allergen">
+                <input type="checkbox" name="allergies[]" value="{{ a }}">
+                <span>{{ a }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- STEP 3: Preferences (bubbles + search) -->
+          <div class="step">
+            <h2 class="section-title">Preferences</h2>
+            <p class="muted">Tap bubbles to select, or search to add/filter.</p>
+            <div class="pref-toolbar">
+              <input class="input" id="prefSearch" type="search" placeholder="Search or add a preference… (press Enter)">
+              <button class="btn btn-outline" type="button" id="clearPrefsBtn">Clear</button>
+            </div>
+            <div class="bubbles" id="bubbles"></div>
+          </div>
+
+          <!-- Hidden serialized fields for server -->
+          <input type="hidden" name="allergies" id="allergiesField" value="">
+          <input type="hidden" name="preferences" id="preferencesField" value="">
+
+          <div class="btn-row" style="margin-bottom: -20px">
+            <button type="submit" class="btn btn-primary">Create account</button>
+            <a class="btn btn-outline" href="{{ url_for('login') }}">I already have an account</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">© 2025 Weeklies</div>
+</footer>
+
+<style>
+  /* Preference bubbles */
+  .pref-toolbar { display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+  .pref-toolbar .input { max-width: 380px; }
+  .bubbles { display:flex; flex-wrap:wrap; gap:12px; }
+  .bubble {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    border:2px solid var(--border);
+    background: rgba(0,0,0,0.05);
+    color: var(--text);
+    padding: 10px 14px;
+    cursor:pointer;
+    user-select:none;
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    opacity: 0.5;
+  }
+  .bubble:hover { transform: translateY(-1px); opacity: 0.7; }
+  .bubble.selected {
+    background: rgba(0,0,0,0.05);
+    border-color: currentColor;
+    box-shadow: 0 0 6px currentColor;
+    opacity: 1;
+  }
+  .section-title { margin: 0 0 6px; font-size: 18px; }
+  .muted { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+  .allergen-grid { display:grid; gap:10px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+  @media (min-width: 720px) { .allergen-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+  .allergen { display:flex; gap:10px; align-items:center; padding:10px 12px; border:1px solid var(--border); border-radius:12px; background: var(--surface); }
+  .step { margin-bottom: 24px; }
+  .error { margin: 12px 0; }
+</style>
+
+<script>
+  (function() {
+    const DEFAULT_PREFS = [
+      'Vegan','Vegetarian','Keto','Paleo','Halal','Kosher','Low Sodium','High Protein',
+      'Dairy-Free','Gluten-Free','Spicy','Mild','Sweet','Savory','Quick Meals','Budget',
+      'Organic','Local','Seasonal','Meal Prep','Breakfast','Lunch','Dinner','Snacks',
+      'High Fiber','Low Carb','Low Fat','Sugar-Free','Nut-Free','Shellfish-Free','Soy-Free',
+      'Comfort Food','Exotic','Street Food','Fine Dining','Fast Food','Slow Cooked','Grilled',
+      'Baked','Fried','Raw','Sushi','Salads','Soups','Sandwiches','Wraps','Smoothies',
+      'Juicing','Energy Boost','Post-Workout','Pre-Workout','Family Friendly','Kid Friendly',
+      'Romantic','Entertaining','Travel Friendly','Picnic','Camping','Holiday Meals',
+      'Desserts','Cakes','Cookies','Pastries','Ice Cream','Chocolate','Coffee','Tea',
+      'Wine Pairing','Beer Pairing','Cocktails','Non-Alcoholic','Hydration','Low Caffeine'
+    ];
+
+    const bubblesEl = document.getElementById('bubbles');
+    const searchEl  = document.getElementById('prefSearch');
+    const clearBtn  = document.getElementById('clearPrefsBtn');
+
+    // Utility: random pastel-ish HSL
+    function randomColor() {
+      const h = Math.floor(Math.random()*360);
+      const s = 65 + Math.random()*25;   // 65–90
+      const l = 55 + Math.random()*15;   // 55–70
+      return `hsl(${h} ${s}% ${l}%)`;
+    }
+    // Utility: random size in px
+    function randomSize() {
+      return Math.floor(28 + Math.random()*28); // 28–56
+    }
+
+    const state = {
+      all: new Map(),       // key -> { el, label, color }
+      selected: new Set(),  // keys
+    };
+
+    function makeKey(label) { return label.toLowerCase().trim(); }
+
+    function createBubble(label) {
+      const key = makeKey(label);
+      if (state.all.has(key)) return state.all.get(key).el;
+      const color = randomColor();
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'bubble';
+      el.textContent = label;
+      el.style.borderColor = color;
+      el.style.color = color;    // used as currentColor
+      el.style.fontSize = Math.random() < 0.5 ? '14px' : '16px';
+      el.style.padding = `8px ${Math.max(14, randomSize())}px`;
+
+      // Toggle selection on click
+      el.addEventListener('click', () => {
+        const k = makeKey(label);
+        if (state.selected.has(k)) {
+          state.selected.delete(k);
+          el.classList.remove('selected');
+        } else {
+          state.selected.add(k);
+          el.classList.add('selected');
+        }
+        syncHiddenFields();
+      });
+
+      state.all.set(key, { el, label, color });
+      return el;
+    }
+
+    function renderList(list) {
+      bubblesEl.innerHTML = '';
+      list.slice(0, 20).forEach(label => bubblesEl.appendChild(createBubble(label)));
+      // re-apply selected classes
+      for (const key of state.selected) {
+        const item = state.all.get(key);
+        if (item) item.el.classList.add('selected');
+      }
+    }
+
+    function filterList(q) {
+      const query = q.toLowerCase().trim();
+      if (!query) {
+        renderList(Array.from(state.all.values()).map(v => v.label));
+        return;
+      }
+      const labels = Array.from(state.all.values())
+        .map(v => v.label)
+        .filter(l => l.toLowerCase().includes(query));
+      renderList(labels);
+    }
+
+    function addFromInput() {
+      const raw = searchEl.value.trim();
+      if (!raw) return;
+      const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+      parts.forEach(p => {
+        const key = makeKey(p);
+        const el = createBubble(p);
+        if (!state.selected.has(key)) {
+          state.selected.add(key);
+          el.classList.add('selected');
+        }
+      });
+      searchEl.value = '';
+      filterList('');
+      syncHiddenFields();
+    }
+
+    function clearSelectionsAndSearch() {
+      // Clear selected bubbles
+      state.selected.clear();
+      state.all.forEach(({ el }) => el.classList.remove('selected'));
+      syncHiddenFields();
+
+      // ALSO clear the search bar text and reset the list
+      searchEl.value = '';
+      filterList('');
+      // optional: return focus to the search field
+      searchEl.focus();
+    }
+
+    function syncHiddenFields() {
+      // preferences (CSV)
+      const prefs = Array.from(state.selected).map(k => state.all.get(k)?.label).filter(Boolean);
+      document.getElementById('preferencesField').value = prefs.join(',');
+    }
+
+    // Init defaults
+    DEFAULT_PREFS.forEach(createBubble);
+    renderList(DEFAULT_PREFS);
+
+    // Events
+    searchEl.addEventListener('input', (e) => filterList(e.target.value));
+    searchEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); addFromInput(); }
+    });
+    clearBtn.addEventListener('click', clearSelectionsAndSearch);
+  })();
+
+  // --- Serialize allergies to CSV for your existing /register route ---
+  (function() {
+    const form = document.getElementById('registerForm');
+    form.addEventListener('submit', (e) => {
+      // Password confirmation guard (client-side mirror of server)
+      const pw = document.getElementById('password').value;
+      const cp = document.getElementById('confirm_password').value;
+      if (pw !== cp) {
+        e.preventDefault();
+        alert('Passwords do not match.');
+        return;
+      }
+      // Allergies CSV
+      const checks = Array.from(form.querySelectorAll('input[name="allergies[]"]:checked')).map(i => i.value);
+      document.getElementById('allergiesField').value = checks.join(',');
+      // preferencesField already managed by bubble script
+    }, { passive: false });
+  })();
+</script>
+
+</body>
+</html>

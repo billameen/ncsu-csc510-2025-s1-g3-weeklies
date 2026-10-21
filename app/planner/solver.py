@@ -1,0 +1,404 @@
+"""
+The weekly planner: picks every meal of the week at once with the OR-Tools CP-SAT solver.
+
+Each rule in `planner.rules` adds itself to one model (see `planner.constraint`). Hard rules
+must hold; soft rules add weighted penalties, and the solver looks for the plan with the
+lowest total penalty. Choosing all meals together is what lets a plan meet weekly limits
+such as the budget, which picking one meal at a time cannot guarantee.
+
+    from planner.menu import load_menu
+    from planner.request import PlanRequest
+    from planner.solver import plan_week
+
+    result = plan_week(request, load_menu(db_file))
+    if result.ok:
+        ...  # result.meals, result.orders, result.total_cost_cents, result.kcal_by_day()
+    else:
+        ...  # result.explanation says why no week could be planned
+
+Solving stops after ``time_limit_s`` (4 s by default, counted from the call, so building the
+model is included) or after ``work_limit`` of the solver's deterministic time (2.0 by
+default), whichever comes first. If a valid plan was found by then it is returned with
+``optimal`` False; it is valid, just not proven to be the best one. On a machine that is not
+overloaded the work limit is reached first, and since it counts work rather than seconds, the
+same request gets the same plan every time. If the machine is so busy that the 4 s limit is
+reached first, the plan may differ between runs; it still meets every hard rule.
+"""
+
+import math
+import time
+from collections.abc import Sequence
+from dataclasses import dataclass
+from datetime import date
+from enum import StrEnum
+
+from ortools.sat.python import cp_model
+
+from planner.constraint import Constraint, Kind
+from planner.context import PlanContext
+from planner.menu import Menu, MenuItem
+from planner.registry import rules_for
+from planner.request import PlanRequest, Slot
+
+DEFAULT_TIME_LIMIT_S = 4.0
+# Search effort cap in CP-SAT's deterministic time (roughly seconds on a laptop, but counted
+# in work done, not on the clock). Stopping on work instead of wall-clock time makes the plan
+# for a given request the same on every run; the wall-clock limit above is a backstop that
+# only wins on a machine about twice as slow, or as busy, as a typical laptop. On the M0 users 2.0 gives the same
+# H1, H2 and H4 as running to the 4 s limit, with p95 planning time under 3 s instead of 4.1 s.
+DEFAULT_WORK_LIMIT = 2.0
+# One search worker keeps the search, and so the plan, the same on every run. Plans are small
+# enough that more workers mostly add CPU contention on a shared web server.
+DEFAULT_WORKERS = 1
+RANDOM_SEED = 0
+# Least time explain() calls get to re-solve after the model is found infeasible.
+MIN_DIAGNOSIS_S = 0.5
+
+
+class PlannerError(Exception):
+    """A rule built a model the solver rejects: a bug in that rule, not in the request."""
+
+
+class Status(StrEnum):
+    """How planning ended."""
+
+    OPTIMAL = "optimal"  # the best week the rules allow, proven
+    FEASIBLE = "feasible"  # a valid week; time ran out before it was proven best
+    INFEASIBLE = "infeasible"  # no week meets every hard rule; see PlanResult.reasons
+    TIMED_OUT = "timed_out"  # time ran out before any valid week was found
+
+
+@dataclass(frozen=True)
+class PlannedMeal:
+    """
+    One meal of the plan. food_cost_cents (price + tax) and separate_fee_cents (the fees it
+    would pay as its own delivery order) are filled in by plan_week from the menu's fees.
+    """
+
+    slot: Slot
+    item: MenuItem
+    food_cost_cents: int | None = None
+    separate_fee_cents: int | None = None
+
+    @property
+    def day(self) -> date:
+        """The date of the meal."""
+        return self.slot.day
+
+    @property
+    def meal(self) -> int:
+        """1 breakfast, 2 lunch, 3 dinner."""
+        return self.slot.meal
+
+    @property
+    def itm_id(self) -> int:
+        """The MenuItem id picked."""
+        return self.item.itm_id
+
+    @property
+    def cost_cents(self) -> int:
+        """Price with tax and the fees of ordering it on its own for delivery."""
+        if self.food_cost_cents is None or self.separate_fee_cents is None:
+            return self.item.cost_cents
+        return self.food_cost_cents + self.separate_fee_cents
+
+
+@dataclass(frozen=True)
+class PlannedOrder:
+    """
+    One order of the plan: one or more meals from one restaurant on one day, delivered
+    together (or picked up). Meals in one order are at most the fee rule's window apart.
+    Attributes:
+        rtr_id: The restaurant.
+        day: The day.
+        meals: The meals in it, in slot order.
+        pickup: True if it is picked up (no delivery fee).
+        fee_cents: The fees it pays: one service fee, plus one delivery fee unless pickup.
+        separate_fee_cents: What its meals would pay in fees as separate delivery orders.
+    """
+
+    rtr_id: int
+    day: date
+    meals: tuple[PlannedMeal, ...]
+    pickup: bool
+    fee_cents: int
+    separate_fee_cents: int
+
+    @property
+    def batched(self) -> bool:
+        """True if more than one meal shares this order."""
+        return len(self.meals) > 1
+
+    @property
+    def food_cost_cents(self) -> int:
+        """Prices plus tax of its meals."""
+        return sum(m.food_cost_cents or 0 for m in self.meals)
+
+    @property
+    def total_cost_cents(self) -> int:
+        """Food, tax and fees."""
+        return self.food_cost_cents + self.fee_cents
+
+    @property
+    def savings_cents(self) -> int:
+        """Fees saved against ordering each of its meals separately for delivery."""
+        return self.separate_fee_cents - self.fee_cents
+
+
+@dataclass(frozen=True)
+class PlanResult:
+    """
+    The outcome of `plan_week`.
+    Attributes:
+        status: How planning ended.
+        meals: The planned meals in slot order; empty unless status is OPTIMAL or FEASIBLE.
+        reasons: Why there is no plan (one sentence per cause); empty when there is one.
+        seconds: Wall-clock time taken, including building the model.
+        orders: The meals grouped into orders, in slot order of their first meal. Each meal
+            is in exactly one order; without batching every order holds one meal.
+    """
+
+    status: Status
+    meals: tuple[PlannedMeal, ...] = ()
+    reasons: tuple[str, ...] = ()
+    seconds: float = 0.0
+    orders: tuple[PlannedOrder, ...] = ()
+
+    @property
+    def ok(self) -> bool:
+        """True if there is a valid plan."""
+        return self.status in (Status.OPTIMAL, Status.FEASIBLE)
+
+    @property
+    def optimal(self) -> bool:
+        """True if the plan is proven to be the best one; False if time ran out first."""
+        return self.status is Status.OPTIMAL
+
+    @property
+    def explanation(self) -> str | None:
+        """The reasons as one message for the user, or None when there is a plan."""
+        return " ".join(self.reasons) or None
+
+    @property
+    def total_cost_cents(self) -> int:
+        """What the whole plan costs, tax and fees included."""
+        if self.orders:
+            return sum(o.total_cost_cents for o in self.orders)
+        return sum(m.cost_cents for m in self.meals)
+
+    @property
+    def fees_cents(self) -> int:
+        """The fees the plan pays (delivery + service, per order)."""
+        if self.orders:
+            return sum(o.fee_cents for o in self.orders)
+        return sum(m.separate_fee_cents or 0 for m in self.meals)
+
+    @property
+    def separate_fees_cents(self) -> int:
+        """The fees if every meal were its own delivery order (the M1 way)."""
+        return sum(m.separate_fee_cents or 0 for m in self.meals)
+
+    @property
+    def fee_savings_cents(self) -> int:
+        """Fees saved by batching and pickup, against ordering every meal separately."""
+        return self.separate_fees_cents - self.fees_cents
+
+    def kcal_by_day(self) -> dict[date, int]:
+        """Calories planned per day, days in order."""
+        totals: dict[date, int] = {}
+        for m in self.meals:
+            totals[m.day] = totals.get(m.day, 0) + m.item.calories
+        return totals
+
+    def menu_entries(self) -> list[str]:
+        """
+        The plan in User.generated_menu's format: "[YYYY-MM-DD,itm_id,meal]" per meal. Meals in
+        a batched or picked-up order get a fourth field naming the order, "o<n>" (delivered)
+        or "p<n>" (picked up): meals with the same tag on the same day are one order.
+        """
+        tags = {}
+        for n, order in enumerate(self.orders, start=1):
+            if order.batched or order.pickup:
+                for m in order.meals:
+                    tags[m.slot.index] = f"{'p' if order.pickup else 'o'}{n}"
+        return [
+            f"[{m.day.isoformat()},{m.itm_id},{m.meal}"
+            + (f",{tags[m.slot.index]}" if m.slot.index in tags else "")
+            + "]"
+            for m in self.meals
+        ]
+
+
+def plan_week(
+    request: PlanRequest,
+    menu: Menu,
+    *,
+    rules: Sequence[Constraint] | None = None,
+    time_limit_s: float = DEFAULT_TIME_LIMIT_S,
+    work_limit: float = DEFAULT_WORK_LIMIT,
+    workers: int = DEFAULT_WORKERS,
+) -> PlanResult:
+    """
+    Plan every meal of a request at once.
+    Args:
+        request: The week, targets, allergens and preferences.
+        menu: What can be picked (see planner.menu.load_menu).
+        rules: The rules to use, in any order. Default: rules_for(request), i.e. every
+            registered rule that is on by default plus those the request's options enable.
+        time_limit_s: When to stop searching and return the best plan found so far.
+        work_limit: The same in deterministic time, so the plan does not depend on how busy
+            the machine is. Whichever limit is hit first stops the search.
+        workers: CP-SAT search workers. More can be faster but makes plans vary run to run.
+    Returns:
+        PlanResult: The plan, or the reasons there is none.
+    Raises:
+        PlannerError: A rule made the model invalid.
+    """
+    started = time.monotonic()
+    rules = sorted(rules_for(request) if rules is None else rules, key=lambda r: r.order)
+    ctx = PlanContext(request, menu, rules, deadline=started + time_limit_s)
+    for rule in rules:
+        rule.apply(ctx)
+    ctx.model.Minimize(ctx.objective())
+
+    # The time limit covers the whole call, so building the model counts against it.
+    solve_budget = max(0.05, started + time_limit_s - time.monotonic())
+    solver = _solver(solve_budget, workers, work_limit)
+    status = solver.Solve(ctx.model)
+
+    if status == cp_model.MODEL_INVALID:
+        raise PlannerError(f"The rules built an invalid model: {ctx.model.Validate()}")
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        fees = menu.fees
+        meals = tuple(
+            PlannedMeal(slot, item, ctx.food_cost_cents(item), fees.order_fee_cents(item.rtr_id))
+            for slot in ctx.slots
+            for item, var in ctx.picks(slot)
+            if solver.BooleanValue(var)
+        )
+        orders = _orders(ctx, meals, solver.BooleanValue)
+        # CP-SAT reports OPTIMAL once it stops for a gap limit too; only claim a proof.
+        proven = (
+            status == cp_model.OPTIMAL and solver.ObjectiveValue() == solver.BestObjectiveBound()
+        )
+        return PlanResult(
+            Status.OPTIMAL if proven else Status.FEASIBLE,
+            meals=meals,
+            seconds=time.monotonic() - started,
+            orders=orders,
+        )
+    if status == cp_model.INFEASIBLE:
+        # Explanations may re-solve parts of the model; give them a moment even if the
+        # infeasibility proof used up most of the time limit.
+        ctx.deadline = max(ctx.deadline, time.monotonic() + MIN_DIAGNOSIS_S)
+        return PlanResult(
+            Status.INFEASIBLE, reasons=diagnose(ctx), seconds=time.monotonic() - started
+        )
+    # Neither a plan nor a proof that none exists. The search is deterministic, so asking
+    # again gives the same answer; say what would help instead.
+    seconds = time.monotonic() - started
+    return PlanResult(
+        Status.TIMED_OUT,
+        reasons=(
+            f"Planning stopped after {seconds:.1f} seconds without finding a week that meets "
+            "all of your requirements, or proving that none exists. A higher budget or a "
+            "higher calorie target leaves more weeks to choose from and makes one easier to "
+            "find.",
+        ),
+        seconds=seconds,
+    )
+
+
+def _orders(ctx: PlanContext, meals: tuple[PlannedMeal, ...], value) -> tuple[PlannedOrder, ...]:
+    """
+    Group the solved meals into orders: the batches the fee rule's variables chose, and every
+    other meal on its own. Pickup and fees follow the fee rule (none: every order delivered).
+    """
+    fees = ctx.menu.fees
+    rule = ctx.fee_rule
+    by_slot = {m.slot.index: m for m in meals}
+
+    def order(group: tuple[PlannedMeal, ...], rtr_id: int, day: date) -> PlannedOrder:
+        pickup = bool(rule is not None and rule.pickup(rtr_id, day))
+        return PlannedOrder(
+            rtr_id=rtr_id,
+            day=day,
+            meals=group,
+            pickup=pickup,
+            fee_cents=fees.order_fee_cents(rtr_id, pickup=pickup),
+            separate_fee_cents=sum(m.separate_fee_cents or 0 for m in group),
+        )
+
+    orders, batched = [], set()
+    for var, rtr_id, day, slots in ctx.fee_batches:
+        if value(var):
+            group = tuple(by_slot[s.index] for s in sorted(slots, key=lambda s: s.index))
+            if any(m.item.rtr_id != rtr_id for m in group):
+                raise PlannerError(f"batch for restaurant {rtr_id} holds a meal from elsewhere")
+            orders.append(order(group, rtr_id, day))
+            batched.update(s.index for s in slots)
+    orders.extend(order((m,), m.item.rtr_id, m.day) for m in meals if m.slot.index not in batched)
+    return tuple(sorted(orders, key=lambda o: o.meals[0].slot.index))
+
+
+@dataclass(frozen=True)
+class Cheapest:
+    """The cheapest plan cost found by `cheapest_without`."""
+
+    cost_cents: int  # exact if proven, else a lower bound: no plan costs less
+    proven: bool
+
+
+def cheapest_without(ctx: PlanContext, rule: Constraint) -> Cheapest | None:
+    """
+    For explain(): the lowest cost of any plan that meets every other hard rule in ctx,
+    ignoring rule and every soft rule. Uses whatever time is left before ctx.deadline.
+    Returns:
+        Cheapest | None: The cost (proven minimum, or a lower bound if time ran out), or
+        None if the other rules have no solution either, or nothing was learned in time.
+    """
+    others = [r for r in ctx.rules if r is not rule and r.kind is Kind.HARD]
+    sub = PlanContext(ctx.request, ctx.menu, others, deadline=ctx.deadline)
+    for other in others:
+        other.apply(sub)
+    sub.model.Minimize(sub.cost_cents())
+    solver = _solver(max(ctx.time_left(), 0.01), DEFAULT_WORKERS)
+    status = solver.Solve(sub.model)
+    if status == cp_model.OPTIMAL:
+        return Cheapest(round(solver.ObjectiveValue()), proven=True)
+    if status == cp_model.FEASIBLE:
+        return Cheapest(math.ceil(solver.BestObjectiveBound()), proven=False)
+    return None
+
+
+def diagnose(ctx: PlanContext) -> tuple[str, ...]:
+    """
+    Why the model in ctx has no solution: every hard rule's explain(ctx) that is not None,
+    in rule order. If no rule can say, a fallback sentence lists the hard rules in play, so
+    the user always gets something more specific than an error.
+    """
+    reasons = []
+    for rule in ctx.rules:
+        if rule.kind is Kind.HARD:
+            reason = rule.explain(ctx)
+            if reason:
+                reasons.append(reason)
+    if reasons:
+        return tuple(reasons)
+    hard = [rule.summary.rstrip(".").lower() for rule in ctx.rules if rule.kind is Kind.HARD]
+    return (f"No week meets all of these at once: {'; '.join(hard)}.",)
+
+
+def _solver(
+    time_limit_s: float, workers: int, work_limit: float = DEFAULT_WORK_LIMIT
+) -> cp_model.CpSolver:
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = time_limit_s
+    solver.parameters.max_deterministic_time = work_limit
+    solver.parameters.num_workers = workers
+    solver.parameters.random_seed = RANDOM_SEED
+    # Full LP relaxation. With one worker, CP-SAT's default level could not prove even a
+    # budget that is below the sum of each day's cheapest valid meals infeasible within the
+    # time limit; at level 2 it takes about 0.1 s.
+    solver.parameters.linearization_level = 2
+    return solver

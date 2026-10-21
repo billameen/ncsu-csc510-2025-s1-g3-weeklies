@@ -1,0 +1,35 @@
+# --- Core Dependencies ---
+Flask==2.3.3
+python-dotenv>=1.2.1
+Werkzeug==2.3.7
+Jinja2==3.1.2
+itsdangerous==2.1.2
+click==8.1.7
+
+# --- Testing ---
+pytest==8.3.3
+pytest-cov==4.1.0
+hypothesis==6.112.0
+
+# --- Documentation ---
+pdoc==14.4.0
+reportlab==4.2.2
+markdown>=3.10
+
+# --- Code Quality Tools ---
+black==24.8.0
+ruff==0.6.9
+
+# --- Meal planner (CP-SAT constraint solver) ---
+ortools==9.15.6755
+pydantic>=2.7,<3
+
+# --- Evaluation charts (python -m eval.m4 draws eval/results/m4_savings.png) ---
+matplotlib==3.9.2
+
+# --- LLM Modules ---
+pandas==2.3.3
+torch==2.9.0
+transformers==4.53.3
+accelerate==1.11.0
+openai

@@ -3,8 +3,8 @@ import pathlib, html
 from markdown import markdown
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SITE = ROOT / "proj2" / "site"
-DOCS_SRC = ROOT / "proj2" / "docs"
+SITE = ROOT / "app" / "site"
+DOCS_SRC = ROOT / "app" / "docs"
 DOCS_OUT = SITE / "docs"
 
 def wrap_html(title, body, rel_css):
@@ -15,7 +15,7 @@ def wrap_html(title, body, rel_css):
 <link rel="stylesheet" href="{rel_css}">
 </head><body class="pdoc"><main class="pdoc">
 <article>{body}</article>
-<p><a href="../proj2.html">← Back to API Reference</a></p>
+<p><a href="../app.html">← Back to API Reference</a></p>
 </main></body></html>"""
 
 def build_markdown_pages():
@@ -37,7 +37,7 @@ def write_index_html():
 </head><body class="pdoc"><main class="pdoc">
 <h1>Project Documentation</h1>
 <ul>
-  <li><a href="proj2.html">🧩 API Reference (pdoc)</a></li>
+  <li><a href="app.html">🧩 API Reference (pdoc)</a></li>
 </ul>
 </main></body></html>""",
         encoding="utf-8"

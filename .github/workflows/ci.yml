@@ -2,9 +2,9 @@
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "development" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "development" ]
   workflow_dispatch:
 
 concurrency:
@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: proj2  # run everything from proj2/
+        working-directory: app  # run everything from app/
 
     steps:
       - name: Checkout
@@ -41,8 +41,11 @@ jobs:
           set -e
           pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install pytest pytest-timeout 
-        
+          pip install pytest pytest-timeout
+
+      - name: Build the database
+        run: python scripts/init_db.py # CSC510_DB.db is gitignored; seed.sql is tracked
+
       - name: Run tests with retry
         uses: nick-fields/retry@v3
         with:
@@ -51,7 +54,7 @@ jobs:
           # retry_on: error
           command: |
             set -euo pipefail
-            cd proj2
+            cd app
             export PYTHONUNBUFFERED=1
             # unique file per attempt; GITHUB_RUN_ATTEMPT is stable, add a seconds stamp too
             LOG="$GITHUB_WORKSPACE/pytest_attempt_${GITHUB_RUN_ATTEMPT}_$(date +%s).log"
@@ -83,16 +86,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-xml
-          path: proj2/coverage.xml
+          path: app/coverage.xml
           if-no-files-found: warn
 
       # - name: Upload coverage to Codecov
       #   uses: codecov/codecov-action@v5
       #   with:
       #     token: ${{ secrets.CODECOV_TOKEN }}   # rotate & set in repo secrets
-      #     files: proj2/coverage.xml
-      #     flags: proj2
-      #     name: proj2-coverage
+      #     files: app/coverage.xml
+      #     flags: app
+      #     name: app-coverage
       #     fail_ci_if_error: true
       #     verbose: true
 

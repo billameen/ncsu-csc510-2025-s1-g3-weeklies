@@ -1,5 +1,5 @@
 [run]
-source = proj2
+source = app
 branch = True
 omit =
     */__init__.py

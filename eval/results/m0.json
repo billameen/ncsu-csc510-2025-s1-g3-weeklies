@@ -1,0 +1,84 @@
+{
+  "schema_version": 2,
+  "seed": 510,
+  "users": {
+    "total": 100,
+    "feasible": 63,
+    "hard": 20,
+    "hard_feasible": 2
+  },
+  "thresholds": {
+    "h1_valid_pct": {
+      "pass_if": ">=",
+      "value": 90
+    },
+    "h2_median_distinct": {
+      "pass_if": ">=",
+      "value": 14
+    },
+    "h3_p95_s": {
+      "pass_if": "<=",
+      "value": 5
+    },
+    "h4_no_plan_pct": {
+      "pass_if": ">=",
+      "value": 90
+    }
+  },
+  "planners": {
+    "B1": {
+      "h1_valid_pct": 0.0,
+      "h2_median_distinct": 19,
+      "h3_p95_s": 0.002540500005125068,
+      "h4_no_plan_pct": 0.0,
+      "overall_valid_pct": 0.0,
+      "explained_pct": 0.0,
+      "users_with_violation": {
+        "missing_meal": 0,
+        "extra_meal": 0,
+        "unknown_item": 0,
+        "allergen": 0,
+        "closed_restaurant": 0,
+        "under_kcal": 100,
+        "over_kcal": 14,
+        "over_budget": 27
+      }
+    },
+    "B2": {
+      "h1_valid_pct": 0.0,
+      "h2_median_distinct": 19,
+      "h3_p95_s": 216.0729634000454,
+      "h4_no_plan_pct": 0.0,
+      "overall_valid_pct": 0.0,
+      "explained_pct": 0.0,
+      "users_with_violation": {
+        "missing_meal": 0,
+        "extra_meal": 0,
+        "unknown_item": 0,
+        "allergen": 13,
+        "closed_restaurant": 0,
+        "under_kcal": 99,
+        "over_kcal": 8,
+        "over_budget": 28
+      }
+    },
+    "M1": {
+      "h1_valid_pct": 100.0,
+      "h2_median_distinct": 20,
+      "h3_p95_s": 4.010987999994541,
+      "h4_no_plan_pct": 100.0,
+      "overall_valid_pct": 63.0,
+      "explained_pct": 100.0,
+      "users_with_violation": {
+        "missing_meal": 0,
+        "extra_meal": 0,
+        "unknown_item": 0,
+        "allergen": 0,
+        "closed_restaurant": 0,
+        "under_kcal": 0,
+        "over_kcal": 0,
+        "over_budget": 0
+      }
+    }
+  }
+}
