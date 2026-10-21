@@ -36,7 +36,9 @@ This Code of Conduct applies within all community spaces, and also applies when 
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project team at **tjbrown8@ncsu.edu**.  
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project team at **siddhantjoshi0428@gmail.com**, or privately to any current maintainer
+(Bill Ameen [@billameen](https://github.com/billameen), Shaan Chandra [@rectangle-man](https://github.com/rectangle-man),
+Siddhant Joshi [@sidjoshi29](https://github.com/sidjoshi29)) through our team group chat.  
 All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the reporter of any incident.

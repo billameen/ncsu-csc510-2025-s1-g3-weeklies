@@ -234,4 +234,9 @@ how to extend the meal planner safely.
 
 ## 📜 License
 
-Distributed under the MIT License. See [LICENSE](./LICENSE) for more information.
+Distributed under the MIT License. See [LICENSE](./LICENSE) for more information. The original
+Weeklies copyright is kept, as MIT requires, with our team's line added below it.
+
+Third-party packages and their licenses are listed in
+[THIRD_PARTY_LIBRARIES.md](./THIRD_PARTY_LIBRARIES.md). Please follow our
+[Code of Conduct](./CODE_OF_CONDUCT.md); reports go to the contact listed there.
